@@ -4,8 +4,9 @@
 {% block content %}
 <section class="hero">
   <div class="hero-content">
+    <span class="eyebrow"><span class="dot-live"></span> Lab พร้อมใช้งานแบบเรียลไทม์</span>
     <h1>เรียน Network<br><span class="highlight">ผ่าน Lab จริงในเบราว์เซอร์</span></h1>
-    <p>ฝึกทำ Lab บน Router/Switch จำลองผ่าน GNS3 โดยไม่ต้องติดตั้งอะไรเพิ่ม</p>
+    <p>ฝึกทำ Lab บน Router/Switch จำลองผ่าน GNS3 พร้อมระบบตรวจคำตอบอัตโนมัติ โดยไม่ต้องติดตั้งอะไรเพิ่ม</p>
     <div class="hero-actions">
       {% if user %}
         <a href="/courses" class="btn btn-primary btn-lg">ดูคอร์สเรียน</a>
@@ -14,18 +15,25 @@
         <a href="/auth/login" class="btn btn-outline btn-lg">เข้าสู่ระบบ</a>
       {% endif %}
     </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><strong>GNS3</strong><span>Topology จริง</span></div>
+      <div class="hero-stat"><strong>Auto</strong><span>ตรวจคำตอบทันที</span></div>
+      <div class="hero-stat"><strong>0₿</strong><span>เริ่มต้นฟรี</span></div>
+    </div>
   </div>
   <div class="hero-visual">
     <div class="terminal-preview">
       <div class="terminal-bar">
         <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
-        <span class="terminal-title">Router1#</span>
+        <span class="terminal-title">Router1 — console</span>
       </div>
       <div class="terminal-body">
         <p><span class="prompt">Router1#</span> show ip interface brief</p>
-        <p>Interface&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;IP-Address&nbsp;&nbsp;&nbsp;OK?&nbsp;Status</p>
-        <p>GigabitEthernet0/0&nbsp;192.168.1.1&nbsp;&nbsp;YES up</p>
-        <p>GigabitEthernet0/1&nbsp;10.0.0.1&nbsp;&nbsp;&nbsp;&nbsp;YES up</p>
+        <p class="out">Interface          IP-Address    OK? Status</p>
+        <p class="out">Gig0/0             192.168.1.1   YES <span class="ok">up</span></p>
+        <p class="out">Gig0/1             10.0.0.1      YES <span class="ok">up</span></p>
+        <p><span class="prompt">Router1#</span> ping 10.0.0.2</p>
+        <p class="out">!!!!! <span class="ok">Success rate is 100 percent</span></p>
         <p><span class="prompt">Router1#</span> <span class="cursor">_</span></p>
       </div>
     </div>
@@ -33,20 +41,43 @@
 </section>
 
 <section class="features">
-  <div class="feature-card">
-    <div class="feature-icon">⚡</div>
-    <h3>เริ่มได้ทันที</h3>
-    <p>กด Start Lab แล้วระบบสร้าง Topology อัตโนมัติภายในไม่กี่วินาที</p>
+  <div class="features-inner">
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <h3>เริ่มได้ทันที</h3>
+      <p>กด Start Lab แล้วระบบ provision Topology อัตโนมัติภายในไม่กี่วินาที</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🖥️</div>
+      <h3>อุปกรณ์จริง</h3>
+      <p>โต้ตอบกับ Router/Switch ผ่าน GNS3 Web-UI ในเบราว์เซอร์ ไม่ต้องลง SSH/Telnet</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">✅</div>
+      <h3>ตรวจอัตโนมัติ</h3>
+      <p>ระบบ grade ผลลัพธ์จากคอนโซลจริง พร้อมคะแนนรายข้อและ output ที่ตรวจสอบได้</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💰</div>
+      <h3>ประหยัด</h3>
+      <p>เซิร์ฟเวอร์เปิด-ปิดตามการใช้งาน คืนทรัพยากรเมื่อจบ จ่ายเฉพาะที่ใช้จริง</p>
+    </div>
   </div>
-  <div class="feature-card">
-    <div class="feature-icon">🖥️</div>
-    <h3>Terminal ในเบราว์เซอร์</h3>
-    <p>พิมพ์คำสั่ง CLI ได้เลย ไม่ต้องติดตั้ง SSH Client หรือ Telnet</p>
-  </div>
-  <div class="feature-card">
-    <div class="feature-icon">💰</div>
-    <h3>ประหยัดค่าใช้จ่าย</h3>
-    <p>เซิร์ฟเวอร์เปิด-ปิดตามการใช้งาน จ่ายเฉพาะเวลาที่ใช้จริง</p>
+</section>
+
+<section class="cta-band">
+  <div class="cta-inner">
+    <div class="cta-text">
+      <h2>พร้อมลงมือทำ Lab แรกหรือยัง?</h2>
+      <p>สมัครฟรี แล้วเริ่มฝึก Network จาก Topology จริงได้ทันที</p>
+    </div>
+    <div class="hero-actions">
+      {% if user %}
+        <a href="/courses" class="btn btn-primary btn-lg">เลือกคอร์ส</a>
+      {% else %}
+        <a href="/auth/register" class="btn btn-primary btn-lg">เริ่มเรียนฟรี</a>
+      {% endif %}
+    </div>
   </div>
 </section>
 {% endblock %}

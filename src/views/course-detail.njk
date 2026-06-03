@@ -2,11 +2,31 @@
 {% block title %}{{ course.title }} — Pingable Dev{% endblock %}
 
 {% block content %}
+{% set labCount = course.labs | length %}
 <div class="course-detail-header">
-  <a href="/courses" class="back-link">← คอร์สเรียน</a>
+  <a href="/courses" class="back-link">← คอร์สเรียนทั้งหมด</a>
+  <span class="course-level level-{{ course.level }}">{{ course.level }}</span>
   <h1>{{ course.title }}</h1>
   <p>{{ course.description }}</p>
-  <span class="course-level level-{{ course.level }}">{{ course.level }}</span>
+</div>
+
+<div class="course-stats">
+  <div class="stat">
+    <span class="stat-icon">◈</span>
+    <span><span class="stat-val">{{ labCount }}</span><span class="stat-label">บทเรียน Lab</span></span>
+  </div>
+  <div class="stat">
+    <span class="stat-icon">▲</span>
+    <span><span class="stat-val">{{ course.level }}</span><span class="stat-label">ระดับความยาก</span></span>
+  </div>
+  <div class="stat">
+    <span class="stat-icon">✅</span>
+    <span><span class="stat-val">Auto</span><span class="stat-label">ตรวจคำตอบอัตโนมัติ</span></span>
+  </div>
+  <div class="stat">
+    <span class="stat-icon">🖥️</span>
+    <span><span class="stat-val">GNS3</span><span class="stat-label">Topology จริง</span></span>
+  </div>
 </div>
 
 <div class="lab-list">
@@ -17,6 +37,12 @@
     <div class="lab-info">
       <h3>{{ lab.title }}</h3>
       <p>{{ lab.description }}</p>
+      <div class="lab-meta">
+        {% if lab.objectives.length %}<span class="lab-tag">🎯 {{ lab.objectives | length }} เป้าหมาย</span>{% endif %}
+        {% if lab.gradingChecks.length %}<span class="lab-tag">✓ {{ lab.gradingChecks | length }} เช็ค</span>{% endif %}
+        {% if lab.hints.length %}<span class="lab-tag">💡 {{ lab.hints | length }} คำใบ้</span>{% endif %}
+        {% if lab.topology.nodes.length %}<span class="lab-tag">◈ {{ lab.topology.nodes | length }} โหนด</span>{% endif %}
+      </div>
       {% if lab.objectives.length %}
       <ul class="lab-objectives">
         {% for obj in lab.objectives %}
@@ -26,6 +52,10 @@
       {% endif %}
     </div>
     <a href="/lab/{{ course._id }}/{{ loop.index0 }}" class="btn btn-primary">เริ่ม Lab</a>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <p>คอร์สนี้กำลังจัดเตรียมเนื้อหา — กลับมาดูใหม่เร็วๆ นี้</p>
   </div>
   {% endfor %}
 </div>

@@ -2,9 +2,28 @@
 {% block title %}สมัครสมาชิก — Pingable Dev{% endblock %}
 
 {% block content %}
-<div class="auth-container">
+<div class="auth-split">
+  <aside class="auth-brand">
+    <span class="eyebrow"><span class="dot-live"></span> Pingable Dev</span>
+    <h2>เริ่มต้นเส้นทาง Network Engineer</h2>
+    <p>สร้างบัญชีฟรี แล้วฝึกทำ Lab บน Router/Switch จริงผ่านเบราว์เซอร์ พร้อมระบบตรวจคำตอบอัตโนมัติ</p>
+    <div class="terminal-preview">
+      <div class="terminal-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="terminal-title">onboarding</span>
+      </div>
+      <div class="terminal-body">
+        <p><span class="prompt">$</span> create-account --free</p>
+        <p class="out">Provisioning your workspace...</p>
+        <p class="out"><span class="ok">✓ ready to learn</span></p>
+        <p><span class="prompt">$</span> <span class="cursor">_</span></p>
+      </div>
+    </div>
+  </aside>
+
   <div class="auth-card">
     <h2>สมัครสมาชิก</h2>
+    <p class="auth-sub">สร้างบัญชีฟรี แล้วเริ่มฝึกทำ Network Lab ได้ทันที</p>
     {% if error %}
       <div class="alert alert-error">{{ error }}</div>
     {% endif %}

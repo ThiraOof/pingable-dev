@@ -2,9 +2,28 @@
 {% block title %}เข้าสู่ระบบ — Pingable Dev{% endblock %}
 
 {% block content %}
-<div class="auth-container">
+<div class="auth-split">
+  <aside class="auth-brand">
+    <span class="eyebrow"><span class="dot-live"></span> Pingable Dev</span>
+    <h2>กลับมาทำ Lab ต่อกันเลย</h2>
+    <p>เข้าสู่ระบบเพื่อ provision Topology, ทำโจทย์ และตรวจคำตอบบนอุปกรณ์จริง</p>
+    <div class="terminal-preview">
+      <div class="terminal-bar">
+        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+        <span class="terminal-title">auth — session</span>
+      </div>
+      <div class="terminal-body">
+        <p><span class="prompt">$</span> ssh you@pingable.dev</p>
+        <p class="out">Authenticating session...</p>
+        <p class="out"><span class="ok">✓ welcome back</span></p>
+        <p><span class="prompt">$</span> <span class="cursor">_</span></p>
+      </div>
+    </div>
+  </aside>
+
   <div class="auth-card">
     <h2>เข้าสู่ระบบ</h2>
+    <p class="auth-sub">ยินดีต้อนรับกลับ — เข้าสู่ระบบเพื่อทำ Lab ต่อ</p>
     {% if error %}
       <div class="alert alert-error">{{ error }}</div>
     {% endif %}

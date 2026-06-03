@@ -4,8 +4,11 @@
 {% block content %}
 <div class="lab-layout">
 
+  <!-- Mobile drawer scrim -->
+  <div id="labScrim" class="lab-scrim" hidden></div>
+
   <!-- Left panel: instructions -->
-  <aside class="lab-sidebar">
+  <aside class="lab-sidebar" id="labSidebar">
     <div class="lab-sidebar-header">
       <a href="/courses/{{ course._id }}" class="back-link">← {{ course.title }}</a>
       <h2>Lab {{ labIndex + 1 }}: {{ lab.title }}</h2>
@@ -14,7 +17,16 @@
 
     {% if lab.objectives.length %}
     <div class="sidebar-section">
-      <h3>Objectives</h3>
+      <div class="sidebar-section-head">
+        <h3>เป้าหมาย ({{ lab.objectives | length }})</h3>
+        <div class="progress-ring" id="objRing" title="ความคืบหน้า">
+          <svg width="44" height="44">
+            <circle class="track" cx="22" cy="22" r="18"/>
+            <circle class="fill" id="objRingFill" cx="22" cy="22" r="18"/>
+          </svg>
+          <span class="label" id="objRingLabel">0/{{ lab.objectives | length }}</span>
+        </div>
+      </div>
       <ul class="objective-list" id="objectiveList">
         {% for obj in lab.objectives %}
         <li data-index="{{ loop.index0 }}">
@@ -27,10 +39,10 @@
 
     {% if lab.hints.length %}
     <div class="sidebar-section">
-      <h3>Hints</h3>
+      <h3>คำใบ้</h3>
       {% for hint in lab.hints %}
       <details class="hint-item">
-        <summary>Hint {{ loop.index }}</summary>
+        <summary>คำใบ้ที่ {{ loop.index }}</summary>
         <p>{{ hint }}</p>
       </details>
       {% endfor %}
@@ -41,7 +53,7 @@
       {% if lab.gradingChecks and lab.gradingChecks.length %}
       <button id="btnGrade" class="btn btn-primary btn-block" disabled>ตรวจคำตอบ ({{ lab.gradingChecks.length }} ข้อ)</button>
       {% endif %}
-      <button id="btnStop" class="btn btn-danger btn-block" style="margin-top:0.5rem">หยุด Lab &amp; คืนทรัพยากร</button>
+      <button id="btnStop" class="btn btn-danger btn-block">หยุด Lab &amp; คืนทรัพยากร</button>
     </div>
   </aside>
 
@@ -52,17 +64,42 @@
         <h3>ผลการตรวจคำตอบ</h3>
         <button id="btnCloseModal" class="grade-modal-close" aria-label="ปิด">&times;</button>
       </div>
-      <div class="grade-score-banner" id="gradeScoreBanner"></div>
+      <div class="grade-score-hero">
+        <div class="score-ring" id="scoreRing">
+          <svg width="96" height="96">
+            <circle class="track" cx="48" cy="48" r="42"/>
+            <circle class="fill" id="scoreRingFill" cx="48" cy="48" r="42"/>
+          </svg>
+          <div class="center"><div><span class="pct" id="scorePct">0%</span><small>คะแนน</small></div></div>
+        </div>
+        <div class="grade-score-meta">
+          <div class="grade-banner" id="gradeBanner"></div>
+          <p id="gradeScoreText"></p>
+        </div>
+      </div>
       <ul class="grade-result-list" id="gradeResultList"></ul>
     </div>
   </div>
 
-  <!-- Right panel: GNS3 Web-UI iframe -->
+  <!-- Right panel: GNS3 Web-UI iframe + provisioning loader -->
   <div class="lab-main">
     <div class="lab-toolbar">
+      <button id="btnToggleSidebar" class="lab-sidebar-toggle" aria-label="เปิดคำแนะนำ Lab">☰ คำแนะนำ</button>
       <span id="labStatus" class="lab-status status-loading">กำลังเตรียม Lab...</span>
     </div>
     <div class="gns3-wrapper">
+      <div id="labLoading" class="lab-loading">
+        <div class="provision" id="provisionCard">
+          <div class="provision-title">กำลังเตรียม Lab</div>
+          <div class="provision-sub" id="provisionSub">initializing workspace…</div>
+          <ul class="provision-steps" id="provisionSteps"></ul>
+        </div>
+        <div class="lab-stopped" id="stoppedCard" hidden>
+          <div class="icon">⏹️</div>
+          <p id="stoppedText">Lab หยุดทำงานแล้ว — คืนทรัพยากรเรียบร้อย</p>
+          <button class="btn btn-primary" id="btnRestart">เริ่ม Lab ใหม่</button>
+        </div>
+      </div>
       <iframe id="gns3Frame" class="gns3-frame" allowfullscreen></iframe>
     </div>
   </div>
@@ -72,42 +109,115 @@
 <script>
   const COURSE_ID = '{{ course._id }}';
   const LAB_INDEX = {{ labIndex }};
-  const labStatus   = document.getElementById('labStatus');
-  const gns3Frame   = document.getElementById('gns3Frame');
-  const btnStop     = document.getElementById('btnStop');
-  const btnGrade    = document.getElementById('btnGrade');
-  const gradeModal  = document.getElementById('gradeModal');
-  const btnClose    = document.getElementById('btnCloseModal');
-  const scoreBanner = document.getElementById('gradeScoreBanner');
-  const resultList  = document.getElementById('gradeResultList');
+
+  const $ = (id) => document.getElementById(id);
+  const labStatus  = $('labStatus');
+  const gns3Frame  = $('gns3Frame');
+  const labLoading = $('labLoading');
+  const provision  = $('provisionCard');
+  const provisionSub = $('provisionSub');
+  const provisionSteps = $('provisionSteps');
+  const stoppedCard = $('stoppedCard');
+  const stoppedText = $('stoppedText');
+  const btnStop    = $('btnStop');
+  const btnRestart = $('btnRestart');
+  const btnGrade   = $('btnGrade');
+  const gradeModal = $('gradeModal');
+  const btnClose   = $('btnCloseModal');
+  const resultList = $('gradeResultList');
+  const objectiveList = $('objectiveList');
+
+  /* ── Multi-step provisioning loader ───────────────────────────── */
+  const STEPS = [
+    { label: 'จองทรัพยากร · allocate project' },
+    { label: 'สร้างโหนด · create nodes' },
+    { label: 'เชื่อมต่อลิงก์ · wire links' },
+    { label: 'บูตอุปกรณ์ · boot devices' },
+  ];
+  const stepEls = STEPS.map((s, i) => {
+    const li = document.createElement('li');
+    li.className = 'provision-step';
+    li.innerHTML = `<span class="ps-icon">${i + 1}</span><span>${s.label}</span>`;
+    provisionSteps.appendChild(li);
+    return li;
+  });
+  function paintSteps(activeIdx, { allDone = false, errorIdx = -1 } = {}) {
+    stepEls.forEach((el, idx) => {
+      el.classList.toggle('done', allDone || idx < activeIdx);
+      el.classList.toggle('active', !allDone && idx === activeIdx && idx !== errorIdx);
+      el.classList.toggle('error', idx === errorIdx);
+      const icon = el.querySelector('.ps-icon');
+      icon.textContent = (allDone || idx < activeIdx) ? '✓'
+                        : idx === errorIdx ? '✕'
+                        : (idx + 1);
+    });
+  }
 
   async function startLab() {
+    stoppedCard.hidden = true;
+    provision.hidden = false;
+    provision.classList.remove('failed');
+    provisionSub.textContent = 'initializing workspace…';
+    labLoading.hidden = false;
     labStatus.textContent = 'กำลังสร้าง Topology...';
     labStatus.className = 'lab-status status-loading';
     if (btnGrade) btnGrade.disabled = true;
+
+    let i = 0;
+    paintSteps(0);
+    const timer = setInterval(() => {
+      if (i < STEPS.length - 1) { i++; paintSteps(i); }
+      else clearInterval(timer);
+    }, 850);
+
     try {
       const res  = await fetch(`/lab/${COURSE_ID}/${LAB_INDEX}/start`, { method: 'POST' });
       const data = await res.json();
-      if (!data.ok) throw new Error(data.error);
+      if (!data.ok) throw new Error(data.error || 'start failed');
+      clearInterval(timer);
+      paintSteps(STEPS.length, { allDone: true });
+      provisionSub.textContent = 'topology ready ✓';
       gns3Frame.src = data.gns3Url;
-      labStatus.textContent = 'Lab พร้อมใช้งาน';
-      labStatus.className = 'lab-status status-ready';
-      if (btnGrade) btnGrade.disabled = false;
+      setTimeout(() => {
+        labLoading.hidden = true;
+        labStatus.textContent = 'Lab พร้อมใช้งาน';
+        labStatus.className = 'lab-status status-ready';
+        if (btnGrade) btnGrade.disabled = false;
+      }, 500);
     } catch (err) {
-      labStatus.textContent = `ข้อผิดพลาด: ${err.message}`;
+      clearInterval(timer);
+      paintSteps(i, { errorIdx: i });
+      provision.classList.add('failed');
+      provisionSub.textContent = `ข้อผิดพลาด: ${err.message}`;
+      labStatus.textContent = 'เตรียม Lab ไม่สำเร็จ';
       labStatus.className = 'lab-status status-error';
     }
   }
 
+  /* ── Stop / restart ───────────────────────────────────────────── */
   btnStop.addEventListener('click', async () => {
     if (!confirm('หยุด Lab และลบ Topology ทั้งหมด?')) return;
     gns3Frame.src = '';
+    provision.hidden = true;
+    stoppedCard.hidden = false;
+    labLoading.hidden = false;
+    labStatus.textContent = 'กำลังหยุด...';
+    labStatus.className = 'lab-status status-loading';
     await fetch('/lab/stop', { method: 'POST' });
     labStatus.textContent = 'Lab หยุดทำงานแล้ว';
     labStatus.className = 'lab-status status-stopped';
     if (btnGrade) btnGrade.disabled = true;
   });
+  if (btnRestart) btnRestart.addEventListener('click', startLab);
 
+  /* ── Mobile sidebar drawer ────────────────────────────────────── */
+  const sidebar   = $('labSidebar');
+  const scrim     = $('labScrim');
+  const btnToggle = $('btnToggleSidebar');
+  if (btnToggle) btnToggle.addEventListener('click', () => { sidebar.classList.add('open'); scrim.hidden = false; });
+  if (scrim)     scrim.addEventListener('click', () => { sidebar.classList.remove('open'); scrim.hidden = true; });
+
+  /* ── Grading ──────────────────────────────────────────────────── */
   if (btnGrade) {
     btnGrade.addEventListener('click', async () => {
       btnGrade.disabled = true;
@@ -115,7 +225,7 @@
       try {
         const res  = await fetch(`/lab/${COURSE_ID}/${LAB_INDEX}/grade`, { method: 'POST' });
         const data = await res.json();
-        if (!data.ok) throw new Error(data.error);
+        if (!data.ok) throw new Error(data.error || 'grade failed');
         renderGradeModal(data);
         gradeModal.hidden = false;
       } catch (err) {
@@ -126,44 +236,89 @@
       }
     });
   }
+  if (btnClose) btnClose.addEventListener('click', () => { gradeModal.hidden = true; });
+  if (gradeModal) gradeModal.addEventListener('click', (e) => { if (e.target === gradeModal) gradeModal.hidden = true; });
 
-  if (btnClose) {
-    btnClose.addEventListener('click', () => { gradeModal.hidden = true; });
-  }
-  if (gradeModal) {
-    gradeModal.addEventListener('click', (e) => {
-      if (e.target === gradeModal) gradeModal.hidden = true;
-    });
-  }
+  const SCORE_C = 264;  // 2πr, r=42
+  const OBJ_C   = 113;  // 2πr, r=18
 
   function renderGradeModal({ score, total, results }) {
-    const pct = total > 0 ? Math.round((score / total) * 100) : 0;
-    scoreBanner.textContent = `${score} / ${total} คะแนน (${pct}%)`;
-    scoreBanner.className = 'grade-score-banner ' + (pct >= 60 ? 'pass' : 'fail');
+    const pct    = total > 0 ? Math.round((score / total) * 100) : 0;
+    const passed = pct >= 60;
+    const okCount = results.filter(r => r.passed).length;
 
+    // Score ring
+    const scoreRing = $('scoreRing');
+    const scoreFill = $('scoreRingFill');
+    scoreRing.className = 'score-ring ' + (passed ? 'pass' : 'fail');
+    scoreFill.style.strokeDashoffset = SCORE_C;       // reset
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      scoreFill.style.strokeDashoffset = SCORE_C * (1 - pct / 100);
+    }));
+    $('scorePct').textContent = pct + '%';
+
+    const banner = $('gradeBanner');
+    banner.textContent = passed ? '🎉 ผ่านแล้ว!' : 'ยังไม่ผ่าน — ลองอีกครั้ง';
+    banner.className = 'grade-banner ' + (passed ? 'pass' : 'fail');
+    $('gradeScoreText').textContent = `ได้ ${score} จาก ${total} คะแนน · ผ่าน ${okCount}/${results.length} ข้อ`;
+
+    // Per-check list
     resultList.innerHTML = '';
     for (const r of results) {
       const li = document.createElement('li');
-      li.className = 'grade-result-item';
+      li.className = 'grade-result-item' + (r.output ? ' has-output' : '');
       li.innerHTML = `
         <div class="grade-result-row">
-          <span class="grade-icon ${r.passed ? 'pass' : 'fail'}">${r.passed ? '✓' : '✗'}</span>
+          <span class="grade-icon ${r.passed ? 'pass' : 'fail'}">${r.passed ? '✓' : '✕'}</span>
           <span class="grade-desc">${escHtml(r.description)}</span>
-          <span class="grade-pts">${r.points} pt${r.points !== 1 ? 's' : ''}</span>
+          <span class="grade-pts">${r.passed ? r.points : 0} / ${r.points} pt</span>
+          ${r.output ? '<span class="grade-toggle">output ▾</span>' : ''}
         </div>
         ${r.output ? `<pre class="grade-output">${escHtml(r.output)}</pre>` : ''}
       `;
       if (r.output) {
-        li.querySelector('.grade-result-row').addEventListener('click', () => {
-          li.classList.toggle('expanded');
-        });
+        li.querySelector('.grade-result-row').addEventListener('click', () => li.classList.toggle('expanded'));
       }
       resultList.appendChild(li);
+    }
+
+    updateObjectives(results);
+  }
+
+  /* ── Live objective tracking + progress ring ──────────────────── */
+  function updateObjectives(results) {
+    if (!objectiveList) return;
+    const items  = [...objectiveList.querySelectorAll('li')];
+    const total  = results.length || 1;
+    const passed = results.filter(r => r.passed).length;
+
+    let doneCount;
+    if (items.length === results.length) {
+      results.forEach((r, i) => {
+        items[i].classList.toggle('done', r.passed);
+        items[i].querySelector('.objective-check').textContent = r.passed ? '●' : '○';
+      });
+      doneCount = passed;
+    } else {
+      doneCount = Math.round((passed / total) * items.length);
+      items.forEach((li, i) => {
+        const done = i < doneCount;
+        li.classList.toggle('done', done);
+        li.querySelector('.objective-check').textContent = done ? '●' : '○';
+      });
+    }
+
+    const ringFill  = $('objRingFill');
+    const ringLabel = $('objRingLabel');
+    if (ringFill && items.length) {
+      const frac = doneCount / items.length;
+      ringFill.style.strokeDashoffset = OBJ_C * (1 - frac);
+      ringLabel.textContent = `${doneCount}/${items.length}`;
     }
   }
 
   function escHtml(str) {
-    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
   startLab();

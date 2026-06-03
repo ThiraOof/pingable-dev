@@ -4,12 +4,29 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Pingable Dev{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css">
   {% block head %}{% endblock %}
 </head>
 <body>
   <nav class="navbar">
-    <a href="/" class="nav-brand">🌐 Pingable Dev</a>
+    <a href="/" class="nav-brand">
+      <svg class="brand-glyph" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+        <line class="topo-link" x1="5" y1="6" x2="12" y2="12"/>
+        <line class="topo-link" x1="19" y1="5" x2="12" y2="12"/>
+        <line class="topo-link" x1="6" y1="19" x2="12" y2="12"/>
+        <line class="topo-link" x1="19" y1="18" x2="12" y2="12"/>
+        <circle class="topo-pulse" cx="12" cy="12" r="5"/>
+        <circle class="topo-node" cx="5" cy="6" r="2"/>
+        <circle class="topo-node" cx="19" cy="5" r="2"/>
+        <circle class="topo-node" cx="6" cy="19" r="2"/>
+        <circle class="topo-node" cx="19" cy="18" r="2"/>
+        <circle class="topo-core" cx="12" cy="12" r="2.6"/>
+      </svg>
+      Pingable Dev
+    </a>
     <div class="nav-links">
       {% if user %}
         <a href="/courses">คอร์สเรียน</a>

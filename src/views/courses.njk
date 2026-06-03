@@ -4,20 +4,40 @@
 {% block content %}
 <div class="page-header">
   <h1>คอร์สเรียนทั้งหมด</h1>
-  <p>เลือกคอร์สที่สนใจ แล้วฝึกทำ Lab ผ่านเบราว์เซอร์ได้เลย</p>
+  <p>เลือกคอร์สที่สนใจ แล้วฝึกทำ Lab บน Topology จริงผ่านเบราว์เซอร์ได้เลย</p>
 </div>
 
 <div class="course-grid">
   {% for course in courses %}
-  <a href="/courses/{{ course._id }}" class="course-card">
-    <div class="course-thumbnail">
-      <img src="{{ course.thumbnail }}" alt="{{ course.title }}" onerror="this.src='/img/default-course.svg';this.onerror=null;">
+  {% set labCount = course.labs | length %}
+  <a href="/courses/{{ course._id }}" class="course-card{% if labCount == 0 %} soon{% endif %}">
+    <div class="course-cover">
+      <svg viewBox="0 0 300 160" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <line class="topo-l" x1="62" y1="44" x2="150" y2="32"/>
+        <line class="topo-l" x1="150" y1="32" x2="238" y2="56"/>
+        <line class="topo-l" x1="62" y1="44" x2="92" y2="112"/>
+        <line class="topo-l" x1="150" y1="32" x2="92" y2="112"/>
+        <line class="topo-l" x1="150" y1="32" x2="192" y2="120"/>
+        <line class="topo-l" x1="238" y1="56" x2="192" y2="120"/>
+        <line class="topo-l" x1="92" y1="112" x2="192" y2="120"/>
+        <circle class="topo-n" cx="62" cy="44" r="5"/>
+        <circle class="topo-n alt" cx="150" cy="32" r="6"/>
+        <circle class="topo-n" cx="238" cy="56" r="5"/>
+        <circle class="topo-n" cx="92" cy="112" r="5"/>
+        <circle class="topo-n alt" cx="192" cy="120" r="5"/>
+      </svg>
       <span class="course-level level-{{ course.level }}">{{ course.level }}</span>
     </div>
     <div class="course-info">
       <h3>{{ course.title }}</h3>
       <p>{{ course.description }}</p>
-      <span class="lab-count">{{ course.labs | length }} Labs</span>
+      <div class="course-meta">
+        {% if labCount == 0 %}
+          <span class="badge-soon">⏳ เร็วๆ นี้</span>
+        {% else %}
+          <span class="lab-count">◈ {{ labCount }} Labs</span>
+        {% endif %}
+      </div>
     </div>
   </a>
   {% else %}
