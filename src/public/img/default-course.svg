@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="160" viewBox="0 0 400 160">
+  <rect width="400" height="160" fill="#161b22"/>
+  <!-- network nodes -->
+  <circle cx="80"  cy="80" r="18" fill="#1f6feb" opacity="0.9"/>
+  <circle cx="200" cy="40" r="18" fill="#238636" opacity="0.9"/>
+  <circle cx="200" cy="120" r="18" fill="#238636" opacity="0.9"/>
+  <circle cx="320" cy="80" r="18" fill="#1f6feb" opacity="0.9"/>
+  <!-- links -->
+  <line x1="98"  y1="80"  x2="182" y2="48"  stroke="#30363d" stroke-width="2"/>
+  <line x1="98"  y1="80"  x2="182" y2="112" stroke="#30363d" stroke-width="2"/>
+  <line x1="218" y1="48"  x2="302" y2="74"  stroke="#30363d" stroke-width="2"/>
+  <line x1="218" y1="112" x2="302" y2="86"  stroke="#30363d" stroke-width="2"/>
+  <!-- label -->
+  <text x="200" y="155" text-anchor="middle" font-family="monospace" font-size="11" fill="#8b949e">Network Lab</text>
+</svg>

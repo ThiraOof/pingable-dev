@@ -1,0 +1,33 @@
+{% extends "base.njk" %}
+{% block title %}สมัครสมาชิก — Pingable Dev{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+  <div class="auth-card">
+    <h2>สมัครสมาชิก</h2>
+    {% if error %}
+      <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+    <form method="POST" action="/auth/register">
+      <div class="form-group">
+        <label for="username">ชื่อผู้ใช้</label>
+        <input type="text" id="username" name="username" required placeholder="network_hero">
+      </div>
+      <div class="form-group">
+        <label for="email">อีเมล</label>
+        <input type="email" id="email" name="email" required placeholder="you@example.com">
+      </div>
+      <div class="form-group">
+        <label for="password">รหัสผ่าน</label>
+        <input type="password" id="password" name="password" required placeholder="อย่างน้อย 8 ตัวอักษร" minlength="8">
+      </div>
+      <div class="form-group">
+        <label for="confirmPassword">ยืนยันรหัสผ่าน</label>
+        <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="••••••••">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">สมัครสมาชิก</button>
+    </form>
+    <p class="auth-link">มีบัญชีแล้ว? <a href="/auth/login">เข้าสู่ระบบ</a></p>
+  </div>
+</div>
+{% endblock %}

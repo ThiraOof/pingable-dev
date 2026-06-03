@@ -1,0 +1,32 @@
+{% extends "base.njk" %}
+{% block title %}{{ course.title }} — Pingable Dev{% endblock %}
+
+{% block content %}
+<div class="course-detail-header">
+  <a href="/courses" class="back-link">← คอร์สเรียน</a>
+  <h1>{{ course.title }}</h1>
+  <p>{{ course.description }}</p>
+  <span class="course-level level-{{ course.level }}">{{ course.level }}</span>
+</div>
+
+<div class="lab-list">
+  <h2>Labs ในคอร์สนี้</h2>
+  {% for lab in course.labs %}
+  <div class="lab-item">
+    <div class="lab-number">{{ loop.index }}</div>
+    <div class="lab-info">
+      <h3>{{ lab.title }}</h3>
+      <p>{{ lab.description }}</p>
+      {% if lab.objectives.length %}
+      <ul class="lab-objectives">
+        {% for obj in lab.objectives %}
+          <li>{{ obj }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+    <a href="/lab/{{ course._id }}/{{ loop.index0 }}" class="btn btn-primary">เริ่ม Lab</a>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

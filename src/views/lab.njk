@@ -1,0 +1,171 @@
+{% extends "base.njk" %}
+{% block title %}{{ lab.title }} — Pingable Dev{% endblock %}
+
+{% block content %}
+<div class="lab-layout">
+
+  <!-- Left panel: instructions -->
+  <aside class="lab-sidebar">
+    <div class="lab-sidebar-header">
+      <a href="/courses/{{ course._id }}" class="back-link">← {{ course.title }}</a>
+      <h2>Lab {{ labIndex + 1 }}: {{ lab.title }}</h2>
+      <p>{{ lab.description }}</p>
+    </div>
+
+    {% if lab.objectives.length %}
+    <div class="sidebar-section">
+      <h3>Objectives</h3>
+      <ul class="objective-list" id="objectiveList">
+        {% for obj in lab.objectives %}
+        <li data-index="{{ loop.index0 }}">
+          <span class="objective-check">○</span> {{ obj }}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {% if lab.hints.length %}
+    <div class="sidebar-section">
+      <h3>Hints</h3>
+      {% for hint in lab.hints %}
+      <details class="hint-item">
+        <summary>Hint {{ loop.index }}</summary>
+        <p>{{ hint }}</p>
+      </details>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="lab-controls">
+      {% if lab.gradingChecks and lab.gradingChecks.length %}
+      <button id="btnGrade" class="btn btn-primary btn-block" disabled>ตรวจคำตอบ ({{ lab.gradingChecks.length }} ข้อ)</button>
+      {% endif %}
+      <button id="btnStop" class="btn btn-danger btn-block" style="margin-top:0.5rem">หยุด Lab &amp; คืนทรัพยากร</button>
+    </div>
+  </aside>
+
+  <!-- Grading result modal -->
+  <div id="gradeModal" class="grade-modal-overlay" hidden>
+    <div class="grade-modal">
+      <div class="grade-modal-header">
+        <h3>ผลการตรวจคำตอบ</h3>
+        <button id="btnCloseModal" class="grade-modal-close" aria-label="ปิด">&times;</button>
+      </div>
+      <div class="grade-score-banner" id="gradeScoreBanner"></div>
+      <ul class="grade-result-list" id="gradeResultList"></ul>
+    </div>
+  </div>
+
+  <!-- Right panel: GNS3 Web-UI iframe -->
+  <div class="lab-main">
+    <div class="lab-toolbar">
+      <span id="labStatus" class="lab-status status-loading">กำลังเตรียม Lab...</span>
+    </div>
+    <div class="gns3-wrapper">
+      <iframe id="gns3Frame" class="gns3-frame" allowfullscreen></iframe>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const COURSE_ID = '{{ course._id }}';
+  const LAB_INDEX = {{ labIndex }};
+  const labStatus   = document.getElementById('labStatus');
+  const gns3Frame   = document.getElementById('gns3Frame');
+  const btnStop     = document.getElementById('btnStop');
+  const btnGrade    = document.getElementById('btnGrade');
+  const gradeModal  = document.getElementById('gradeModal');
+  const btnClose    = document.getElementById('btnCloseModal');
+  const scoreBanner = document.getElementById('gradeScoreBanner');
+  const resultList  = document.getElementById('gradeResultList');
+
+  async function startLab() {
+    labStatus.textContent = 'กำลังสร้าง Topology...';
+    labStatus.className = 'lab-status status-loading';
+    if (btnGrade) btnGrade.disabled = true;
+    try {
+      const res  = await fetch(`/lab/${COURSE_ID}/${LAB_INDEX}/start`, { method: 'POST' });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error);
+      gns3Frame.src = data.gns3Url;
+      labStatus.textContent = 'Lab พร้อมใช้งาน';
+      labStatus.className = 'lab-status status-ready';
+      if (btnGrade) btnGrade.disabled = false;
+    } catch (err) {
+      labStatus.textContent = `ข้อผิดพลาด: ${err.message}`;
+      labStatus.className = 'lab-status status-error';
+    }
+  }
+
+  btnStop.addEventListener('click', async () => {
+    if (!confirm('หยุด Lab และลบ Topology ทั้งหมด?')) return;
+    gns3Frame.src = '';
+    await fetch('/lab/stop', { method: 'POST' });
+    labStatus.textContent = 'Lab หยุดทำงานแล้ว';
+    labStatus.className = 'lab-status status-stopped';
+    if (btnGrade) btnGrade.disabled = true;
+  });
+
+  if (btnGrade) {
+    btnGrade.addEventListener('click', async () => {
+      btnGrade.disabled = true;
+      btnGrade.textContent = 'กำลังตรวจ...';
+      try {
+        const res  = await fetch(`/lab/${COURSE_ID}/${LAB_INDEX}/grade`, { method: 'POST' });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+        renderGradeModal(data);
+        gradeModal.hidden = false;
+      } catch (err) {
+        alert(`ตรวจไม่สำเร็จ: ${err.message}`);
+      } finally {
+        btnGrade.disabled = false;
+        btnGrade.textContent = `ตรวจคำตอบ ({{ lab.gradingChecks.length }} ข้อ)`;
+      }
+    });
+  }
+
+  if (btnClose) {
+    btnClose.addEventListener('click', () => { gradeModal.hidden = true; });
+  }
+  if (gradeModal) {
+    gradeModal.addEventListener('click', (e) => {
+      if (e.target === gradeModal) gradeModal.hidden = true;
+    });
+  }
+
+  function renderGradeModal({ score, total, results }) {
+    const pct = total > 0 ? Math.round((score / total) * 100) : 0;
+    scoreBanner.textContent = `${score} / ${total} คะแนน (${pct}%)`;
+    scoreBanner.className = 'grade-score-banner ' + (pct >= 60 ? 'pass' : 'fail');
+
+    resultList.innerHTML = '';
+    for (const r of results) {
+      const li = document.createElement('li');
+      li.className = 'grade-result-item';
+      li.innerHTML = `
+        <div class="grade-result-row">
+          <span class="grade-icon ${r.passed ? 'pass' : 'fail'}">${r.passed ? '✓' : '✗'}</span>
+          <span class="grade-desc">${escHtml(r.description)}</span>
+          <span class="grade-pts">${r.points} pt${r.points !== 1 ? 's' : ''}</span>
+        </div>
+        ${r.output ? `<pre class="grade-output">${escHtml(r.output)}</pre>` : ''}
+      `;
+      if (r.output) {
+        li.querySelector('.grade-result-row').addEventListener('click', () => {
+          li.classList.toggle('expanded');
+        });
+      }
+      resultList.appendChild(li);
+    }
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  startLab();
+</script>
+{% endblock %}

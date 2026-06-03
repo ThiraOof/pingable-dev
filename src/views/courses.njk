@@ -1,0 +1,29 @@
+{% extends "base.njk" %}
+{% block title %}คอร์สเรียน — Pingable Dev{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>คอร์สเรียนทั้งหมด</h1>
+  <p>เลือกคอร์สที่สนใจ แล้วฝึกทำ Lab ผ่านเบราว์เซอร์ได้เลย</p>
+</div>
+
+<div class="course-grid">
+  {% for course in courses %}
+  <a href="/courses/{{ course._id }}" class="course-card">
+    <div class="course-thumbnail">
+      <img src="{{ course.thumbnail }}" alt="{{ course.title }}" onerror="this.src='/img/default-course.svg';this.onerror=null;">
+      <span class="course-level level-{{ course.level }}">{{ course.level }}</span>
+    </div>
+    <div class="course-info">
+      <h3>{{ course.title }}</h3>
+      <p>{{ course.description }}</p>
+      <span class="lab-count">{{ course.labs | length }} Labs</span>
+    </div>
+  </a>
+  {% else %}
+  <div class="empty-state">
+    <p>ยังไม่มีคอร์สเรียนในขณะนี้ กรุณากลับมาตรวจสอบอีกครั้ง</p>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
