@@ -11,7 +11,7 @@
   <aside class="lab-sidebar" id="labSidebar">
     <div class="lab-sidebar-header">
       <a href="/courses/{{ course._id }}" class="back-link">← {{ course.title }}</a>
-      <h2>Lab {{ labIndex + 1 }}: {{ lab.title }}</h2>
+      <h2>🧪 {{ lab.title }}</h2>
       <p>{{ lab.description }}</p>
     </div>
 
@@ -108,7 +108,7 @@
 
 <script>
   const COURSE_ID = '{{ course._id }}';
-  const LAB_INDEX = {{ labIndex }};
+  const M = {{ m }}, L = {{ l }};
 
   const $ = (id) => document.getElementById(id);
   const labStatus  = $('labStatus');
@@ -171,7 +171,7 @@
     }, 850);
 
     try {
-      const res  = await fetch(`/lab/${COURSE_ID}/${LAB_INDEX}/start`, { method: 'POST' });
+      const res  = await fetch(`/lab/${COURSE_ID}/${M}/${L}/start`, { method: 'POST' });
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || 'start failed');
       clearInterval(timer);
@@ -223,7 +223,7 @@
       btnGrade.disabled = true;
       btnGrade.textContent = 'กำลังตรวจ...';
       try {
-        const res  = await fetch(`/lab/${COURSE_ID}/${LAB_INDEX}/grade`, { method: 'POST' });
+        const res  = await fetch(`/lab/${COURSE_ID}/${M}/${L}/grade`, { method: 'POST' });
         const data = await res.json();
         if (!data.ok) throw new Error(data.error || 'grade failed');
         renderGradeModal(data);

@@ -1,58 +1,86 @@
 {% extends "base.njk" %}
 {% block title %}{{ course.title }} — Pingable Dev{% endblock %}
 
+{% set TYPE_ICON = { reading: '📖', lab: '🧪', quiz: '❓' } %}
+{% set TYPE_LABEL = { reading: 'บทเรียน', lab: 'แล็บ', quiz: 'แบบทดสอบ' } %}
+
 {% block content %}
-{% set labCount = course.labs | length %}
 <div class="course-detail-header">
   <a href="/courses" class="back-link">← คอร์สเรียนทั้งหมด</a>
+  {% if course.track %}<span class="course-track inline">{{ course.track }}</span>{% endif %}
   <span class="course-level level-{{ course.level }}">{{ course.level }}</span>
   <h1>{{ course.title }}</h1>
   <p>{{ course.description }}</p>
+
+  {% if course.prerequisites.length %}
+  <div class="prereq-box">
+    <strong>ความรู้พื้นฐานที่ควรมี:</strong>
+    <ul>{% for p in course.prerequisites %}<li>{{ p }}</li>{% endfor %}</ul>
+  </div>
+  {% endif %}
 </div>
 
-<div class="course-stats">
-  <div class="stat">
-    <span class="stat-icon">◈</span>
-    <span><span class="stat-val">{{ labCount }}</span><span class="stat-label">บทเรียน Lab</span></span>
+<div class="course-progress-bar">
+  <div class="progress-ring lg" title="ความคืบหน้า">
+    <svg width="64" height="64">
+      <circle class="track" cx="32" cy="32" r="27"/>
+      <circle class="fill" cx="32" cy="32" r="27"
+              style="stroke-dasharray: 169.6; stroke-dashoffset: {{ 169.6 * (1 - percent / 100) }};"/>
+    </svg>
+    <span class="label">{{ percent }}%</span>
   </div>
-  <div class="stat">
-    <span class="stat-icon">▲</span>
-    <span><span class="stat-val">{{ course.level }}</span><span class="stat-label">ระดับความยาก</span></span>
+  <div class="cpb-meta">
+    <strong>ความคืบหน้าของคุณ</strong>
+    <p>{{ doneTotal }} / {{ lessonTotal }} บทเรียนสำเร็จ
+       {% if course.estimatedHours %}· ใช้เวลาทั้งหมด ~{{ course.estimatedHours }} ชั่วโมง{% endif %}</p>
   </div>
-  <div class="stat">
-    <span class="stat-icon">✅</span>
-    <span><span class="stat-val">Auto</span><span class="stat-label">ตรวจคำตอบอัตโนมัติ</span></span>
-  </div>
-  <div class="stat">
-    <span class="stat-icon">🖥️</span>
-    <span><span class="stat-val">GNS3</span><span class="stat-label">Topology จริง</span></span>
-  </div>
+  {% if nextUp %}
+  <a href="/learn/{{ course._id }}/{{ nextUp.m }}/{{ nextUp.l }}" class="btn btn-primary">
+    {% if doneTotal > 0 %}เรียนต่อ →{% else %}เริ่มเรียน →{% endif %}
+  </a>
+  {% endif %}
 </div>
 
-<div class="lab-list">
-  <h2>Labs ในคอร์สนี้</h2>
-  {% for lab in course.labs %}
-  <div class="lab-item">
-    <div class="lab-number">{{ loop.index }}</div>
-    <div class="lab-info">
-      <h3>{{ lab.title }}</h3>
-      <p>{{ lab.description }}</p>
-      <div class="lab-meta">
-        {% if lab.objectives.length %}<span class="lab-tag">🎯 {{ lab.objectives | length }} เป้าหมาย</span>{% endif %}
-        {% if lab.gradingChecks.length %}<span class="lab-tag">✓ {{ lab.gradingChecks | length }} เช็ค</span>{% endif %}
-        {% if lab.hints.length %}<span class="lab-tag">💡 {{ lab.hints | length }} คำใบ้</span>{% endif %}
-        {% if lab.topology.nodes.length %}<span class="lab-tag">◈ {{ lab.topology.nodes | length }} โหนด</span>{% endif %}
-      </div>
-      {% if lab.objectives.length %}
-      <ul class="lab-objectives">
-        {% for obj in lab.objectives %}
-          <li>{{ obj }}</li>
-        {% endfor %}
-      </ul>
-      {% endif %}
+<div class="module-list">
+  {% for mb in modules %}
+  <details class="module-block" {% if mb.percent < 100 and loop.first %}open{% endif %}>
+    <summary class="module-summary">
+      <span class="module-index">{{ loop.index }}</span>
+      <span class="module-titles">
+        <strong>{{ mb.mod.title }}</strong>
+        {% if mb.mod.description %}<small>{{ mb.mod.description }}</small>{% endif %}
+      </span>
+      <span class="module-progress">
+        <span class="mp-count">{{ mb.doneCount }}/{{ mb.total }}</span>
+        <span class="mp-bar"><span style="width: {{ mb.percent }}%"></span></span>
+      </span>
+    </summary>
+
+    {% if mb.mod.objectives.length %}
+    <div class="module-objectives">
+      <strong>เมื่อจบโมดูลนี้ คุณจะ:</strong>
+      <ul>{% for o in mb.mod.objectives %}<li>{{ o }}</li>{% endfor %}</ul>
     </div>
-    <a href="/lab/{{ course._id }}/{{ loop.index0 }}" class="btn btn-primary">เริ่ม Lab</a>
-  </div>
+    {% endif %}
+
+    <ul class="lesson-rows">
+      {% for lr in mb.lessons %}
+      {% set lesson = lr.lesson %}
+      <li class="lesson-row {{ 'done' if lr.completed }}">
+        <a href="/learn/{{ course._id }}/{{ lr.m }}/{{ lr.l }}">
+          <span class="lesson-check">{{ '✓' if lr.completed else '○' }}</span>
+          <span class="lesson-type-chip type-{{ lesson.type }}">{{ TYPE_ICON[lesson.type] }} {{ TYPE_LABEL[lesson.type] }}</span>
+          <span class="lesson-title">{{ lesson.title }}</span>
+          <span class="lesson-meta">
+            {% if lesson.type == 'lab' and lesson.topology.nodes.length %}<span class="lesson-tag">◈ {{ lesson.topology.nodes | length }} โหนด</span>{% endif %}
+            {% if lesson.type == 'quiz' and lesson.questions.length %}<span class="lesson-tag">{{ lesson.questions | length }} ข้อ</span>{% endif %}
+            {% if lesson.estMinutes %}<span class="lesson-tag">~{{ lesson.estMinutes }} น.</span>{% endif %}
+          </span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </details>
   {% else %}
   <div class="empty-state">
     <p>คอร์สนี้กำลังจัดเตรียมเนื้อหา — กลับมาดูใหม่เร็วๆ นี้</p>

@@ -46,6 +46,17 @@ export async function createNode(projectId, nodeConfig) {
   return request('POST', `/projects/${projectId}/nodes`, nodeConfig);
 }
 
+// Instantiate a node from a registered GNS3 template (appliance / qemu image,
+// e.g. VyOS). This is a different endpoint than createNode — templates cannot
+// be created through POST /nodes with a template_id.
+export async function createNodeFromTemplate(projectId, templateId, { x = 0, y = 0, computeId = 'local' } = {}) {
+  return request('POST', `/projects/${projectId}/templates/${templateId}`, { x, y, compute_id: computeId });
+}
+
+export async function updateNode(projectId, nodeId, patch) {
+  return request('PUT', `/projects/${projectId}/nodes/${nodeId}`, patch);
+}
+
 export async function startAllNodes(projectId) {
   return request('POST', `/projects/${projectId}/nodes/start`);
 }
@@ -79,20 +90,43 @@ export async function buildLab(labDefinition, labTitle) {
   await openProject(projectId);
 
   const nameToNode = {};
+  const nameToDef = {};
 
   for (const nodeDef of labDefinition.topology.nodes) {
-    const payload = {
-      name:        nodeDef.name,
-      node_type:   nodeDef.nodeType || 'vpcs',
-      compute_id:  nodeDef.computeId || 'local',
-      x:           nodeDef.x || 0,
-      y:           nodeDef.y || 0,
-    };
-    if (nodeDef.templateId) payload.template_id = nodeDef.templateId;
+    nameToDef[nodeDef.name] = nodeDef;
 
-    const node = await createNode(projectId, payload);
+    let node;
+    if (nodeDef.templateId) {
+      // Appliance / qemu image (e.g. VyOS) — instantiate from its template,
+      // then rename it so links and grading can address it by lab name.
+      node = await createNodeFromTemplate(projectId, nodeDef.templateId, {
+        x: nodeDef.x || 0,
+        y: nodeDef.y || 0,
+        computeId: nodeDef.computeId || 'local',
+      });
+      if (node.name !== nodeDef.name) {
+        node = await updateNode(projectId, node.node_id, { name: nodeDef.name });
+      }
+    } else {
+      node = await createNode(projectId, {
+        name:       nodeDef.name,
+        node_type:  nodeDef.nodeType || 'vpcs',
+        compute_id: nodeDef.computeId || 'local',
+        x:          nodeDef.x || 0,
+        y:          nodeDef.y || 0,
+      });
+    }
     nameToNode[nodeDef.name] = node;
   }
+
+  // Map a lab "port" number to GNS3 (adapter_number, port_number).
+  // Template/qemu nodes (VyOS) expose each NIC as a separate adapter with a
+  // single port (ethN → adapter N, port 0). Built-in VPCS/ethernet_switch use
+  // one adapter with the port number selecting the interface.
+  const portMapping = (def, port) =>
+    def?.templateId
+      ? { adapter_number: port || 0, port_number: 0 }
+      : { adapter_number: 0, port_number: port || 0 };
 
   for (const linkDef of labDefinition.topology.links || []) {
     const n1 = nameToNode[linkDef.node1];
@@ -101,8 +135,8 @@ export async function buildLab(labDefinition, labTitle) {
 
     await createLink(projectId, {
       nodes: [
-        { node_id: n1.node_id, adapter_number: 0, port_number: linkDef.port1 || 0 },
-        { node_id: n2.node_id, adapter_number: 0, port_number: linkDef.port2 || 0 },
+        { node_id: n1.node_id, ...portMapping(nameToDef[linkDef.node1], linkDef.port1) },
+        { node_id: n2.node_id, ...portMapping(nameToDef[linkDef.node2], linkDef.port2) },
       ],
     });
   }

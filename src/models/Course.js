@@ -23,26 +23,64 @@ const checkSchema = new mongoose.Schema({
   points:      { type: Number, default: 1 },
 });
 
-const labSchema = new mongoose.Schema({
-  title:       { type: String, required: true },
-  description: { type: String },
-  order:       { type: Number, default: 0 },
+// ── Theory reading content ──────────────────────────────────────────
+const readingSectionSchema = new mongoose.Schema({
+  heading: { type: String },           // section sub-heading (Thai)
+  body:    { type: String },           // Markdown body (Thai) → rendered with `markdown` filter
+  image:   { type: String },           // optional diagram URL (/img/... or external)
+}, { _id: false });
+
+// ── Quiz question ───────────────────────────────────────────────────
+const quizQuestionSchema = new mongoose.Schema({
+  prompt:      { type: String, required: true }, // question text (markdown allowed)
+  choices:     { type: [String], required: true },
+  answer:      { type: [Number], required: true }, // index(es) of correct choice(s)
+  explanation: { type: String },                   // shown after submit
+  points:      { type: Number, default: 1 },
+}, { _id: false });
+
+// ── A lesson is one of: reading | lab | quiz ────────────────────────
+const lessonSchema = new mongoose.Schema({
+  type:       { type: String, enum: ['reading', 'lab', 'quiz'], required: true },
+  title:      { type: String, required: true },
+  order:      { type: Number, default: 0 },
+  estMinutes: { type: Number },        // shown in UI ("~10 นาที")
+
+  // type === 'reading'
+  sections:   [readingSectionSchema],
+
+  // type === 'lab' (the existing GNS3 lab fields)
   topology: {
     nodes: [nodeSchema],
     links: [linkSchema],
   },
-  objectives:     [String],
-  hints:          [String],
-  gradingChecks:  [checkSchema],
+  objectives:    [String],
+  hints:         [String],
+  gradingChecks: [checkSchema],
+
+  // type === 'quiz'
+  questions:     [quizQuestionSchema],
+  passThreshold: { type: Number, default: 60 }, // % to mark the quiz complete
+});
+
+const moduleSchema = new mongoose.Schema({
+  title:       { type: String, required: true },
+  description: { type: String },
+  order:       { type: Number, default: 0 },
+  objectives:  [String],               // "เมื่อจบโมดูลนี้ คุณจะ…"
+  lessons:     [lessonSchema],
 });
 
 const courseSchema = new mongoose.Schema({
-  title:       { type: String, required: true },
-  description: { type: String },
-  level:       { type: String, enum: ['beginner', 'intermediate', 'advanced'], default: 'beginner' },
-  thumbnail:   { type: String, default: '/img/default-course.svg' },
-  labs:        [labSchema],
-  published:   { type: Boolean, default: false },
+  title:          { type: String, required: true },
+  description:    { type: String },
+  level:          { type: String, enum: ['beginner', 'intermediate', 'advanced', 'expert'], default: 'beginner' },
+  track:          { type: String },    // catalog grouping label e.g. "CCNP Enterprise"
+  estimatedHours: { type: Number },
+  prerequisites:  [String],            // free-text Thai prereq lines
+  thumbnail:      { type: String, default: '/img/default-course.svg' },
+  modules:        [moduleSchema],
+  published:      { type: Boolean, default: false },
 }, { timestamps: true });
 
 export default mongoose.model('Course', courseSchema);

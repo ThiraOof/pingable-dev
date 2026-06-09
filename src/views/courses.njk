@@ -4,46 +4,63 @@
 {% block content %}
 <div class="page-header">
   <h1>คอร์สเรียนทั้งหมด</h1>
-  <p>เลือกคอร์สที่สนใจ แล้วฝึกทำ Lab บน Topology จริงผ่านเบราว์เซอร์ได้เลย</p>
+  <p>เรียนรู้องค์ความรู้เครือข่าย พร้อมลงมือทำ Lab บน Topology จริง — ไล่ระดับตั้งแต่เริ่มต้นจนถึงผู้เชี่ยวชาญ</p>
 </div>
 
-<div class="course-grid">
-  {% for course in courses %}
-  {% set labCount = course.labs | length %}
-  <a href="/courses/{{ course._id }}" class="course-card{% if labCount == 0 %} soon{% endif %}">
-    <div class="course-cover">
-      <svg viewBox="0 0 300 160" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-        <line class="topo-l" x1="62" y1="44" x2="150" y2="32"/>
-        <line class="topo-l" x1="150" y1="32" x2="238" y2="56"/>
-        <line class="topo-l" x1="62" y1="44" x2="92" y2="112"/>
-        <line class="topo-l" x1="150" y1="32" x2="92" y2="112"/>
-        <line class="topo-l" x1="150" y1="32" x2="192" y2="120"/>
-        <line class="topo-l" x1="238" y1="56" x2="192" y2="120"/>
-        <line class="topo-l" x1="92" y1="112" x2="192" y2="120"/>
-        <circle class="topo-n" cx="62" cy="44" r="5"/>
-        <circle class="topo-n alt" cx="150" cy="32" r="6"/>
-        <circle class="topo-n" cx="238" cy="56" r="5"/>
-        <circle class="topo-n" cx="92" cy="112" r="5"/>
-        <circle class="topo-n alt" cx="192" cy="120" r="5"/>
-      </svg>
-      <span class="course-level level-{{ course.level }}">{{ course.level }}</span>
-    </div>
-    <div class="course-info">
-      <h3>{{ course.title }}</h3>
-      <p>{{ course.description }}</p>
-      <div class="course-meta">
-        {% if labCount == 0 %}
-          <span class="badge-soon">⏳ เร็วๆ นี้</span>
-        {% else %}
-          <span class="lab-count">◈ {{ labCount }} Labs</span>
+{% for lane in lanes %}
+<section class="level-lane">
+  <div class="lane-head">
+    <span class="course-level level-{{ lane.key }}">{{ lane.label }}</span>
+    <span class="lane-count">{{ lane.courses | length }} คอร์ส</span>
+  </div>
+
+  <div class="course-grid">
+    {% for c in lane.courses %}
+    {% set course = c.doc %}
+    <a href="/courses/{{ course._id }}" class="course-card{% if c.lessonTotal == 0 %} soon{% endif %}">
+      <div class="course-cover">
+        <svg viewBox="0 0 300 160" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <line class="topo-l" x1="62" y1="44" x2="150" y2="32"/>
+          <line class="topo-l" x1="150" y1="32" x2="238" y2="56"/>
+          <line class="topo-l" x1="62" y1="44" x2="92" y2="112"/>
+          <line class="topo-l" x1="150" y1="32" x2="92" y2="112"/>
+          <line class="topo-l" x1="150" y1="32" x2="192" y2="120"/>
+          <line class="topo-l" x1="238" y1="56" x2="192" y2="120"/>
+          <line class="topo-l" x1="92" y1="112" x2="192" y2="120"/>
+          <circle class="topo-n" cx="62" cy="44" r="5"/>
+          <circle class="topo-n alt" cx="150" cy="32" r="6"/>
+          <circle class="topo-n" cx="238" cy="56" r="5"/>
+          <circle class="topo-n" cx="92" cy="112" r="5"/>
+          <circle class="topo-n alt" cx="192" cy="120" r="5"/>
+        </svg>
+        {% if course.track %}<span class="course-track">{{ course.track }}</span>{% endif %}
+        {% if c.percent > 0 %}<span class="course-pct-badge">{{ c.percent }}%</span>{% endif %}
+      </div>
+      <div class="course-info">
+        <h3>{{ course.title }}</h3>
+        <p>{{ course.description }}</p>
+        <div class="course-meta">
+          {% if c.lessonTotal == 0 %}
+            <span class="badge-soon">⏳ เร็วๆ นี้</span>
+          {% else %}
+            <span class="meta-chip">▦ {{ c.moduleCount }} โมดูล</span>
+            {% if c.counts.readings %}<span class="meta-chip">📖 {{ c.counts.readings }}</span>{% endif %}
+            {% if c.counts.labs %}<span class="meta-chip">🧪 {{ c.counts.labs }}</span>{% endif %}
+            {% if c.counts.quizzes %}<span class="meta-chip">❓ {{ c.counts.quizzes }}</span>{% endif %}
+            {% if course.estimatedHours %}<span class="meta-chip">⏱ {{ course.estimatedHours }} ชม.</span>{% endif %}
+          {% endif %}
+        </div>
+        {% if c.percent > 0 %}
+        <div class="card-progress"><span style="width: {{ c.percent }}%"></span></div>
         {% endif %}
       </div>
-    </div>
-  </a>
-  {% else %}
-  <div class="empty-state">
-    <p>ยังไม่มีคอร์สเรียนในขณะนี้ กรุณากลับมาตรวจสอบอีกครั้ง</p>
+    </a>
+    {% endfor %}
   </div>
-  {% endfor %}
+</section>
+{% else %}
+<div class="empty-state">
+  <p>ยังไม่มีคอร์สเรียนในขณะนี้ กรุณากลับมาตรวจสอบอีกครั้ง</p>
 </div>
+{% endfor %}
 {% endblock %}

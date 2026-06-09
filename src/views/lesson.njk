@@ -1,0 +1,57 @@
+{% extends "base.njk" %}
+{% block title %}{{ lesson.title }} — Pingable Dev{% endblock %}
+
+{% block content %}
+<div class="learn-layout">
+  <article class="reading">
+    <div class="reading-head">
+      <a href="/courses/{{ course._id }}" class="back-link">← {{ course.title }}</a>
+      <div class="reading-crumb">{{ mod.title }}</div>
+      <h1>📖 {{ lesson.title }}</h1>
+      {% if lesson.estMinutes %}<span class="reading-time">⏱ ใช้เวลาอ่าน ~{{ lesson.estMinutes }} นาที</span>{% endif %}
+    </div>
+
+    {% for section in lesson.sections %}
+    <section class="reading-section">
+      {% if section.heading %}<h2>{{ section.heading }}</h2>{% endif %}
+      {% if section.body %}<div class="prose">{{ section.body | markdown | safe }}</div>{% endif %}
+      {% if section.image %}<figure class="reading-figure"><img src="{{ section.image }}" alt="{{ section.heading }}"></figure>{% endif %}
+    </section>
+    {% endfor %}
+
+    <div class="lesson-footer">
+      <div class="lesson-nav">
+        {% if prev %}<a class="btn btn-ghost" href="/learn/{{ course._id }}/{{ prev.m }}/{{ prev.l }}">← ก่อนหน้า</a>{% endif %}
+      </div>
+      <button id="btnComplete" class="btn btn-primary{% if completed %} is-done{% endif %}">
+        {% if completed %}✓ เรียนจบแล้ว{% else %}เรียนจบบทนี้{% endif %}
+      </button>
+      <div class="lesson-nav right">
+        {% if next %}<a class="btn btn-ghost" id="nextLink" href="/learn/{{ course._id }}/{{ next.m }}/{{ next.l }}">ถัดไป →</a>{% endif %}
+      </div>
+    </div>
+  </article>
+</div>
+
+<script>
+  const COURSE_ID = '{{ course._id }}';
+  const M = {{ m }}, L = {{ l }};
+  const btn = document.getElementById('btnComplete');
+  const nextLink = document.getElementById('nextLink');
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    try {
+      const res = await fetch(`/learn/${COURSE_ID}/${M}/${L}/complete`, { method: 'POST' });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'failed');
+      btn.classList.add('is-done');
+      btn.textContent = '✓ เรียนจบแล้ว';
+      if (nextLink) { window.location.href = nextLink.href; }
+    } catch (err) {
+      btn.disabled = false;
+      alert('บันทึกไม่สำเร็จ: ' + err.message);
+    }
+  });
+</script>
+{% endblock %}

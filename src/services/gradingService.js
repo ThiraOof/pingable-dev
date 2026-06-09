@@ -9,20 +9,37 @@ function stripAnsi(str) {
     .replace(/[\x00-\x08\x0b-\x1f\x7f]/g, '');
 }
 
-// Detect any CLI prompt: a line ending with > or # (VPCS, IOS, etc.)
-// Avoids relying on the exact node name since GNS3/VPCS may display
-// a different hostname than the GNS3 node name (e.g. "VPCS[1]>").
-const PROMPT_RE = /[>#]\s*$/;
+// Detect any CLI prompt: a line ending with >, # or $ (VPCS/IOS use >/#,
+// VyOS operational mode ends with "vyos@vyos:~$"). Avoids relying on the exact
+// node name since the device hostname may differ from the GNS3 node name.
+const PROMPT_RE = /[>#$]\s*$/;
+
+// Login prompts presented by appliances that boot to a getty (e.g. VyOS).
+const LOGIN_RE    = /(?:login|username)\s*:\s*$/i;
+const PASSWORD_RE = /password\s*:\s*$/i;
+
+// Pager markers (VyOS pipes long output through a pager; IOS uses --More--).
+const PAGER_RE = /--More--|\(END\)|^:\s*$/m;
+
+// Default appliance console credentials (VyOS ships vyos/vyos). Override per
+// deployment if the image was hardened.
+const NODE_USER = process.env.GNS3_NODE_USER || 'vyos';
+const NODE_PASS = process.env.GNS3_NODE_PASS || 'vyos';
 
 /**
- * Open a telnet session to a GNS3 node console, wait for prompt,
- * send one command, collect output, return it as a string.
+ * Open a telnet session to a GNS3 node console, log in if prompted,
+ * wait for the CLI prompt, send one command, collect output, return it.
+ *
+ * Works for both the built-in nodes (VPCS/IOS — no login, >/# prompt) and
+ * appliances that require a getty login and use a $-terminated prompt (VyOS).
  */
 function runCommand(host, port, nodeName, command) {
   return new Promise((resolve, reject) => {
     const socket = new net.Socket();
     let buffer = '';
     let stage = 'waiting_prompt'; // → 'waiting_output' → done
+    let sentUser = false;
+    let sentPass = false;
 
     const finish = (result) => {
       clearTimeout(globalTimer);
@@ -36,7 +53,7 @@ function runCommand(host, port, nodeName, command) {
       reject(err);
     };
 
-    // One timer covers connect + prompt wait + command output
+    // One timer covers connect + login + prompt wait + command output
     const globalTimer = setTimeout(
       () => fail(new Error(`Timeout (${TOTAL_TIMEOUT_MS}ms) on ${nodeName} at ${host}:${port}`)),
       TOTAL_TIMEOUT_MS,
@@ -52,12 +69,31 @@ function runCommand(host, port, nodeName, command) {
       buffer += stripAnsi(chunk.toString('utf8'));
 
       if (stage === 'waiting_prompt') {
+        // Handle an optional getty login before the shell prompt appears.
+        if (PASSWORD_RE.test(buffer) && !sentPass) {
+          sentPass = true;
+          buffer = '';
+          socket.write(NODE_PASS + '\n');
+          return;
+        }
+        if (LOGIN_RE.test(buffer) && !sentUser) {
+          sentUser = true;
+          buffer = '';
+          socket.write(NODE_USER + '\n');
+          return;
+        }
         if (PROMPT_RE.test(buffer)) {
           stage = 'waiting_output';
           buffer = '';
           socket.write(command + '\n');
         }
       } else {
+        if (PAGER_RE.test(buffer)) {
+          // Advance the pager and drop the marker so it can't re-trigger.
+          buffer = buffer.replace(/--More--|\(END\)|^:\s*$/gm, '');
+          socket.write(' ');
+          return;
+        }
         if (PROMPT_RE.test(buffer)) {
           finish(buffer);
         }
