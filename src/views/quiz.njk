@@ -1,13 +1,14 @@
 {% extends "base.njk" %}
-{% block title %}{{ lesson.title }} — Pingable Dev{% endblock %}
+{% from "_icons.njk" import icon %}
+{% block title %}{{ lesson.title }} — Pingable{% endblock %}
 
 {% block content %}
 <div class="learn-layout">
   <article class="quiz">
     <div class="reading-head">
-      <a href="/courses/{{ course._id }}" class="back-link">← {{ course.title }}</a>
+      <a href="/courses/{{ course._id }}" class="back-link">{{ icon("arrow-left", 16) }} {{ course.title }}</a>
       <div class="reading-crumb">{{ mod.title }}</div>
-      <h1>❓ {{ lesson.title }}</h1>
+      <h1>{{ icon("help", 26) }} {{ lesson.title }}</h1>
       <span class="reading-time">{{ lesson.questions | length }} ข้อ · ต้องได้ {{ lesson.passThreshold or 60 }}% จึงผ่าน</span>
     </div>
 
@@ -16,7 +17,7 @@
       <fieldset class="quiz-q" data-qid="{{ loop.index0 }}">
         <legend><span class="qnum">{{ loop.index }}</span> <span class="prose-inline">{{ q.prompt | markdown | safe }}</span></legend>
         {% set multi = q.answer | length > 1 %}
-        {% if multi %}<p class="quiz-hint">เลือกได้มากกว่า 1 ข้อ</p>{% endif %}
+        {% if multi %}<p class="quiz-hint">{{ icon("sparkles", 14) }} เลือกได้มากกว่า 1 ข้อ</p>{% endif %}
         <div class="quiz-choices">
           {% for choice in q.choices %}
           <label class="quiz-choice">
@@ -60,6 +61,10 @@
   const COURSE_ID = '{{ course._id }}';
   const M = {{ m }}, L = {{ l }};
   const SCORE_C = 264;
+  const svg = (p, s) => `<svg class="ico" width="${s||16}" height="${s||16}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+  const ICO_BULB = svg('<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>');
+  const ICO_CHECK = svg('<path d="M20 6 9 17l-5-5"/>', 20);
+  const ICO_X = svg('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>', 20);
 
   const form = document.getElementById('quizForm');
   const fieldsets = [...form.querySelectorAll('.quiz-q')];
@@ -112,7 +117,7 @@
       fs.classList.toggle('q-pass', r.passed);
       fs.classList.toggle('q-fail', !r.passed);
       const ex = fs.querySelector('.quiz-explain');
-      if (r.explanation) { ex.textContent = '💡 ' + r.explanation; ex.hidden = false; }
+      if (r.explanation) { ex.innerHTML = ICO_BULB + '<span></span>'; ex.lastChild.textContent = r.explanation; ex.hidden = false; }
     });
 
     const result = document.getElementById('quizResult');
@@ -124,7 +129,7 @@
     }));
     document.getElementById('scorePct').textContent = data.pct + '%';
     const banner = document.getElementById('quizBanner');
-    banner.textContent = data.passed ? '🎉 ผ่านแล้ว!' : 'ยังไม่ผ่าน — ทบทวนแล้วลองใหม่';
+    banner.innerHTML = (data.passed ? ICO_CHECK + ' ผ่านแล้ว!' : ICO_X + ' ยังไม่ผ่าน — ทบทวนแล้วลองใหม่');
     banner.className = 'grade-banner ' + (data.passed ? 'pass' : 'fail');
     document.getElementById('quizScoreText').textContent =
       `ได้ ${data.score} จาก ${data.total} คะแนน (ต้องได้ ${data.threshold}%)`;

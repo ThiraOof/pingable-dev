@@ -1,5 +1,6 @@
 {% extends "base.njk" %}
-{% block title %}คอร์สเรียน — Pingable Dev{% endblock %}
+{% from "_icons.njk" import icon %}
+{% block title %}คอร์สเรียน — Pingable{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -41,13 +42,13 @@
         <p>{{ course.description }}</p>
         <div class="course-meta">
           {% if c.lessonTotal == 0 %}
-            <span class="badge-soon">⏳ เร็วๆ นี้</span>
+            <span class="badge-soon">{{ icon("clock", 13) }} เร็วๆ นี้</span>
           {% else %}
-            <span class="meta-chip">▦ {{ c.moduleCount }} โมดูล</span>
-            {% if c.counts.readings %}<span class="meta-chip">📖 {{ c.counts.readings }}</span>{% endif %}
-            {% if c.counts.labs %}<span class="meta-chip">🧪 {{ c.counts.labs }}</span>{% endif %}
-            {% if c.counts.quizzes %}<span class="meta-chip">❓ {{ c.counts.quizzes }}</span>{% endif %}
-            {% if course.estimatedHours %}<span class="meta-chip">⏱ {{ course.estimatedHours }} ชม.</span>{% endif %}
+            <span class="meta-chip">{{ icon("layers", 13) }} {{ c.moduleCount }} โมดูล</span>
+            {% if c.counts.readings %}<span class="meta-chip">{{ icon("book-open", 13) }} {{ c.counts.readings }}</span>{% endif %}
+            {% if c.counts.labs %}<span class="meta-chip">{{ icon("flask", 13) }} {{ c.counts.labs }}</span>{% endif %}
+            {% if c.counts.quizzes %}<span class="meta-chip">{{ icon("help", 13) }} {{ c.counts.quizzes }}</span>{% endif %}
+            {% if course.estimatedHours %}<span class="meta-chip">{{ icon("clock", 13) }} {{ course.estimatedHours }} ชม.</span>{% endif %}
           {% endif %}
         </div>
         {% if c.percent > 0 %}

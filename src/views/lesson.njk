@@ -1,14 +1,15 @@
 {% extends "base.njk" %}
-{% block title %}{{ lesson.title }} — Pingable Dev{% endblock %}
+{% from "_icons.njk" import icon %}
+{% block title %}{{ lesson.title }} — Pingable{% endblock %}
 
 {% block content %}
 <div class="learn-layout">
   <article class="reading">
     <div class="reading-head">
-      <a href="/courses/{{ course._id }}" class="back-link">← {{ course.title }}</a>
+      <a href="/courses/{{ course._id }}" class="back-link">{{ icon("arrow-left", 16) }} {{ course.title }}</a>
       <div class="reading-crumb">{{ mod.title }}</div>
-      <h1>📖 {{ lesson.title }}</h1>
-      {% if lesson.estMinutes %}<span class="reading-time">⏱ ใช้เวลาอ่าน ~{{ lesson.estMinutes }} นาที</span>{% endif %}
+      <h1>{{ icon("book-open", 26) }} {{ lesson.title }}</h1>
+      {% if lesson.estMinutes %}<span class="reading-time">{{ icon("clock", 15) }} ใช้เวลาอ่าน ~{{ lesson.estMinutes }} นาที</span>{% endif %}
     </div>
 
     {% for section in lesson.sections %}
@@ -21,13 +22,13 @@
 
     <div class="lesson-footer">
       <div class="lesson-nav">
-        {% if prev %}<a class="btn btn-ghost" href="/learn/{{ course._id }}/{{ prev.m }}/{{ prev.l }}">← ก่อนหน้า</a>{% endif %}
+        {% if prev %}<a class="btn btn-ghost" href="/learn/{{ course._id }}/{{ prev.m }}/{{ prev.l }}">{{ icon("arrow-left", 16) }} ก่อนหน้า</a>{% endif %}
       </div>
       <button id="btnComplete" class="btn btn-primary{% if completed %} is-done{% endif %}">
-        {% if completed %}✓ เรียนจบแล้ว{% else %}เรียนจบบทนี้{% endif %}
+        {% if completed %}{{ icon("check", 18) }} เรียนจบแล้ว{% else %}เรียนจบบทนี้{% endif %}
       </button>
       <div class="lesson-nav right">
-        {% if next %}<a class="btn btn-ghost" id="nextLink" href="/learn/{{ course._id }}/{{ next.m }}/{{ next.l }}">ถัดไป →</a>{% endif %}
+        {% if next %}<a class="btn btn-ghost" id="nextLink" href="/learn/{{ course._id }}/{{ next.m }}/{{ next.l }}">ถัดไป {{ icon("arrow-right", 16) }}</a>{% endif %}
       </div>
     </div>
   </article>
@@ -38,6 +39,7 @@
   const M = {{ m }}, L = {{ l }};
   const btn = document.getElementById('btnComplete');
   const nextLink = document.getElementById('nextLink');
+  const CHECK_SVG = '<svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
 
   btn.addEventListener('click', async () => {
     btn.disabled = true;
@@ -46,7 +48,7 @@
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || 'failed');
       btn.classList.add('is-done');
-      btn.textContent = '✓ เรียนจบแล้ว';
+      btn.innerHTML = CHECK_SVG + ' เรียนจบแล้ว';
       if (nextLink) { window.location.href = nextLink.href; }
     } catch (err) {
       btn.disabled = false;

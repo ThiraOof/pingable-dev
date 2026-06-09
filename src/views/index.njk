@@ -1,5 +1,6 @@
 {% extends "base.njk" %}
-{% block title %}Pingable Dev — เรียน Network ผ่าน Lab จริง{% endblock %}
+{% from "_icons.njk" import icon %}
+{% block title %}Pingable — เรียน Network ผ่าน Lab จริง{% endblock %}
 
 {% block content %}
 <section class="hero">
@@ -9,33 +10,54 @@
     <p>ฝึกทำ Lab บน Router/Switch จำลองผ่าน GNS3 พร้อมระบบตรวจคำตอบอัตโนมัติ โดยไม่ต้องติดตั้งอะไรเพิ่ม</p>
     <div class="hero-actions">
       {% if user %}
-        <a href="/courses" class="btn btn-primary btn-lg">ดูคอร์สเรียน</a>
+        <a href="/courses" class="btn btn-primary btn-lg">{{ icon("layers", 20) }} ดูคอร์สเรียน</a>
       {% else %}
-        <a href="/auth/register" class="btn btn-primary btn-lg">เริ่มเรียนฟรี</a>
+        <a href="/auth/register" class="btn btn-primary btn-lg">{{ icon("play", 18) }} เริ่มเรียนฟรี</a>
         <a href="/auth/login" class="btn btn-outline btn-lg">เข้าสู่ระบบ</a>
       {% endif %}
     </div>
     <div class="hero-stats">
       <div class="hero-stat"><strong>GNS3</strong><span>Topology จริง</span></div>
       <div class="hero-stat"><strong>Auto</strong><span>ตรวจคำตอบทันที</span></div>
-      <div class="hero-stat"><strong>0₿</strong><span>เริ่มต้นฟรี</span></div>
+      <div class="hero-stat"><strong>0฿</strong><span>เริ่มต้นฟรี</span></div>
     </div>
   </div>
   <div class="hero-visual">
     <div class="terminal-preview">
       <div class="terminal-bar">
         <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
-        <span class="terminal-title">Router1 — console</span>
+        <span class="terminal-title">R1 — console</span>
       </div>
       <div class="terminal-body">
-        <p><span class="prompt">Router1#</span> show ip interface brief</p>
-        <p class="out">Interface          IP-Address    OK? Status</p>
-        <p class="out">Gig0/0             192.168.1.1   YES <span class="ok">up</span></p>
-        <p class="out">Gig0/1             10.0.0.1      YES <span class="ok">up</span></p>
-        <p><span class="prompt">Router1#</span> ping 10.0.0.2</p>
+        <p><span class="prompt">R1#</span> show ip interface brief</p>
+        <p class="out">Interface          IP-Address    Status</p>
+        <p class="out">Gig0/0             192.168.1.1   <span class="ok">up</span></p>
+        <p class="out">Gig0/1             10.0.0.1      <span class="ok">up</span></p>
+        <p><span class="prompt">R1#</span> ping 10.0.0.2</p>
         <p class="out">!!!!! <span class="ok">Success rate is 100 percent</span></p>
-        <p><span class="prompt">Router1#</span> <span class="cursor">_</span></p>
+        <p><span class="prompt">R1#</span> <span class="cursor">_</span></p>
       </div>
+    </div>
+  </div>
+</section>
+
+<section class="signal-band">
+  <div class="signal-inner">
+    <div class="signal-stat">
+      <span class="sig-icon">{{ icon("route", 22) }}</span>
+      <div><div class="sig-val">20+</div><div class="sig-label">Hands-on Lab</div></div>
+    </div>
+    <div class="signal-stat">
+      <span class="sig-icon">{{ icon("gauge", 22) }}</span>
+      <div><div class="sig-val">&lt; 30s</div><div class="sig-label">Provision Topology</div></div>
+    </div>
+    <div class="signal-stat">
+      <span class="sig-icon">{{ icon("badge-check", 22) }}</span>
+      <div><div class="sig-val">Auto</div><div class="sig-label">ตรวจจากคอนโซลจริง</div></div>
+    </div>
+    <div class="signal-stat">
+      <span class="sig-icon">{{ icon("wifi", 22) }}</span>
+      <div><div class="sig-val">100%</div><div class="sig-label">รันบนเบราว์เซอร์</div></div>
     </div>
   </div>
 </section>
@@ -43,22 +65,22 @@
 <section class="features">
   <div class="features-inner">
     <div class="feature-card">
-      <div class="feature-icon">⚡</div>
+      <div class="feature-icon">{{ icon("zap", 24) }}</div>
       <h3>เริ่มได้ทันที</h3>
       <p>กด Start Lab แล้วระบบ provision Topology อัตโนมัติภายในไม่กี่วินาที</p>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">🖥️</div>
+      <div class="feature-icon">{{ icon("server", 24) }}</div>
       <h3>อุปกรณ์จริง</h3>
       <p>โต้ตอบกับ Router/Switch ผ่าน GNS3 Web-UI ในเบราว์เซอร์ ไม่ต้องลง SSH/Telnet</p>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">✅</div>
+      <div class="feature-icon">{{ icon("badge-check", 24) }}</div>
       <h3>ตรวจอัตโนมัติ</h3>
       <p>ระบบ grade ผลลัพธ์จากคอนโซลจริง พร้อมคะแนนรายข้อและ output ที่ตรวจสอบได้</p>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">💰</div>
+      <div class="feature-icon">{{ icon("wallet", 24) }}</div>
       <h3>ประหยัด</h3>
       <p>เซิร์ฟเวอร์เปิด-ปิดตามการใช้งาน คืนทรัพยากรเมื่อจบ จ่ายเฉพาะที่ใช้จริง</p>
     </div>
@@ -73,9 +95,9 @@
     </div>
     <div class="hero-actions">
       {% if user %}
-        <a href="/courses" class="btn btn-primary btn-lg">เลือกคอร์ส</a>
+        <a href="/courses" class="btn btn-primary btn-lg">{{ icon("arrow-right", 18) }} เลือกคอร์ส</a>
       {% else %}
-        <a href="/auth/register" class="btn btn-primary btn-lg">เริ่มเรียนฟรี</a>
+        <a href="/auth/register" class="btn btn-primary btn-lg">{{ icon("play", 18) }} เริ่มเรียนฟรี</a>
       {% endif %}
     </div>
   </div>

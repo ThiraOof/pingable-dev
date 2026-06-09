@@ -1,12 +1,13 @@
 {% extends "base.njk" %}
-{% block title %}{{ course.title }} — Pingable Dev{% endblock %}
+{% from "_icons.njk" import icon %}
+{% block title %}{{ course.title }} — Pingable{% endblock %}
 
-{% set TYPE_ICON = { reading: '📖', lab: '🧪', quiz: '❓' } %}
+{% set TYPE_ICON = { reading: 'book-open', lab: 'flask', quiz: 'help' } %}
 {% set TYPE_LABEL = { reading: 'บทเรียน', lab: 'แล็บ', quiz: 'แบบทดสอบ' } %}
 
 {% block content %}
 <div class="course-detail-header">
-  <a href="/courses" class="back-link">← คอร์สเรียนทั้งหมด</a>
+  <a href="/courses" class="back-link">{{ icon("arrow-left", 16) }} คอร์สเรียนทั้งหมด</a>
   {% if course.track %}<span class="course-track inline">{{ course.track }}</span>{% endif %}
   <span class="course-level level-{{ course.level }}">{{ course.level }}</span>
   <h1>{{ course.title }}</h1>
@@ -36,7 +37,7 @@
   </div>
   {% if nextUp %}
   <a href="/learn/{{ course._id }}/{{ nextUp.m }}/{{ nextUp.l }}" class="btn btn-primary">
-    {% if doneTotal > 0 %}เรียนต่อ →{% else %}เริ่มเรียน →{% endif %}
+    {% if doneTotal > 0 %}เรียนต่อ{% else %}เริ่มเรียน{% endif %} {{ icon("arrow-right", 18) }}
   </a>
   {% endif %}
 </div>
@@ -68,13 +69,13 @@
       {% set lesson = lr.lesson %}
       <li class="lesson-row {{ 'done' if lr.completed }}">
         <a href="/learn/{{ course._id }}/{{ lr.m }}/{{ lr.l }}">
-          <span class="lesson-check">{{ '✓' if lr.completed else '○' }}</span>
-          <span class="lesson-type-chip type-{{ lesson.type }}">{{ TYPE_ICON[lesson.type] }} {{ TYPE_LABEL[lesson.type] }}</span>
+          <span class="lesson-check">{% if lr.completed %}{{ icon("check", 14) }}{% endif %}</span>
+          <span class="lesson-type-chip type-{{ lesson.type }}">{{ icon(TYPE_ICON[lesson.type], 13) }} {{ TYPE_LABEL[lesson.type] }}</span>
           <span class="lesson-title">{{ lesson.title }}</span>
           <span class="lesson-meta">
-            {% if lesson.type == 'lab' and lesson.topology.nodes.length %}<span class="lesson-tag">◈ {{ lesson.topology.nodes | length }} โหนด</span>{% endif %}
+            {% if lesson.type == 'lab' and lesson.topology.nodes.length %}<span class="lesson-tag">{{ icon("route", 13) }} {{ lesson.topology.nodes | length }} โหนด</span>{% endif %}
             {% if lesson.type == 'quiz' and lesson.questions.length %}<span class="lesson-tag">{{ lesson.questions | length }} ข้อ</span>{% endif %}
-            {% if lesson.estMinutes %}<span class="lesson-tag">~{{ lesson.estMinutes }} น.</span>{% endif %}
+            {% if lesson.estMinutes %}<span class="lesson-tag">{{ icon("clock", 13) }} {{ lesson.estMinutes }} น.</span>{% endif %}
           </span>
         </a>
       </li>

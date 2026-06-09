@@ -1,5 +1,6 @@
 {% extends "base.njk" %}
-{% block title %}{{ lab.title }} — Pingable Dev{% endblock %}
+{% from "_icons.njk" import icon %}
+{% block title %}{{ lab.title }} — Pingable{% endblock %}
 
 {% block content %}
 <div class="lab-layout">
@@ -10,8 +11,8 @@
   <!-- Left panel: instructions -->
   <aside class="lab-sidebar" id="labSidebar">
     <div class="lab-sidebar-header">
-      <a href="/courses/{{ course._id }}" class="back-link">← {{ course.title }}</a>
-      <h2>🧪 {{ lab.title }}</h2>
+      <a href="/courses/{{ course._id }}" class="back-link">{{ icon("arrow-left", 16) }} {{ course.title }}</a>
+      <h2>{{ icon("flask", 22) }} {{ lab.title }}</h2>
       <p>{{ lab.description }}</p>
     </div>
 
@@ -42,7 +43,7 @@
       <h3>คำใบ้</h3>
       {% for hint in lab.hints %}
       <details class="hint-item">
-        <summary>คำใบ้ที่ {{ loop.index }}</summary>
+        <summary>{{ icon("arrow-right", 14) }} คำใบ้ที่ {{ loop.index }}</summary>
         <p>{{ hint }}</p>
       </details>
       {% endfor %}
@@ -51,9 +52,9 @@
 
     <div class="lab-controls">
       {% if lab.gradingChecks and lab.gradingChecks.length %}
-      <button id="btnGrade" class="btn btn-primary btn-block" disabled>ตรวจคำตอบ ({{ lab.gradingChecks.length }} ข้อ)</button>
+      <button id="btnGrade" class="btn btn-primary btn-block" disabled>{{ icon("badge-check", 18) }} ตรวจคำตอบ ({{ lab.gradingChecks.length }} ข้อ)</button>
       {% endif %}
-      <button id="btnStop" class="btn btn-danger btn-block">หยุด Lab &amp; คืนทรัพยากร</button>
+      <button id="btnStop" class="btn btn-danger btn-block">{{ icon("stop", 18) }} หยุด Lab &amp; คืนทรัพยากร</button>
     </div>
   </aside>
 
@@ -84,7 +85,7 @@
   <!-- Right panel: GNS3 Web-UI iframe + provisioning loader -->
   <div class="lab-main">
     <div class="lab-toolbar">
-      <button id="btnToggleSidebar" class="lab-sidebar-toggle" aria-label="เปิดคำแนะนำ Lab">☰ คำแนะนำ</button>
+      <button id="btnToggleSidebar" class="lab-sidebar-toggle" aria-label="เปิดคำแนะนำ Lab">{{ icon("book-open", 16) }} คำแนะนำ</button>
       <span id="labStatus" class="lab-status status-loading">กำลังเตรียม Lab...</span>
     </div>
     <div class="gns3-wrapper">
@@ -95,9 +96,9 @@
           <ul class="provision-steps" id="provisionSteps"></ul>
         </div>
         <div class="lab-stopped" id="stoppedCard" hidden>
-          <div class="icon">⏹️</div>
+          {{ icon("stop", 40) }}
           <p id="stoppedText">Lab หยุดทำงานแล้ว — คืนทรัพยากรเรียบร้อย</p>
-          <button class="btn btn-primary" id="btnRestart">เริ่ม Lab ใหม่</button>
+          <button class="btn btn-primary" id="btnRestart">{{ icon("play", 18) }} เริ่ม Lab ใหม่</button>
         </div>
       </div>
       <iframe id="gns3Frame" class="gns3-frame" allowfullscreen></iframe>
@@ -126,6 +127,12 @@
   const btnClose   = $('btnCloseModal');
   const resultList = $('gradeResultList');
   const objectiveList = $('objectiveList');
+
+  const svg = (p, s) => `<svg class="ico" width="${s||16}" height="${s||16}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+  const ICO_CHECK = svg('<path d="M20 6 9 17l-5-5"/>', 14);
+  const ICO_X     = svg('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>', 14);
+  const ICO_CHECK_LG = svg('<path d="M20 6 9 17l-5-5"/>', 22);
+  const ICO_X_LG     = svg('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>', 22);
 
   /* ── Multi-step provisioning loader ───────────────────────────── */
   const STEPS = [
@@ -258,7 +265,7 @@
     $('scorePct').textContent = pct + '%';
 
     const banner = $('gradeBanner');
-    banner.textContent = passed ? '🎉 ผ่านแล้ว!' : 'ยังไม่ผ่าน — ลองอีกครั้ง';
+    banner.innerHTML = (passed ? ICO_CHECK_LG + ' ผ่านแล้ว!' : ICO_X_LG + ' ยังไม่ผ่าน — ลองอีกครั้ง');
     banner.className = 'grade-banner ' + (passed ? 'pass' : 'fail');
     $('gradeScoreText').textContent = `ได้ ${score} จาก ${total} คะแนน · ผ่าน ${okCount}/${results.length} ข้อ`;
 
@@ -269,7 +276,7 @@
       li.className = 'grade-result-item' + (r.output ? ' has-output' : '');
       li.innerHTML = `
         <div class="grade-result-row">
-          <span class="grade-icon ${r.passed ? 'pass' : 'fail'}">${r.passed ? '✓' : '✕'}</span>
+          <span class="grade-icon ${r.passed ? 'pass' : 'fail'}">${r.passed ? ICO_CHECK : ICO_X}</span>
           <span class="grade-desc">${escHtml(r.description)}</span>
           <span class="grade-pts">${r.passed ? r.points : 0} / ${r.points} pt</span>
           ${r.output ? '<span class="grade-toggle">output ▾</span>' : ''}
