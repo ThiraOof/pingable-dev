@@ -2,23 +2,17 @@
 {% block title %}สมัครสมาชิก — Pingable{% endblock %}
 
 {% block content %}
-<div class="auth-split">
+<png-auth>
   <aside class="auth-brand">
-    <span class="eyebrow"><span class="dot-live"></span> Pingable</span>
+    <png-eyebrow live>Pingable</png-eyebrow>
     <h2>เริ่มต้นเส้นทาง Network Engineer</h2>
     <p>สร้างบัญชีฟรี แล้วฝึกทำ Lab บน Router/Switch จริงผ่านเบราว์เซอร์ พร้อมระบบตรวจคำตอบอัตโนมัติ</p>
-    <div class="terminal-preview">
-      <div class="terminal-bar">
-        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
-        <span class="terminal-title">onboarding</span>
-      </div>
-      <div class="terminal-body">
-        <p><span class="prompt">$</span> create-account --free</p>
-        <p class="out">Provisioning your workspace...</p>
-        <p class="out"><span class="ok">✓ ready to learn</span></p>
-        <p><span class="prompt">$</span> <span class="cursor">_</span></p>
-      </div>
-    </div>
+    <png-terminal title="onboarding">
+      <p><span class="prompt">$</span> create-account --free</p>
+      <p class="out">Provisioning your workspace...</p>
+      <p class="out"><span class="ok">✓ ready to learn</span></p>
+      <p><span class="prompt">$</span> <span class="cursor">_</span></p>
+    </png-terminal>
   </aside>
 
   <div class="auth-card">
@@ -30,23 +24,23 @@
     <form method="POST" action="/auth/register">
       <div class="form-group">
         <label for="username">ชื่อผู้ใช้</label>
-        <input type="text" id="username" name="username" required placeholder="network_hero">
+        <input type="text" id="username" name="username" required placeholder="network_hero" autocomplete="username">
       </div>
       <div class="form-group">
         <label for="email">อีเมล</label>
-        <input type="email" id="email" name="email" required placeholder="you@example.com">
+        <input type="email" id="email" name="email" required placeholder="you@example.com" autocomplete="email">
       </div>
       <div class="form-group">
         <label for="password">รหัสผ่าน</label>
-        <input type="password" id="password" name="password" required placeholder="อย่างน้อย 8 ตัวอักษร" minlength="8">
+        <input type="password" id="password" name="password" required placeholder="อย่างน้อย 8 ตัวอักษร" minlength="8" autocomplete="new-password">
       </div>
       <div class="form-group">
         <label for="confirmPassword">ยืนยันรหัสผ่าน</label>
-        <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="••••••••">
+        <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="••••••••" autocomplete="new-password">
       </div>
       <button type="submit" class="btn btn-primary btn-block">สมัครสมาชิก</button>
     </form>
     <p class="auth-link">มีบัญชีแล้ว? <a href="/auth/login">เข้าสู่ระบบ</a></p>
   </div>
-</div>
+</png-auth>
 {% endblock %}

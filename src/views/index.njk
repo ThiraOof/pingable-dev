@@ -1,105 +1,58 @@
 {% extends "base.njk" %}
-{% from "_icons.njk" import icon %}
 {% block title %}Pingable — เรียน Network ผ่าน Lab จริง{% endblock %}
 
 {% block content %}
-<section class="hero">
+<png-hero>
   <div class="hero-content">
-    <span class="eyebrow"><span class="dot-live"></span> Lab พร้อมใช้งานแบบเรียลไทม์</span>
+    <png-eyebrow live>Lab พร้อมใช้งานแบบเรียลไทม์</png-eyebrow>
     <h1>เรียน Network<br><span class="highlight">ผ่าน Lab จริงในเบราว์เซอร์</span></h1>
     <p>ฝึกทำ Lab บน Router/Switch จำลองผ่าน GNS3 พร้อมระบบตรวจคำตอบอัตโนมัติ โดยไม่ต้องติดตั้งอะไรเพิ่ม</p>
     <div class="hero-actions">
       {% if user %}
-        <a href="/courses" class="btn btn-primary btn-lg">{{ icon("layers", 20) }} ดูคอร์สเรียน</a>
+        <png-button variant="primary" size="lg" href="/courses" icon="layers">ดูคอร์สเรียน</png-button>
       {% else %}
-        <a href="/auth/register" class="btn btn-primary btn-lg">{{ icon("play", 18) }} เริ่มเรียนฟรี</a>
-        <a href="/auth/login" class="btn btn-outline btn-lg">เข้าสู่ระบบ</a>
+        <png-button variant="primary" size="lg" href="/auth/register" icon="play">เริ่มเรียนฟรี</png-button>
+        <png-button variant="outline" size="lg" href="/auth/login">เข้าสู่ระบบ</png-button>
       {% endif %}
     </div>
     <div class="hero-stats">
-      <div class="hero-stat"><strong>GNS3</strong><span>Topology จริง</span></div>
-      <div class="hero-stat"><strong>Auto</strong><span>ตรวจคำตอบทันที</span></div>
-      <div class="hero-stat"><strong>0฿</strong><span>เริ่มต้นฟรี</span></div>
+      <png-stat kind="hero" value="GNS3" label="Topology จริง"></png-stat>
+      <png-stat kind="hero" value="Auto" label="ตรวจคำตอบทันที"></png-stat>
+      <png-stat kind="hero" value="0฿" label="เริ่มต้นฟรี"></png-stat>
     </div>
   </div>
   <div class="hero-visual">
-    <div class="terminal-preview">
-      <div class="terminal-bar">
-        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
-        <span class="terminal-title">R1 — console</span>
-      </div>
-      <div class="terminal-body">
-        <p><span class="prompt">R1#</span> show ip interface brief</p>
-        <p class="out">Interface          IP-Address    Status</p>
-        <p class="out">Gig0/0             192.168.1.1   <span class="ok">up</span></p>
-        <p class="out">Gig0/1             10.0.0.1      <span class="ok">up</span></p>
-        <p><span class="prompt">R1#</span> ping 10.0.0.2</p>
-        <p class="out">!!!!! <span class="ok">Success rate is 100 percent</span></p>
-        <p><span class="prompt">R1#</span> <span class="cursor">_</span></p>
-      </div>
-    </div>
+    <png-terminal title="R1 — console">
+      <p><span class="prompt">R1#</span> show ip interface brief</p>
+      <p class="out">Interface          IP-Address    Status</p>
+      <p class="out">Gig0/0             192.168.1.1   <span class="ok">up</span></p>
+      <p class="out">Gig0/1             10.0.0.1      <span class="ok">up</span></p>
+      <p><span class="prompt">R1#</span> ping 10.0.0.2</p>
+      <p class="out">!!!!! <span class="ok">Success rate is 100 percent</span></p>
+      <p><span class="prompt">R1#</span> <span class="cursor">_</span></p>
+    </png-terminal>
   </div>
-</section>
+</png-hero>
 
-<section class="signal-band">
-  <div class="signal-inner">
-    <div class="signal-stat">
-      <span class="sig-icon">{{ icon("route", 22) }}</span>
-      <div><div class="sig-val">20+</div><div class="sig-label">Hands-on Lab</div></div>
-    </div>
-    <div class="signal-stat">
-      <span class="sig-icon">{{ icon("gauge", 22) }}</span>
-      <div><div class="sig-val">&lt; 30s</div><div class="sig-label">Provision Topology</div></div>
-    </div>
-    <div class="signal-stat">
-      <span class="sig-icon">{{ icon("badge-check", 22) }}</span>
-      <div><div class="sig-val">Auto</div><div class="sig-label">ตรวจจากคอนโซลจริง</div></div>
-    </div>
-    <div class="signal-stat">
-      <span class="sig-icon">{{ icon("wifi", 22) }}</span>
-      <div><div class="sig-val">100%</div><div class="sig-label">รันบนเบราว์เซอร์</div></div>
-    </div>
-  </div>
-</section>
+<png-signal-band>
+  <png-stat kind="signal" icon="route" value="20+" label="Hands-on Lab"></png-stat>
+  <png-stat kind="signal" icon="gauge" value="< 30s" label="Provision Topology"></png-stat>
+  <png-stat kind="signal" icon="badge-check" value="Auto" label="ตรวจจากคอนโซลจริง"></png-stat>
+  <png-stat kind="signal" icon="wifi" value="100%" label="รันบนเบราว์เซอร์"></png-stat>
+</png-signal-band>
 
-<section class="features">
-  <div class="features-inner">
-    <div class="feature-card">
-      <div class="feature-icon">{{ icon("zap", 24) }}</div>
-      <h3>เริ่มได้ทันที</h3>
-      <p>กด Start Lab แล้วระบบ provision Topology อัตโนมัติภายในไม่กี่วินาที</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">{{ icon("server", 24) }}</div>
-      <h3>อุปกรณ์จริง</h3>
-      <p>โต้ตอบกับ Router/Switch ผ่าน GNS3 Web-UI ในเบราว์เซอร์ ไม่ต้องลง SSH/Telnet</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">{{ icon("badge-check", 24) }}</div>
-      <h3>ตรวจอัตโนมัติ</h3>
-      <p>ระบบ grade ผลลัพธ์จากคอนโซลจริง พร้อมคะแนนรายข้อและ output ที่ตรวจสอบได้</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">{{ icon("wallet", 24) }}</div>
-      <h3>ประหยัด</h3>
-      <p>เซิร์ฟเวอร์เปิด-ปิดตามการใช้งาน คืนทรัพยากรเมื่อจบ จ่ายเฉพาะที่ใช้จริง</p>
-    </div>
-  </div>
-</section>
+<png-features>
+  <png-feature icon="zap" heading="เริ่มได้ทันที">กด Start Lab แล้วระบบ provision Topology อัตโนมัติภายในไม่กี่วินาที</png-feature>
+  <png-feature icon="server" heading="อุปกรณ์จริง">โต้ตอบกับ Router/Switch ผ่าน GNS3 Web-UI ในเบราว์เซอร์ ไม่ต้องลง SSH/Telnet</png-feature>
+  <png-feature icon="badge-check" heading="ตรวจอัตโนมัติ">ระบบ grade ผลลัพธ์จากคอนโซลจริง พร้อมคะแนนรายข้อและ output ที่ตรวจสอบได้</png-feature>
+  <png-feature icon="wallet" heading="ประหยัด">เซิร์ฟเวอร์เปิด-ปิดตามการใช้งาน คืนทรัพยากรเมื่อจบ จ่ายเฉพาะที่ใช้จริง</png-feature>
+</png-features>
 
-<section class="cta-band">
-  <div class="cta-inner">
-    <div class="cta-text">
-      <h2>พร้อมลงมือทำ Lab แรกหรือยัง?</h2>
-      <p>สมัครฟรี แล้วเริ่มฝึก Network จาก Topology จริงได้ทันที</p>
-    </div>
-    <div class="hero-actions">
-      {% if user %}
-        <a href="/courses" class="btn btn-primary btn-lg">{{ icon("arrow-right", 18) }} เลือกคอร์ส</a>
-      {% else %}
-        <a href="/auth/register" class="btn btn-primary btn-lg">{{ icon("play", 18) }} เริ่มเรียนฟรี</a>
-      {% endif %}
-    </div>
-  </div>
-</section>
+<png-cta heading="พร้อมลงมือทำ Lab แรกหรือยัง?" text="สมัครฟรี แล้วเริ่มฝึก Network จาก Topology จริงได้ทันที">
+  {% if user %}
+    <png-button variant="primary" size="lg" href="/courses" icon="arrow-right">เลือกคอร์ส</png-button>
+  {% else %}
+    <png-button variant="primary" size="lg" href="/auth/register" icon="play">เริ่มเรียนฟรี</png-button>
+  {% endif %}
+</png-cta>
 {% endblock %}

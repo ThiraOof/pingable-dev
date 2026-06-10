@@ -258,6 +258,9 @@ main { flex: 1; }
 .terminal-body { padding: var(--s-5); line-height: 1.85; color: var(--text); overflow-x: auto; }
 .terminal-body p { white-space: pre; }
 .terminal-body .out { color: var(--muted); }
+/* Console lines are slotted (light DOM) into the png-terminal shadow */
+.terminal-body ::slotted(p) { white-space: pre; margin: 0; }
+.terminal-body ::slotted(.out) { color: var(--muted); }
 .prompt { color: var(--signal-h); font-weight: 700; }
 .ok { color: var(--success-h); }
 .cursor { animation: blink 1.1s step-end infinite; color: var(--signal-h); }
@@ -738,6 +741,8 @@ main { flex: 1; }
 .reading-crumb { color: var(--sky); font-size: .82rem; font-weight: 600; margin-bottom: var(--s-2); }
 .reading-head h1 { display: flex; align-items: center; gap: var(--s-3); font-size: clamp(1.6rem, 3.5vw, 2.2rem); }
 .reading-head h1 .ico { color: var(--signal-h); flex: none; }
+/* light-DOM <png-icon> host in headings: color inherits into its shadow svg */
+.reading-head h1 png-icon { color: var(--signal-h); }
 .reading-time { display: inline-flex; align-items: center; gap: var(--s-2); margin-top: var(--s-3); color: var(--faint); font-size: .85rem; }
 .reading-section { margin-bottom: var(--s-6); }
 .reading-section > h2 { font-size: 1.3rem; margin-bottom: var(--s-3); padding-left: var(--s-3); border-left: 3px solid var(--signal); }

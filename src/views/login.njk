@@ -2,23 +2,17 @@
 {% block title %}เข้าสู่ระบบ — Pingable{% endblock %}
 
 {% block content %}
-<div class="auth-split">
+<png-auth>
   <aside class="auth-brand">
-    <span class="eyebrow"><span class="dot-live"></span> Pingable</span>
+    <png-eyebrow live>Pingable</png-eyebrow>
     <h2>กลับมาทำ Lab ต่อกันเลย</h2>
     <p>เข้าสู่ระบบเพื่อ provision Topology, ทำโจทย์ และตรวจคำตอบบนอุปกรณ์จริง</p>
-    <div class="terminal-preview">
-      <div class="terminal-bar">
-        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
-        <span class="terminal-title">auth — session</span>
-      </div>
-      <div class="terminal-body">
-        <p><span class="prompt">$</span> ssh you@pingable.dev</p>
-        <p class="out">Authenticating session...</p>
-        <p class="out"><span class="ok">✓ welcome back</span></p>
-        <p><span class="prompt">$</span> <span class="cursor">_</span></p>
-      </div>
-    </div>
+    <png-terminal title="auth — session">
+      <p><span class="prompt">$</span> ssh you@pingable.dev</p>
+      <p class="out">Authenticating session...</p>
+      <p class="out"><span class="ok">✓ welcome back</span></p>
+      <p><span class="prompt">$</span> <span class="cursor">_</span></p>
+    </png-terminal>
   </aside>
 
   <div class="auth-card">
@@ -30,15 +24,15 @@
     <form method="POST" action="/auth/login">
       <div class="form-group">
         <label for="email">อีเมล</label>
-        <input type="email" id="email" name="email" required placeholder="you@example.com">
+        <input type="email" id="email" name="email" required placeholder="you@example.com" autocomplete="email">
       </div>
       <div class="form-group">
         <label for="password">รหัสผ่าน</label>
-        <input type="password" id="password" name="password" required placeholder="••••••••">
+        <input type="password" id="password" name="password" required placeholder="••••••••" autocomplete="current-password">
       </div>
       <button type="submit" class="btn btn-primary btn-block">เข้าสู่ระบบ</button>
     </form>
     <p class="auth-link">ยังไม่มีบัญชี? <a href="/auth/register">สมัครสมาชิก</a></p>
   </div>
-</div>
+</png-auth>
 {% endblock %}

@@ -7,6 +7,7 @@ import session from 'express-session';
 import { marked } from 'marked';
 
 import connectDB from './config/db.js';
+import { injectDSD } from './dsd.js';
 import authRoutes from './routes/authRoutes.js';
 import courseRoutes from './routes/courseRoutes.js';
 import learnRoutes from './routes/learnRoutes.js';
@@ -44,6 +45,19 @@ app.use(session({
 // Pass user to all templates
 app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
+  next();
+});
+
+// Inject Declarative Shadow DOM into <png-*> elements after rendering (SSR + no-JS)
+app.use((req, res, next) => {
+  const orig = res.render.bind(res);
+  res.render = (view, opts, cb) => {
+    orig(view, opts, (err, html) => {
+      if (err) return cb ? cb(err) : next(err);
+      const out = injectDSD(html);
+      if (cb) cb(null, out); else res.send(out);
+    });
+  };
   next();
 });
 

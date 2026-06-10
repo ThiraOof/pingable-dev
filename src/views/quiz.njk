@@ -1,140 +1,27 @@
 {% extends "base.njk" %}
-{% from "_icons.njk" import icon %}
 {% block title %}{{ lesson.title }} — Pingable{% endblock %}
 
 {% block content %}
 <div class="learn-layout">
   <article class="quiz">
     <div class="reading-head">
-      <a href="/courses/{{ course._id }}" class="back-link">{{ icon("arrow-left", 16) }} {{ course.title }}</a>
+      <a href="/courses/{{ course._id }}" class="back-link"><png-icon name="arrow-left" size="16"></png-icon> {{ course.title }}</a>
       <div class="reading-crumb">{{ mod.title }}</div>
-      <h1>{{ icon("help", 26) }} {{ lesson.title }}</h1>
+      <h1><png-icon name="help" size="26"></png-icon> {{ lesson.title }}</h1>
       <span class="reading-time">{{ lesson.questions | length }} ข้อ · ต้องได้ {{ lesson.passThreshold or 60 }}% จึงผ่าน</span>
     </div>
 
-    <form id="quizForm">
-      {% for q in lesson.questions %}
-      <fieldset class="quiz-q" data-qid="{{ loop.index0 }}">
-        <legend><span class="qnum">{{ loop.index }}</span> <span class="prose-inline">{{ q.prompt | markdown | safe }}</span></legend>
-        {% set multi = q.answer | length > 1 %}
-        {% if multi %}<p class="quiz-hint">{{ icon("sparkles", 14) }} เลือกได้มากกว่า 1 ข้อ</p>{% endif %}
-        <div class="quiz-choices">
-          {% for choice in q.choices %}
-          <label class="quiz-choice">
-            <input type="{{ 'checkbox' if multi else 'radio' }}" value="{{ loop.index0 }}">
-            <span class="choice-mark"></span>
-            <span class="choice-text">{{ choice }}</span>
-          </label>
-          {% endfor %}
-        </div>
-        <div class="quiz-explain" hidden></div>
-      </fieldset>
-      {% endfor %}
-
-      <div class="lesson-footer">
-        <div></div>
-        <button type="submit" id="btnSubmit" class="btn btn-primary">ส่งคำตอบ</button>
-        <div class="lesson-nav right">
-          {% if next %}<a class="btn btn-ghost" id="nextLink" href="/learn/{{ course._id }}/{{ next.m }}/{{ next.l }}">ถัดไป →</a>{% endif %}
-        </div>
-      </div>
-    </form>
-
-    <!-- Result banner -->
-    <div id="quizResult" class="quiz-result" hidden>
-      <div class="score-ring" id="scoreRing">
-        <svg width="96" height="96">
-          <circle class="track" cx="48" cy="48" r="42"/>
-          <circle class="fill" id="scoreRingFill" cx="48" cy="48" r="42"/>
-        </svg>
-        <div class="center"><div><span class="pct" id="scorePct">0%</span><small>คะแนน</small></div></div>
-      </div>
-      <div class="quiz-result-meta">
-        <div class="grade-banner" id="quizBanner"></div>
-        <p id="quizScoreText"></p>
-      </div>
-    </div>
+    <png-quiz course-id="{{ course._id }}" m="{{ m }}" l="{{ l }}" threshold="{{ lesson.passThreshold or 60 }}">
+      <script type="application/json">
+{ "questions": [
+{% for q in lesson.questions -%}
+  { "promptHtml": {{ (q.prompt | markdown) | dump | safe }},
+    "multi": {{ "true" if (q.answer | length > 1) else "false" }},
+    "choices": {{ q.choices | dump | safe }} }{{ "," if not loop.last }}
+{% endfor %}
+] }
+      </script>
+    </png-quiz>
   </article>
 </div>
-
-<script>
-  const COURSE_ID = '{{ course._id }}';
-  const M = {{ m }}, L = {{ l }};
-  const SCORE_C = 264;
-  const svg = (p, s) => `<svg class="ico" width="${s||16}" height="${s||16}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
-  const ICO_BULB = svg('<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>');
-  const ICO_CHECK = svg('<path d="M20 6 9 17l-5-5"/>', 20);
-  const ICO_X = svg('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>', 20);
-
-  const form = document.getElementById('quizForm');
-  const fieldsets = [...form.querySelectorAll('.quiz-q')];
-
-  // Group inputs per question (name them so radios are mutually exclusive)
-  fieldsets.forEach((fs, qi) => {
-    fs.querySelectorAll('input').forEach((inp) => { inp.name = 'question-' + qi; });
-  });
-
-  function collectAnswers() {
-    return fieldsets.map((fs) =>
-      [...fs.querySelectorAll('input:checked')].map((i) => Number(i.value))
-    );
-  }
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('btnSubmit');
-    btn.disabled = true;
-    btn.textContent = 'กำลังตรวจ...';
-    try {
-      const res = await fetch(`/learn/${COURSE_ID}/${M}/${L}/quiz`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers: collectAnswers() }),
-      });
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error || 'failed');
-      renderResult(data);
-    } catch (err) {
-      alert('ตรวจไม่สำเร็จ: ' + err.message);
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'ส่งคำตอบอีกครั้ง';
-    }
-  });
-
-  function renderResult(data) {
-    // Mark each question + reveal explanation
-    fieldsets.forEach((fs, qi) => {
-      const r = data.results[qi];
-      const correct = new Set(r.correct.map(Number));
-      fs.querySelectorAll('.quiz-choice').forEach((label, ci) => {
-        label.classList.remove('correct', 'wrong', 'missed');
-        const checked = label.querySelector('input').checked;
-        if (correct.has(ci) && checked) label.classList.add('correct');
-        else if (!correct.has(ci) && checked) label.classList.add('wrong');
-        else if (correct.has(ci) && !checked) label.classList.add('missed');
-      });
-      fs.classList.toggle('q-pass', r.passed);
-      fs.classList.toggle('q-fail', !r.passed);
-      const ex = fs.querySelector('.quiz-explain');
-      if (r.explanation) { ex.innerHTML = ICO_BULB + '<span></span>'; ex.lastChild.textContent = r.explanation; ex.hidden = false; }
-    });
-
-    const result = document.getElementById('quizResult');
-    const fill = document.getElementById('scoreRingFill');
-    document.getElementById('scoreRing').className = 'score-ring ' + (data.passed ? 'pass' : 'fail');
-    fill.style.strokeDashoffset = SCORE_C;
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      fill.style.strokeDashoffset = SCORE_C * (1 - data.pct / 100);
-    }));
-    document.getElementById('scorePct').textContent = data.pct + '%';
-    const banner = document.getElementById('quizBanner');
-    banner.innerHTML = (data.passed ? ICO_CHECK + ' ผ่านแล้ว!' : ICO_X + ' ยังไม่ผ่าน — ทบทวนแล้วลองใหม่');
-    banner.className = 'grade-banner ' + (data.passed ? 'pass' : 'fail');
-    document.getElementById('quizScoreText').textContent =
-      `ได้ ${data.score} จาก ${data.total} คะแนน (ต้องได้ ${data.threshold}%)`;
-    result.hidden = false;
-    result.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-</script>
 {% endblock %}
