@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import Course from '../models/Course.js';
 import Progress, { getProgress, completedSet, coursePercent, totalLessons, lessonCounts } from '../models/Progress.js';
 import { checkPrerequisites } from '../utils/prereqs.js';
+import requireAuth from '../middleware/requireAuth.js';
 
 const router = express.Router();
 
@@ -96,6 +97,31 @@ router.get('/:courseId', async (req, res) => {
     nextUp,
     prereqsMet: prereqsInfo.met,
     prereqsInfo,
+  });
+});
+
+// GET /courses/:courseId/certificate — printable completion certificate
+router.get('/:courseId/certificate', requireAuth, async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.courseId)) return res.redirect('/courses');
+  const course = await Course.findById(req.params.courseId).select('title description level track estimatedHours modules');
+  if (!course) return res.redirect('/courses');
+
+  const total = totalLessons(course);
+  if (!total) return res.redirect(`/courses/${req.params.courseId}`);
+
+  const progress = await getProgress(req.session.user.id, course._id);
+  const done = progress?.completed.length ?? 0;
+  if (done < total) return res.redirect(`/courses/${req.params.courseId}`);
+
+  const completedAt = progress.completed.reduce((latest, c) => {
+    const d = new Date(c.at);
+    return d > latest ? d : latest;
+  }, new Date(0));
+
+  res.render('certificate.njk', {
+    course,
+    completedAt,
+    lessonTotal: total,
   });
 });
 

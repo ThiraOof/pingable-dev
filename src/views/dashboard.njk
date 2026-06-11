@@ -16,6 +16,10 @@
     <div class="dash-stat"><strong>{% if stats.avgScore is not none %}{{ stats.avgScore }}%{% else %}—{% endif %}</strong><span>คะแนนเฉลี่ย</span></div>
   </div>
 
+  <div class="dash-export-row">
+    <png-button variant="secondary" href="/dashboard/export" icon="download">ส่งออกรายงาน PDF</png-button>
+  </div>
+
   <h2 class="dash-section-title"><png-icon name="book-open" size="20"></png-icon> คอร์สของฉัน</h2>
   {% if myCourses.length %}
   <div class="dash-courses">
@@ -29,7 +33,12 @@
       {% if item.nextUp %}
       <png-button variant="primary" href="/learn/{{ item.course._id }}/{{ item.nextUp.m }}/{{ item.nextUp.l }}" icon-end="arrow-right">เรียนต่อ</png-button>
       {% else %}
-      <span class="dash-done-badge"><png-icon name="badge-check" size="16"></png-icon> เรียนจบแล้ว</span>
+      <div class="dash-done-wrap">
+        <span class="dash-done-badge"><png-icon name="badge-check" size="16"></png-icon> เรียนจบแล้ว</span>
+        <a class="dash-cert-link" href="/courses/{{ item.course._id }}/certificate">
+          <png-icon name="award" size="14"></png-icon> ใบเกียรติบัตร
+        </a>
+      </div>
       {% endif %}
     </div>
     {% endfor %}

@@ -14,6 +14,18 @@
 <body>
   <png-navbar{% if user %} username="{{ user.username }}"{% endif %}></png-navbar>
 
+  {% if user and not user.emailVerified %}
+  <div class="verify-banner" role="alert">
+    <span class="verify-banner-text">
+      <png-icon name="mail" size="15"></png-icon>
+      กรุณายืนยันอีเมล <strong>{{ user.email }}</strong> — เช็คกล่องจดหมายของคุณ
+    </span>
+    <form method="POST" action="/auth/resend" class="verify-banner-form">
+      <button type="submit" class="verify-banner-btn">ส่งอีเมลอีกครั้ง</button>
+    </form>
+  </div>
+  {% endif %}
+
   <main>
     {% block content %}{% endblock %}
   </main>

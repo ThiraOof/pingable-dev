@@ -15,10 +15,12 @@ const attemptSchema = new mongoose.Schema({
   passed:    { type: Boolean, required: true },
   score:     { type: Number, required: true },
   total:     { type: Number, required: true },
-  results:   [resultSchema],
-  at:        { type: Date, default: Date.now },
+  results:    [resultSchema],
+  shareToken: { type: String },
+  at:         { type: Date, default: Date.now },
 }, { timestamps: false });
 
 attemptSchema.index({ user: 1, course: 1, moduleIdx: 1, lessonIdx: 1, at: -1 });
+attemptSchema.index({ shareToken: 1 }, { sparse: true, unique: true });
 
 export default mongoose.model('LabAttempt', attemptSchema);

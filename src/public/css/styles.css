@@ -369,7 +369,8 @@ main { flex: 1; }
 .auth-card .btn-block { margin-top: var(--s-5); }
 .auth-link { margin-top: var(--s-5); text-align: center; color: var(--muted); font-size: .9rem; }
 .alert { padding: .7rem 1rem; border-radius: var(--r-md); margin-bottom: var(--s-5); font-size: .9rem; }
-.alert-error { background: rgba(244,63,94,.12); border: 1px solid rgba(244,63,94,.4); color: var(--danger-h); }
+.alert-error   { background: rgba(244,63,94,.12); border: 1px solid rgba(244,63,94,.4); color: var(--danger-h); }
+.alert-success { background: var(--signal-soft); border: 1px solid var(--signal-dim); color: var(--signal); }
 
 /* ── Page header ─────────────────────────────────────────────────── */
 .page-header { text-align: center; max-width: 680px; margin-inline: auto; padding: var(--s-8) var(--s-4) var(--s-6); }
@@ -912,10 +913,71 @@ main { flex: 1; }
 }
 .show-more-btn:hover { border-color: var(--border-h); color: var(--text); }
 
+/* ── Certificate page ──────────────────────────────────────────────── */
+.cert-wrap {
+  max-width: 860px; margin: 0 auto; padding: var(--s-5) var(--s-4);
+  display: flex; flex-direction: column; align-items: center; gap: var(--s-5);
+}
+.cert-back { align-self: flex-start; }
+.cert-page {
+  width: 100%; background: #fff; border-radius: var(--r-lg);
+  box-shadow: 0 4px 40px rgba(0,0,0,.4); color: #1a2030;
+}
+.cert-border {
+  margin: 12px; border: 2px solid #22c55e; border-radius: calc(var(--r-lg) - 4px);
+  padding: var(--s-6) var(--s-7);
+}
+.cert-inner { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--s-3); }
+
+.cert-brand  { display: flex; align-items: center; gap: var(--s-3); }
+.cert-brand-name {
+  font-family: var(--font-display); font-size: 1.4rem; font-weight: 800;
+  letter-spacing: .12em; color: #22c55e;
+}
+.cert-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; }
+.cert-brand-sub { margin: 0; font-size: .75rem; color: #5b6b85; letter-spacing: .1em; text-transform: uppercase; }
+
+.cert-divider { width: 120px; height: 1px; background: linear-gradient(90deg, transparent, #22c55e, transparent); }
+.cert-divider--sm { width: 80px; }
+
+.cert-heading { font-size: 1.7rem; font-weight: 700; color: #1a2030; margin: 0; line-height: 1.2; }
+.cert-sub     { margin: 0; font-size: .85rem; color: #5b6b85; letter-spacing: .08em; }
+.cert-given   { margin: 0; font-size: .9rem; color: #5b6b85; }
+.cert-name    {
+  font-family: var(--font-display); font-size: 2.2rem; font-weight: 700; color: #0f1923;
+  padding: var(--s-1) var(--s-5); border-bottom: 2px solid #22c55e; line-height: 1.3;
+}
+.cert-body { margin: 0; font-size: .95rem; color: #374151; }
+.cert-lesson-count { font-weight: 600; color: #22c55e; }
+.cert-course-box {
+  background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--r-md);
+  padding: var(--s-3) var(--s-5); max-width: 540px;
+}
+.cert-track { font-size: .72rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: #16a34a; }
+.cert-course-title { font-size: 1.15rem; font-weight: 700; color: #0f1923; margin-top: 2px; }
+.cert-course-desc  { font-size: .82rem; color: #6b7280; margin-top: 2px; }
+
+.cert-footer-row { display: flex; align-items: center; justify-content: center; gap: var(--s-6); width: 100%; }
+.cert-date-block { display: flex; flex-direction: column; gap: 2px; }
+.cert-date-label { font-size: .75rem; color: #5b6b85; }
+.cert-date { font-size: 1rem; font-weight: 600; color: #0f1923; }
+
+.cert-actions { display: flex; gap: var(--s-3); flex-wrap: wrap; justify-content: center; }
+
+/* Dashboard certificate link */
+.dash-done-wrap  { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
+.dash-cert-link  {
+  font-size: .8rem; color: var(--signal); text-decoration: none;
+  display: inline-flex; align-items: center; gap: 4px;
+  border: 1px solid var(--signal-dim); border-radius: var(--r-sm);
+  padding: 2px 8px; transition: background .15s;
+}
+.dash-cert-link:hover { background: var(--signal-soft); }
+
 /* ── Lab attempt history (sidebar) ─────────────────────────────────── */
 .lab-history { display: flex; flex-direction: column; gap: 4px; margin-top: var(--s-2); }
 .hist-item {
-  display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: var(--s-2);
+  display: grid; grid-template-columns: 44px 1fr auto auto; align-items: center; gap: var(--s-2);
   padding: 5px var(--s-2); border-radius: var(--r-sm);
   border-left: 3px solid var(--border);
 }
@@ -1012,6 +1074,115 @@ main { flex: 1; }
   transition: background .15s, border-color .15s;
 }
 .admin-btn-danger:hover { background: rgba(239,68,68,.22); border-color: #f87171; }
+
+/* ── Email verification banner ──────────────────────────────────────── */
+.verify-banner {
+  background: rgba(251,191,36,.10);
+  border-bottom: 1px solid rgba(251,191,36,.25);
+  color: var(--warning-h);
+  display: flex; align-items: center; justify-content: center; gap: var(--s-4);
+  padding: var(--s-2) var(--s-4); font-size: .88rem; flex-wrap: wrap; text-align: center;
+}
+.verify-banner-text { display: flex; align-items: center; gap: var(--s-2); }
+.verify-banner-form { margin: 0; }
+.verify-banner-btn {
+  padding: 3px 12px; font-size: .8rem; font-family: var(--font-body);
+  background: rgba(251,191,36,.15); border: 1px solid rgba(251,191,36,.35);
+  color: var(--warning-h); border-radius: var(--r-sm); cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.verify-banner-btn:hover { background: rgba(251,191,36,.26); border-color: var(--warning-h); }
+
+/* ── Lab history share button ───────────────────────────────────────── */
+.hist-share {
+  display: flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; padding: 0; flex-shrink: 0;
+  background: none; border: 1px solid var(--border); border-radius: var(--r-sm);
+  color: var(--muted); cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+}
+.hist-share:hover:not(:disabled) { background: var(--surface-2); color: var(--text); border-color: var(--border-h); }
+.hist-share:disabled { opacity: .5; cursor: default; }
+
+/* ── Dashboard export row ───────────────────────────────────────────── */
+.dash-export-row { display: flex; justify-content: flex-end; margin-bottom: var(--s-4); }
+
+/* ── Progress export/PDF page ───────────────────────────────────────── */
+.export-page { max-width: 860px; margin: 0 auto; padding: var(--s-5) var(--s-4); }
+.export-header {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-4);
+  margin-bottom: var(--s-5); flex-wrap: wrap;
+}
+.export-header h1 { font-size: 1.4rem; font-weight: 700; margin: 0 0 var(--s-1); }
+.export-header > div > p { margin: 0; color: var(--muted); font-size: .9rem; }
+.export-actions { display: flex; gap: var(--s-2); flex-shrink: 0; flex-wrap: wrap; }
+.export-stats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: var(--s-3); margin-bottom: var(--s-5);
+}
+.export-stat {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md);
+  padding: var(--s-3); display: flex; flex-direction: column; gap: 2px; text-align: center;
+}
+.export-stat strong { font-size: 1.4rem; font-weight: 700; color: var(--signal); }
+.export-stat span   { font-size: .75rem; color: var(--muted); }
+.export-page h2 { font-size: 1rem; font-weight: 600; margin: var(--s-5) 0 var(--s-3); color: var(--text); }
+.export-table {
+  width: 100%; border-collapse: collapse; font-size: .875rem; margin-bottom: var(--s-4);
+}
+.export-table th {
+  text-align: left; padding: var(--s-2) var(--s-3);
+  border-bottom: 1px solid var(--border); color: var(--muted); font-weight: 500; white-space: nowrap;
+}
+.export-table td {
+  padding: var(--s-2) var(--s-3); border-bottom: 1px solid var(--border); vertical-align: middle;
+}
+.export-table tr:last-child td { border-bottom: none; }
+.export-bar {
+  display: inline-block; width: 72px; height: 4px; background: var(--surface-2);
+  border-radius: 999px; overflow: hidden; vertical-align: middle; margin-right: 4px;
+}
+.export-bar-fill { height: 100%; background: var(--signal); border-radius: 999px; }
+.export-empty { color: var(--muted); font-size: .9rem; }
+
+/* ── Shared lab result (public page) ────────────────────────────────── */
+.shared-wrap { max-width: 640px; margin: 0 auto; padding: var(--s-6) var(--s-4); }
+.shared-header {
+  text-align: center; padding: var(--s-6) var(--s-4);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
+  margin-bottom: var(--s-5);
+}
+.shared-verdict-row {
+  display: flex; align-items: center; justify-content: center; gap: var(--s-2);
+  margin-bottom: var(--s-2);
+}
+.shared-verdict { font-size: 1rem; font-weight: 600; }
+.shared-verdict.pass { color: var(--signal); }
+.shared-verdict.fail { color: #f87171; }
+.shared-score {
+  font-family: var(--font-display); font-size: 3.5rem; font-weight: 800;
+  margin: var(--s-1) 0; line-height: 1;
+}
+.shared-score.pass { color: var(--signal); }
+.shared-score.fail { color: #f87171; }
+.shared-meta   { color: var(--muted); font-size: .9rem; margin: 0 0 var(--s-1); }
+.shared-course { font-size: .85rem; color: var(--sky); margin: 0 0 2px; }
+.shared-date   { font-size: .8rem; color: var(--faint); margin: 0; }
+.shared-results { margin-bottom: var(--s-5); }
+.shared-results h2 { font-size: 1rem; font-weight: 600; margin: 0 0 var(--s-3); }
+.shared-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--s-2); }
+.shared-item {
+  display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: var(--s-2);
+  padding: var(--s-2) var(--s-3); border-radius: var(--r-sm); border-left: 3px solid transparent;
+}
+.shared-item.pass { background: var(--signal-soft); border-left-color: var(--signal); }
+.shared-item.fail { background: rgba(239,68,68,.06); border-left-color: rgba(239,68,68,.5); }
+.shared-icon { text-align: center; font-size: 1rem; }
+.shared-item.pass .shared-icon { color: var(--signal); }
+.shared-item.fail .shared-icon { color: #f87171; }
+.shared-desc { font-size: .88rem; }
+.shared-pts  { font-size: .8rem; color: var(--muted); font-family: var(--font-mono); white-space: nowrap; }
+.shared-footer { text-align: center; }
+.shared-footer-note { font-size: .8rem; color: var(--faint); margin: 0 0 var(--s-3); }
 
 /* ── Error page (404/500) ───────────────────────────────────────────── */
 .error-page { text-align: center; padding: var(--s-8) var(--s-4); max-width: 520px; margin-inline: auto; }

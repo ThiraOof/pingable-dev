@@ -52,6 +52,8 @@
     <png-icon name="lock" size="15"></png-icon> ยังไม่ผ่านวิชาพื้นฐาน
   </png-button>
   {% endif %}
+  {% elif percent == 100 and lessonTotal > 0 %}
+  <png-button variant="signal" href="/courses/{{ course._id }}/certificate" icon="award">ดูใบเกียรติบัตร</png-button>
   {% endif %}
   {% else %}
   <div class="cpb-meta">

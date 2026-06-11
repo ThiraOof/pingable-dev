@@ -1,0 +1,82 @@
+{% extends "base.njk" %}
+{% block title %}ใบประกาศนียบัตร — {{ course.title }}{% endblock %}
+
+{% block head %}
+<style>
+  @media print {
+    png-navbar, png-footer, .cert-actions, .cert-back { display: none !important; }
+    body, main { background: #fff !important; }
+    main { padding: 0 !important; }
+    .cert-page { box-shadow: none !important; margin: 0 !important; max-width: 100% !important; }
+  }
+  @page { size: A4 landscape; margin: 1cm; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cert-wrap">
+  <a href="/courses/{{ course._id }}" class="back-link cert-back">
+    <png-icon name="arrow-left" size="16"></png-icon> กลับไปหน้าคอร์ส
+  </a>
+
+  <div class="cert-page">
+    <div class="cert-border">
+      <div class="cert-inner">
+
+        <div class="cert-brand">
+          <span class="cert-dot"></span>
+          <span class="cert-brand-name">PINGABLE</span>
+          <span class="cert-dot"></span>
+        </div>
+        <p class="cert-brand-sub">Network Learning Platform</p>
+
+        <div class="cert-divider"></div>
+
+        <h1 class="cert-heading">ใบประกาศนียบัตรการศึกษา</h1>
+        <p class="cert-sub">Certificate of Completion</p>
+
+        <p class="cert-given">มอบให้แก่</p>
+        <div class="cert-name">{{ user.username }}</div>
+
+        <p class="cert-body">
+          ได้เรียนจบหลักสูตรและผ่านการประเมินครบถ้วน
+          <span class="cert-lesson-count">{{ lessonTotal }} บทเรียน</span>
+        </p>
+
+        <div class="cert-course-box">
+          {% if course.track %}<span class="cert-track">{{ course.track }}</span>{% endif %}
+          <div class="cert-course-title">{{ course.title }}</div>
+          <div class="cert-course-desc">{{ course.description }}</div>
+        </div>
+
+        <div class="cert-divider cert-divider--sm"></div>
+
+        <div class="cert-footer-row">
+          <div class="cert-seal">
+            <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+              <circle cx="28" cy="28" r="26" stroke="#22c55e" stroke-width="2" stroke-dasharray="4 3"/>
+              <circle cx="28" cy="28" r="20" fill="rgba(34,197,94,.08)" stroke="#22c55e" stroke-width="1.5"/>
+              <text x="28" y="24" text-anchor="middle" font-size="8" font-weight="700" fill="#22c55e" font-family="Inter,sans-serif">PINGABLE</text>
+              <text x="28" y="34" text-anchor="middle" font-size="6" fill="#22c55e" font-family="Inter,sans-serif">CERTIFIED</text>
+            </svg>
+          </div>
+          <div class="cert-date-block">
+            <span class="cert-date-label">วันที่เรียนสำเร็จ</span>
+            <span class="cert-date">{{ completedAt | thaidate }}</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="cert-actions">
+    <button class="btn btn-primary btn-print">
+      <png-icon name="printer" size="16"></png-icon> พิมพ์ / บันทึกเป็น PDF
+    </button>
+    <a class="btn btn-secondary" href="/courses/{{ course._id }}">กลับไปหน้าคอร์ส</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}<script type="module" src="/js/ui.js"></script>{% endblock %}

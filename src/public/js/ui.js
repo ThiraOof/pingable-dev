@@ -1,3 +1,6 @@
+// Print button: replaces onclick="window.print()" which CSP script-src-attr 'none' blocks.
+document.querySelector('.btn-print')?.addEventListener('click', () => window.print());
+
 // Show-more toggle for the dashboard activity list.
 // Items beyond index 8 start with [hidden]; clicking the button reveals them.
 document.querySelectorAll('.show-more-btn').forEach((btn) => {

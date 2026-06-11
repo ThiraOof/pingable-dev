@@ -5,7 +5,10 @@ const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true, trim: true },
   email:    { type: String, required: true, unique: true, lowercase: true },
   password: { type: String, required: true },
-  role:     { type: String, enum: ['student', 'admin'], default: 'student' },
+  role:          { type: String, enum: ['student', 'admin'], default: 'student' },
+  emailVerified: { type: Boolean, default: false },
+  emailToken:    { type: String },
+  emailTokenExp: { type: Date },
   enrolledCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
 }, { timestamps: true });
 

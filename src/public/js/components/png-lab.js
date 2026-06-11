@@ -111,10 +111,11 @@ define('png-lab', class extends PngEl {
         const dateStr = d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
         const timeStr = d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
         const ok = a.passed, passCount = a.results.filter((r) => r.passed).length;
-        return `<div class="hist-item ${ok ? 'pass' : 'fail'}">` +
+        return `<div class="hist-item ${ok ? 'pass' : 'fail'}" data-id="${esc(String(a._id))}">` +
           `<span class="hist-pct">${a.pct}%</span>` +
           `<span class="hist-detail">${passCount}/${a.results.length} ข้อ · ${dateStr} ${timeStr}</span>` +
           `<span class="hist-badge">${ok ? svgIcon('check', 13) : svgIcon('x', 13)}</span>` +
+          `<button class="hist-share" title="คัดลอกลิงก์แชร์">${svgIcon('link', 13)}</button>` +
           `</div>`;
       }).join('');
     }
@@ -123,6 +124,32 @@ define('png-lab', class extends PngEl {
         const d = await (await fetch(histUrl)).json();
         if (d.ok) renderHistory(d.attempts || []);
       } catch {}
+    }
+    if (historyList) {
+      historyList.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.hist-share');
+        if (!btn) return;
+        const id = btn.closest('.hist-item')?.dataset.id;
+        if (!id) return;
+        btn.disabled = true;
+        try {
+          const r = await fetch(`/lab/${cid}/${M}/${L}/share`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ attemptId: id }),
+          });
+          const d = await r.json();
+          if (!d.ok) throw new Error(d.error || 'failed');
+          const fullUrl = location.origin + d.url;
+          await navigator.clipboard.writeText(fullUrl);
+          btn.innerHTML = svgIcon('check', 13);
+          btn.title = fullUrl;
+          setTimeout(() => { btn.innerHTML = svgIcon('link', 13); btn.disabled = false; }, 2500);
+        } catch {
+          btn.disabled = false;
+          alert('ไม่สามารถสร้างลิงก์แชร์ได้');
+        }
+      });
     }
 
     btnStop.addEventListener('click', async () => {

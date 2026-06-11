@@ -1,0 +1,46 @@
+{% extends "base.njk" %}
+{% block title %}ผลการตรวจ Lab{% if course %} — {{ course.title }}{% endif %} · Pingable{% endblock %}
+
+{% block content %}
+<div class="shared-wrap">
+
+  <div class="shared-header {{ 'pass' if attempt.passed else 'fail' }}">
+    <div class="shared-verdict-row">
+      {% if attempt.passed %}
+      <png-icon name="badge-check" size="28"></png-icon>
+      <span class="shared-verdict pass">ผ่านแล้ว!</span>
+      {% else %}
+      <png-icon name="x-circle" size="28"></png-icon>
+      <span class="shared-verdict fail">ยังไม่ผ่าน</span>
+      {% endif %}
+    </div>
+    <div class="shared-score {{ 'pass' if attempt.passed else 'fail' }}">{{ attempt.pct }}%</div>
+    <p class="shared-meta">{{ attempt.score }} จาก {{ attempt.total }} คะแนน</p>
+    {% if course %}
+    <p class="shared-course">{{ course.title }}{% if labTitle %} — {{ labTitle }}{% endif %}</p>
+    {% endif %}
+    <p class="shared-date">{{ attempt.at | thaidate }}</p>
+  </div>
+
+  {% if attempt.results and attempt.results.length %}
+  <div class="shared-results">
+    <h2>ผลการตรวจรายข้อ</h2>
+    <ul class="shared-list">
+      {% for r in attempt.results %}
+      <li class="shared-item {{ 'pass' if r.passed else 'fail' }}">
+        <span class="shared-icon">{% if r.passed %}✓{% else %}✕{% endif %}</span>
+        <span class="shared-desc">{{ r.description }}</span>
+        <span class="shared-pts">{{ r.points if r.passed else 0 }} / {{ r.points }} pt</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <div class="shared-footer">
+    <p class="shared-footer-note">ผลการตรวจนี้แชร์จาก Pingable — ระบบเรียนเน็ตเวิร์คออนไลน์</p>
+    <png-button variant="secondary" href="/courses">ดูคอร์สทั้งหมด</png-button>
+  </div>
+
+</div>
+{% endblock %}

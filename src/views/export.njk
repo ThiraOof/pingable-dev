@@ -1,0 +1,113 @@
+{% extends "base.njk" %}
+{% block title %}รายงานความก้าวหน้า — {{ user.username }} · Pingable{% endblock %}
+
+{% block head %}
+<style>
+  @media print {
+    png-navbar, png-footer, .export-actions { display: none !important; }
+    body, main { background: #fff !important; color: #111 !important; }
+    main { padding: 0 !important; }
+    .export-page { max-width: 100% !important; padding: 0 !important; }
+    .export-stat  { background: #f9f9f9 !important; border: 1px solid #ddd !important; }
+    .export-stat strong { color: #059669 !important; }
+    .export-table th, .export-table td { color: #333 !important; border-color: #ddd !important; }
+    .export-bar { background: #e5e7eb !important; }
+    .export-bar-fill { background: #059669 !important; }
+    .export-page h2 { color: #111 !important; }
+  }
+  @page { size: A4 portrait; margin: 1.5cm; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="export-page">
+
+  <div class="export-header">
+    <div>
+      <h1>รายงานความก้าวหน้าการเรียน</h1>
+      <p>{{ user.username }} · ส่งออกเมื่อ {{ now | thaidate }}</p>
+    </div>
+    <div class="export-actions">
+      <button class="btn btn-primary btn-print">
+        <png-icon name="printer" size="16"></png-icon> พิมพ์ / บันทึกเป็น PDF
+      </button>
+      <a class="btn btn-secondary" href="/dashboard">กลับแดชบอร์ด</a>
+    </div>
+  </div>
+
+  <div class="export-stats">
+    <div class="export-stat"><strong>{{ stats.coursesStarted }}</strong><span>คอร์สที่เริ่มแล้ว</span></div>
+    <div class="export-stat"><strong>{{ stats.lessonsDone }}</strong><span>บทเรียนที่จบ</span></div>
+    <div class="export-stat"><strong>{{ stats.labsPassed }}</strong><span>แล็บที่ผ่าน</span></div>
+    <div class="export-stat"><strong>{{ stats.quizzesPassed }}</strong><span>แบบทดสอบที่ผ่าน</span></div>
+    <div class="export-stat">
+      <strong>{% if stats.avgScore is not none %}{{ stats.avgScore }}%{% else %}—{% endif %}</strong>
+      <span>คะแนนเฉลี่ย</span>
+    </div>
+  </div>
+
+  <h2>คอร์สของฉัน</h2>
+  {% if myCourses.length %}
+  <table class="export-table">
+    <thead>
+      <tr>
+        <th>คอร์ส</th>
+        <th>ระดับ</th>
+        <th>บทเรียน</th>
+        <th>ความก้าวหน้า</th>
+        <th>สถานะ</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in myCourses %}
+      <tr>
+        <td>{{ item.course.title }}</td>
+        <td>{{ item.course.level }}</td>
+        <td>{{ item.doneCount }} / {{ item.lessonTotal }}</td>
+        <td>
+          <div class="export-bar"><div class="export-bar-fill" style="width:{{ item.percent }}%"></div></div>
+          {{ item.percent }}%
+        </td>
+        <td>{% if not item.nextUp %}เรียนจบแล้ว{% else %}กำลังเรียน{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="export-empty">ยังไม่ได้เริ่มเรียนคอร์สไหนเลย</p>
+  {% endif %}
+
+  {% if activity.length %}
+  <h2>กิจกรรมทั้งหมด ({{ activity.length }} รายการ)</h2>
+  <table class="export-table">
+    <thead>
+      <tr>
+        <th>วันที่</th>
+        <th>ประเภท</th>
+        <th>บทเรียน</th>
+        <th>คอร์ส</th>
+        <th>คะแนน</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in activity %}
+      <tr>
+        <td style="white-space:nowrap">{{ a.at | thaidate }}</td>
+        <td>
+          {%- if a.type == 'lab' %}แล็บ
+          {%- elif a.type == 'quiz' %}แบบทดสอบ
+          {%- else %}บทเรียน{% endif -%}
+        </td>
+        <td>{{ a.lessonTitle }}</td>
+        <td>{{ a.courseTitle }}</td>
+        <td>{% if a.score is not none %}{{ a.score }}%{% else %}—{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}<script type="module" src="/js/ui.js"></script>{% endblock %}

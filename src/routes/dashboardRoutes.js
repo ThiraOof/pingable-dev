@@ -5,7 +5,6 @@ import requireAuth from '../middleware/requireAuth.js';
 
 const router = express.Router();
 
-// First lesson the user hasn't completed yet, or null when the course is done.
 function findNextUp(course, done) {
   for (let m = 0; m < (course.modules || []).length; m++) {
     const lessons = course.modules[m].lessons || [];
@@ -16,11 +15,7 @@ function findNextUp(course, done) {
   return null;
 }
 
-// GET /dashboard — the learner's home: continue-learning cards, study stats,
-// recent activity, and suggested not-yet-started courses.
-router.get('/', requireAuth, async (req, res) => {
-  const userId = req.session.user.id;
-
+async function collectDashboardData(userId) {
   const progresses = await Progress.find({ user: userId }).sort({ updatedAt: -1 });
   const allCourses = await Course.find({ published: true });
   const courseById = new Map(allCourses.map((c) => [String(c._id), c]));
@@ -32,7 +27,7 @@ router.get('/', requireAuth, async (req, res) => {
 
   for (const p of progresses) {
     const course = courseById.get(String(p.course));
-    if (!course) continue; // course removed/unpublished since
+    if (!course) continue;
 
     lessonsDone += p.completed.length;
     for (const c of p.completed) {
@@ -47,7 +42,6 @@ router.get('/', requireAuth, async (req, res) => {
         courseTitle: course.title,
         m: c.moduleIdx,
         l: c.lessonIdx,
-        // content may have shifted since this was recorded — degrade gracefully
         lessonTitle: course.modules?.[c.moduleIdx]?.lessons?.[c.lessonIdx]?.title || course.title,
       });
     }
@@ -73,9 +67,9 @@ router.get('/', requireAuth, async (req, res) => {
       counts: lessonCounts(course),
     }));
 
-  res.render('dashboard.njk', {
+  return {
     myCourses,
-    activity: activity.slice(0, 50),
+    activity,
     suggestions,
     stats: {
       coursesStarted: myCourses.length,
@@ -84,7 +78,18 @@ router.get('/', requireAuth, async (req, res) => {
       quizzesPassed,
       avgScore: scores.length ? Math.round(scores.reduce((n, s) => n + s, 0) / scores.length) : null,
     },
-  });
+  };
+}
+
+router.get('/', requireAuth, async (req, res) => {
+  const data = await collectDashboardData(req.session.user.id);
+  res.render('dashboard.njk', { ...data, activity: data.activity.slice(0, 50) });
+});
+
+// GET /dashboard/export — printable progress report (all activity, no truncation)
+router.get('/export', requireAuth, async (req, res) => {
+  const data = await collectDashboardData(req.session.user.id);
+  res.render('export.njk', { ...data, now: new Date() });
 });
 
 export default router;

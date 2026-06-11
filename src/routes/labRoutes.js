@@ -1,5 +1,6 @@
 import express from 'express';
 import mongoose from 'mongoose';
+import { randomBytes } from 'crypto';
 import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
 import Course from '../models/Course.js';
 import requireAuth from '../middleware/requireAuth.js';
@@ -39,6 +40,15 @@ function matchesLab(session, courseId, m, l) {
     && session.moduleIdx === m
     && session.lessonIdx === l;
 }
+
+// GET /lab/shared/:token — public read-only view of a shared grading attempt
+router.get('/shared/:token', async (req, res) => {
+  const attempt = await LabAttempt.findOne({ shareToken: req.params.token }).lean();
+  if (!attempt) return res.status(404).render('error.njk', { code: 404, message: 'ไม่พบผลการตรวจ หรือลิงก์นี้ถูกยกเลิกแล้ว' });
+  const course = await Course.findById(attempt.course).select('title modules').lean();
+  const labTitle = course?.modules?.[attempt.moduleIdx]?.lessons?.[attempt.lessonIdx]?.title || '';
+  res.render('lab-shared.njk', { attempt, course, labTitle });
+});
 
 // GET /lab/:courseId/:m/:l — render the lab page
 router.get('/:courseId/:m/:l', requireAuth, async (req, res) => {
@@ -159,6 +169,21 @@ router.get('/:courseId/:m/:l/history', requireAuth, async (req, res) => {
     lessonIdx: l,
   }).sort({ at: -1 }).limit(20).lean();
   res.json({ ok: true, attempts });
+});
+
+// POST /lab/:courseId/:m/:l/share — generate (or return existing) share link for an attempt
+router.post('/:courseId/:m/:l/share', requireAuth, async (req, res) => {
+  const { attemptId } = req.body;
+  if (!attemptId || !mongoose.isValidObjectId(attemptId)) {
+    return res.status(400).json({ ok: false, error: 'invalid attemptId' });
+  }
+  const attempt = await LabAttempt.findOne({ _id: attemptId, user: req.session.user.id });
+  if (!attempt) return res.status(404).json({ ok: false, error: 'not found' });
+  if (!attempt.shareToken) {
+    attempt.shareToken = randomBytes(16).toString('hex');
+    await attempt.save();
+  }
+  res.json({ ok: true, url: `/lab/shared/${attempt.shareToken}` });
 });
 
 // POST /lab/stop — destroy GNS3 project and free resources

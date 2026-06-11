@@ -133,9 +133,11 @@ app.use((req, res, next) => {
   res.status(403).json({ ok: false, error: 'Cross-origin request blocked' });
 });
 
-// Pass user to all templates
+// Pass user to all templates. Normalize emailVerified for sessions that pre-date
+// the field: treat absence as verified so the banner doesn't appear for old accounts.
 app.use((req, res, next) => {
-  res.locals.user = req.session.user || null;
+  const u = req.session.user || null;
+  res.locals.user = u ? { ...u, emailVerified: u.emailVerified ?? true } : null;
   next();
 });
 
