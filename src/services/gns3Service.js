@@ -6,7 +6,10 @@ function authHeader() {
   return { Authorization: `Basic ${creds}` };
 }
 
-async function request(method, path, body = null) {
+const MAX_ATTEMPTS = 3;
+const RETRY_BASE_MS = 500;
+
+async function request(method, path, body = null, attempt = 1) {
   const opts = {
     method,
     headers: { 'Content-Type': 'application/json', ...authHeader() },
@@ -19,6 +22,14 @@ async function request(method, path, body = null) {
     res = await fetch(`${GNS3_BASE}${path}`, opts);
   } catch (err) {
     if (err.name === 'TimeoutError') throw new Error(`GNS3 ${method} ${path} → timed out after 30s`);
+    // Network error (ECONNREFUSED, ECONNRESET, etc.) — retry with exponential backoff.
+    // Timeouts are not retried: 30s already elapsed, something is seriously wrong.
+    // HTTP 4xx/5xx are not retried: server received the request; mutating again risks
+    // double-execution on partially-successful GNS3 operations.
+    if (attempt < MAX_ATTEMPTS) {
+      await new Promise((r) => setTimeout(r, RETRY_BASE_MS * 2 ** (attempt - 1)));
+      return request(method, path, body, attempt + 1);
+    }
     throw err;
   }
   const text = await res.text();

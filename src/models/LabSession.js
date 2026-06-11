@@ -1,5 +1,11 @@
 import mongoose from 'mongoose';
 
+// Backup TTL: 2× the idle window so the sweeper (labSessionService) always
+// wins, but a crashed sweeper can't leave sessions alive forever.
+// Changing LAB_IDLE_MINUTES requires dropping/recreating the TTL index:
+//   db.labsessions.dropIndex('lastActivityAt_1')
+const BACKUP_EXPIRE_SECONDS = (parseInt(process.env.LAB_IDLE_MINUTES) || 45) * 60 * 2;
+
 // One live GNS3 lab per user (unique index), persisted so sessions survive
 // server restarts and orphaned projects can be reconciled/swept. `building`
 // doubles as the start lock — see labSessionService.startSession().
@@ -13,7 +19,7 @@ const labSessionSchema = new mongoose.Schema({
   webUiUrl:  { type: String },
   nodes:     { type: mongoose.Schema.Types.Mixed, default: {} }, // name -> { consoleHost, consolePort }
   bootedNodes:    { type: [String], default: [] },  // nodes whose console already answered a probe
-  lastActivityAt: { type: Date, default: Date.now }, // bumped by the lab page heartbeat; sweeper key
+  lastActivityAt: { type: Date, default: Date.now, expires: BACKUP_EXPIRE_SECONDS }, // bumped by heartbeat; sweeper key + TTL backup
 }, { timestamps: true });
 
 export default mongoose.model('LabSession', labSessionSchema);

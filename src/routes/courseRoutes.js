@@ -1,7 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import Course from '../models/Course.js';
-import Progress, { getProgress, completedSet, coursePercent, totalLessons } from '../models/Progress.js';
+import Progress, { getProgress, completedSet, coursePercent, totalLessons, lessonCounts } from '../models/Progress.js';
 
 const router = express.Router();
 
@@ -19,19 +19,6 @@ const LEVELS = [
   { key: 'advanced',     label: 'ระดับสูง' },
   { key: 'expert',       label: 'ระดับผู้เชี่ยวชาญ' },
 ];
-
-// Count lessons of a given type across a course (for catalog badges)
-function lessonCounts(course) {
-  let readings = 0, labs = 0, quizzes = 0;
-  for (const m of course.modules || []) {
-    for (const l of m.lessons || []) {
-      if (l.type === 'reading') readings++;
-      else if (l.type === 'lab') labs++;
-      else if (l.type === 'quiz') quizzes++;
-    }
-  }
-  return { readings, labs, quizzes };
-}
 
 // GET /courses — catalog laned by level, with per-course progress.
 // Public: guests can browse; progress only shows when logged in.

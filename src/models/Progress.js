@@ -73,6 +73,19 @@ export function totalLessons(course) {
   return (course.modules || []).reduce((n, m) => n + (m.lessons ? m.lessons.length : 0), 0);
 }
 
+/** Count lessons by type across all modules (for catalog/dashboard badges). */
+export function lessonCounts(course) {
+  let readings = 0, labs = 0, quizzes = 0;
+  for (const m of course.modules || []) {
+    for (const l of m.lessons || []) {
+      if (l.type === 'reading') readings++;
+      else if (l.type === 'lab') labs++;
+      else if (l.type === 'quiz') quizzes++;
+    }
+  }
+  return { readings, labs, quizzes };
+}
+
 /** Overall completion percentage (0–100) for a course given a Progress doc. */
 export function coursePercent(course, progressDoc) {
   const total = totalLessons(course);

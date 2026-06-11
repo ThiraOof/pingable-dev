@@ -1,4 +1,5 @@
 import { createProxyMiddleware } from 'http-proxy-middleware';
+import rateLimit from 'express-rate-limit';
 import * as gns3 from '../services/gns3Service.js';
 import { getSession } from '../services/labSessionService.js';
 import logger from '../config/logger.js';
@@ -27,6 +28,23 @@ const setAuth = (proxyReq) => {
   const auth = gns3AuthHeader();
   if (auth) proxyReq.setHeader('Authorization', auth);
 };
+
+// Rate-limit non-GET proxy calls per authenticated user (keyed on session user
+// id, falling back to IP for unauthenticated requests that slip through).
+// 200 mutations per minute accommodates normal Web-UI bursts (drag-to-move
+// nodes, start/stop buttons) while blocking automated scripts.
+const proxyMutationLimit = rateLimit({
+  windowMs: 60_000,
+  max: 200,
+  keyGenerator: (req) => String(req.session?.user?.id ?? req.ip),
+  skip: (req) => req.method === 'GET' || req.path.startsWith('/static/web-ui'),
+  standardHeaders: false,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    logger.warn({ user: String(req.session?.user?.id), path: req.path }, 'gns3-proxy: rate limited');
+    res.status(429).json({ message: 'too many requests' });
+  },
+});
 
 const proxy = createProxyMiddleware({
   target: GNS3_TARGET,
@@ -87,7 +105,10 @@ export function gns3Gate(sessionMiddleware) {
     if (!isGns3Path(req.path)) return next();
     sessionMiddleware(req, res, (err) => {
       if (err) return next(err);
-      authorize(req, res, (err2) => (err2 ? next(err2) : proxy(req, res, next)));
+      authorize(req, res, (err2) => {
+        if (err2) return next(err2);
+        proxyMutationLimit(req, res, (err3) => (err3 ? next(err3) : proxy(req, res, next)));
+      });
     });
   };
 }

@@ -1,22 +1,9 @@
 import express from 'express';
 import Course from '../models/Course.js';
-import Progress, { completedSet, coursePercent, totalLessons } from '../models/Progress.js';
+import Progress, { completedSet, coursePercent, totalLessons, lessonCounts } from '../models/Progress.js';
 import requireAuth from '../middleware/requireAuth.js';
 
 const router = express.Router();
-
-// Count lessons of each type across a course (for suggestion card badges).
-function lessonCounts(course) {
-  let readings = 0, labs = 0, quizzes = 0;
-  for (const m of course.modules || []) {
-    for (const l of m.lessons || []) {
-      if (l.type === 'reading') readings++;
-      else if (l.type === 'lab') labs++;
-      else if (l.type === 'quiz') quizzes++;
-    }
-  }
-  return { readings, labs, quizzes };
-}
 
 // First lesson the user hasn't completed yet, or null when the course is done.
 function findNextUp(course, done) {

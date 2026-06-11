@@ -72,6 +72,7 @@ router.post('/register', authLimiter, async (req, res) => {
     : (!EMAIL_RE.test(email) || email.length > 254) ? 'รูปแบบอีเมลไม่ถูกต้อง'
     : (password.length < 8) ? 'รหัสผ่านต้องยาวอย่างน้อย 8 ตัวอักษร'
     : (password.length > 72) ? 'รหัสผ่านยาวเกินไป (สูงสุด 72 ตัวอักษร)'
+    : (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) ? 'รหัสผ่านต้องมีตัวอักษรและตัวเลขอย่างน้อย 1 ตัว'
     : (password !== confirmPassword) ? 'รหัสผ่านไม่ตรงกัน'
     : null;
   if (error) return res.render('register.njk', { error });
