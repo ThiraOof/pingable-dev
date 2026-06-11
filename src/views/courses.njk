@@ -4,6 +4,10 @@
 {% block content %}
 <png-page-header title="คอร์สเรียนทั้งหมด" subtitle="เรียนรู้องค์ความรู้เครือข่าย พร้อมลงมือทำ Lab บน Topology จริง — ไล่ระดับตั้งแต่เริ่มต้นจนถึงผู้เชี่ยวชาญ"></png-page-header>
 
+<div class="catalog-search-wrap">
+  <input type="search" id="course-search" class="catalog-search" placeholder="ค้นหาคอร์ส..." autocomplete="off" spellcheck="false">
+</div>
+
 {% for lane in lanes %}
 <png-level-lane label="{{ lane.label }}" level="{{ lane.key }}" count="{{ lane.courses | length }}">
   {% for c in lane.courses %}
@@ -29,3 +33,5 @@
 </div>
 {% endfor %}
 {% endblock %}
+
+{% block scripts %}<script type="module" src="/js/ui.js"></script>{% endblock %}

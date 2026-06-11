@@ -892,6 +892,26 @@ main { flex: 1; }
   .dash-activity-meta { display: none; }
 }
 
+/* ── Catalog search ────────────────────────────────────────────────── */
+.catalog-search-wrap { max-width: var(--maxw); margin: 0 auto var(--s-5); padding-inline: var(--s-4); }
+.catalog-search {
+  display: block; width: 100%; padding: var(--s-3) var(--s-4);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md);
+  color: var(--text); font-size: .95rem; font-family: var(--font-body);
+  outline: none; transition: border-color .15s; box-sizing: border-box;
+}
+.catalog-search::placeholder { color: var(--faint); }
+.catalog-search:focus { border-color: var(--signal); }
+
+/* ── Show-more button ──────────────────────────────────────────────── */
+.show-more-btn {
+  display: block; margin: var(--s-3) auto 0; padding: var(--s-2) var(--s-5);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md);
+  color: var(--muted); font-size: .88rem; font-family: var(--font-body); cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.show-more-btn:hover { border-color: var(--border-h); color: var(--text); }
+
 /* ── Error page (404/500) ───────────────────────────────────────────── */
 .error-page { text-align: center; padding: var(--s-8) var(--s-4); max-width: 520px; margin-inline: auto; }
 .error-code {

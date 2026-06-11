@@ -43,9 +43,9 @@
 
   {% if activity.length %}
   <h2 class="dash-section-title"><png-icon name="activity" size="20"></png-icon> กิจกรรมล่าสุด</h2>
-  <ul class="dash-activity">
+  <ul class="dash-activity" id="dash-activity-list">
     {% for a in activity %}
-    <li>
+    <li{% if loop.index > 8 %} hidden{% endif %}>
       <span class="lesson-type-chip type-{{ a.type }}">
         {%- if a.type == 'lab' %}แล็บ{% elif a.type == 'quiz' %}แบบทดสอบ{% else %}บทเรียน{% endif -%}
       </span>
@@ -57,6 +57,11 @@
     </li>
     {% endfor %}
   </ul>
+  {% if activity.length > 8 %}
+  <button class="show-more-btn" data-list="dash-activity-list" data-count="{{ activity.length - 8 }}">
+    ดูเพิ่มอีก {{ activity.length - 8 }} รายการ
+  </button>
+  {% endif %}
   {% endif %}
 
   {% if suggestions.length %}
@@ -81,3 +86,5 @@
   {% endif %}
 </div>
 {% endblock %}
+
+{% block scripts %}<script type="module" src="/js/ui.js"></script>{% endblock %}

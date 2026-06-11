@@ -75,7 +75,7 @@ router.get('/', requireAuth, async (req, res) => {
 
   res.render('dashboard.njk', {
     myCourses,
-    activity: activity.slice(0, 8),
+    activity: activity.slice(0, 50),
     suggestions,
     stats: {
       coursesStarted: myCourses.length,
