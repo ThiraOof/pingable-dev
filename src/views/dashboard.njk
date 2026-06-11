@@ -1,0 +1,83 @@
+{% extends "base.njk" %}
+{% block title %}แดชบอร์ด — Pingable{% endblock %}
+
+{% block content %}
+<div class="dash">
+  <div class="dash-head">
+    <h1>สวัสดี, {{ user.username }}</h1>
+    <p>ภาพรวมการเรียนของคุณ — เก็บทีละบท เดี๋ยวก็ถึงปลายทาง</p>
+  </div>
+
+  <div class="dash-stats">
+    <div class="dash-stat"><strong>{{ stats.coursesStarted }}</strong><span>คอร์สที่เริ่มแล้ว</span></div>
+    <div class="dash-stat"><strong>{{ stats.lessonsDone }}</strong><span>บทเรียนที่จบ</span></div>
+    <div class="dash-stat"><strong>{{ stats.labsPassed }}</strong><span>แล็บที่ผ่าน</span></div>
+    <div class="dash-stat"><strong>{{ stats.quizzesPassed }}</strong><span>แบบทดสอบที่ผ่าน</span></div>
+    <div class="dash-stat"><strong>{% if stats.avgScore is not none %}{{ stats.avgScore }}%{% else %}—{% endif %}</strong><span>คะแนนเฉลี่ย</span></div>
+  </div>
+
+  <h2 class="dash-section-title"><png-icon name="book-open" size="20"></png-icon> คอร์สของฉัน</h2>
+  {% if myCourses.length %}
+  <div class="dash-courses">
+    {% for item in myCourses %}
+    <div class="dash-course">
+      <png-progress-ring percent="{{ item.percent }}" size="56"></png-progress-ring>
+      <div class="dash-course-info">
+        <a class="dash-course-title" href="/courses/{{ item.course._id }}">{{ item.course.title }}</a>
+        <p>{{ item.doneCount }} / {{ item.lessonTotal }} บทเรียน{% if item.nextUp %} · ถัดไป: {{ item.nextUp.lesson.title }}{% endif %}</p>
+      </div>
+      {% if item.nextUp %}
+      <png-button variant="primary" href="/learn/{{ item.course._id }}/{{ item.nextUp.m }}/{{ item.nextUp.l }}" icon-end="arrow-right">เรียนต่อ</png-button>
+      {% else %}
+      <span class="dash-done-badge"><png-icon name="badge-check" size="16"></png-icon> เรียนจบแล้ว</span>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <p>คุณยังไม่ได้เริ่มเรียนคอร์สไหนเลย — เลือกคอร์สแรกของคุณได้เลย</p>
+    <png-button variant="primary" href="/courses" icon-end="arrow-right">ดูคอร์สทั้งหมด</png-button>
+  </div>
+  {% endif %}
+
+  {% if activity.length %}
+  <h2 class="dash-section-title"><png-icon name="activity" size="20"></png-icon> กิจกรรมล่าสุด</h2>
+  <ul class="dash-activity">
+    {% for a in activity %}
+    <li>
+      <span class="lesson-type-chip type-{{ a.type }}">
+        {%- if a.type == 'lab' %}แล็บ{% elif a.type == 'quiz' %}แบบทดสอบ{% else %}บทเรียน{% endif -%}
+      </span>
+      <a href="/learn/{{ a.courseId }}/{{ a.m }}/{{ a.l }}" class="dash-activity-title">{{ a.lessonTitle }}</a>
+      <span class="dash-activity-meta">
+        {% if a.score is not none and a.score is not undefined %}<span class="dash-score">{{ a.score }}%</span>{% endif %}
+        {{ a.at | thaidate }}
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  {% if suggestions.length %}
+  <h2 class="dash-section-title"><png-icon name="sparkles" size="20"></png-icon> คอร์สถัดไปที่น่าสนใจ</h2>
+  <div class="course-grid">
+    {% for s in suggestions %}
+    {% set course = s.course %}
+    <png-course-card
+      href="/courses/{{ course._id }}"
+      title="{{ course.title }}"
+      desc="{{ course.description }}"
+      level="{{ course.level }}"
+      {% if course.track %}track="{{ course.track }}"{% endif %}
+      percent="0"
+      modules="{{ s.moduleCount }}"
+      readings="{{ s.counts.readings or 0 }}"
+      labs="{{ s.counts.labs or 0 }}"
+      quizzes="{{ s.counts.quizzes or 0 }}"
+      hours="{{ course.estimatedHours or 0 }}"></png-course-card>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

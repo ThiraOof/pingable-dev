@@ -26,11 +26,11 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function consumeReturnTo(req) {
   const dest = req.session.returnTo;
   delete req.session.returnTo;
-  return (typeof dest === 'string' && dest.startsWith('/') && !dest.startsWith('//')) ? dest : '/courses';
+  return (typeof dest === 'string' && dest.startsWith('/') && !dest.startsWith('//')) ? dest : '/dashboard';
 }
 
 router.get('/login', (req, res) => {
-  if (req.session.user) return res.redirect('/courses');
+  if (req.session.user) return res.redirect('/dashboard');
   const next = req.query.next;
   if (typeof next === 'string' && next.startsWith('/') && !next.startsWith('//')) {
     req.session.returnTo = next;
@@ -57,7 +57,7 @@ router.post('/login', authLimiter, async (req, res) => {
 });
 
 router.get('/register', (req, res) => {
-  if (req.session.user) return res.redirect('/courses');
+  if (req.session.user) return res.redirect('/dashboard');
   res.render('register.njk', { error: null });
 });
 

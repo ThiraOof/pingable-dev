@@ -15,6 +15,7 @@ import authRoutes from './routes/authRoutes.js';
 import courseRoutes from './routes/courseRoutes.js';
 import learnRoutes from './routes/learnRoutes.js';
 import labRoutes from './routes/labRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -33,6 +34,12 @@ app.set('view engine', 'njk');
 // Render Thai Markdown theory to HTML: {{ section.body | markdown | safe }}
 marked.setOptions({ breaks: true, gfm: true });
 njkEnv.addFilter('markdown', (str) => marked.parse(str || ''));
+
+// Thai date for the dashboard: {{ someDate | thaidate }} → "11 มิ.ย. 2569"
+njkEnv.addFilter('thaidate', (d) => {
+  if (!d) return '';
+  return new Date(d).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+});
 
 const PROD = process.env.NODE_ENV === 'production';
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/pingable-dev';
@@ -125,6 +132,7 @@ app.use('/auth', authRoutes);
 app.use('/courses', courseRoutes);
 app.use('/learn', learnRoutes);
 app.use('/lab', labRoutes);
+app.use('/dashboard', dashboardRoutes);
 
 app.get('/', (req, res) => res.render('index.njk'));
 
