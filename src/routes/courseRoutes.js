@@ -5,6 +5,13 @@ import Progress, { getProgress, completedSet, coursePercent, totalLessons } from
 
 const router = express.Router();
 
+// In-memory cache for the published course list (topology excluded).
+// Progress is still fetched per-user on every request; only the shared
+// Course.find() result is cached. TTL of 60s keeps the catalog fresh
+// enough after a re-seed without hammering Mongo on every page load.
+const CATALOG_TTL_MS = 60_000;
+let catalogCache = null; // { data: Course[], expiresAt: number }
+
 // Display order + Thai labels for the level lanes shown on /courses
 const LEVELS = [
   { key: 'beginner',     label: 'ระดับเริ่มต้น' },
@@ -30,7 +37,15 @@ function lessonCounts(course) {
 // Public: guests can browse; progress only shows when logged in.
 router.get('/', async (req, res) => {
   const userId = req.session.user?.id;
-  const courses = await Course.find({ published: true }).select('-modules.lessons.topology');
+
+  const now = Date.now();
+  if (!catalogCache || catalogCache.expiresAt <= now) {
+    catalogCache = {
+      data: await Course.find({ published: true }).select('-modules.lessons.topology'),
+      expiresAt: now + CATALOG_TTL_MS,
+    };
+  }
+  const courses = catalogCache.data;
 
   // One query for all progress docs instead of one per course.
   const progresses = userId

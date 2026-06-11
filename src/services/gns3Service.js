@@ -10,10 +10,17 @@ async function request(method, path, body = null) {
   const opts = {
     method,
     headers: { 'Content-Type': 'application/json', ...authHeader() },
+    signal: AbortSignal.timeout(30_000),
   };
   if (body) opts.body = JSON.stringify(body);
 
-  const res = await fetch(`${GNS3_BASE}${path}`, opts);
+  let res;
+  try {
+    res = await fetch(`${GNS3_BASE}${path}`, opts);
+  } catch (err) {
+    if (err.name === 'TimeoutError') throw new Error(`GNS3 ${method} ${path} → timed out after 30s`);
+    throw err;
+  }
   const text = await res.text();
 
   if (!res.ok) {
