@@ -17,6 +17,8 @@ define('png-lab', class extends PngEl {
     const provision = $('provisionCard'), provisionSub = $('provisionSub'), provisionSteps = $('provisionSteps');
     const stoppedCard = $('stoppedCard'), btnStop = $('btnStop'), btnRestart = $('btnRestart'), btnGrade = $('btnGrade');
     const gradeModal = $('gradeModal'), resultList = $('gradeResultList'), objectiveList = $('objectiveList');
+    const historyWrap = $('labHistoryWrap'), historyList = $('labHistory');
+    const histUrl = `/lab/${cid}/${M}/${L}/history`;
     if (!labStatus) return;
 
     const STEPS = [
@@ -101,6 +103,28 @@ define('png-lab', class extends PngEl {
         labStatus.textContent = 'เตรียม Lab ไม่สำเร็จ'; labStatus.className = 'lab-status status-error';
       }
     }
+    function renderHistory(attempts) {
+      if (!historyList || !historyWrap || !attempts.length) return;
+      historyWrap.hidden = false;
+      historyList.innerHTML = attempts.map((a) => {
+        const d = new Date(a.at);
+        const dateStr = d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+        const timeStr = d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+        const ok = a.passed, passCount = a.results.filter((r) => r.passed).length;
+        return `<div class="hist-item ${ok ? 'pass' : 'fail'}">` +
+          `<span class="hist-pct">${a.pct}%</span>` +
+          `<span class="hist-detail">${passCount}/${a.results.length} ข้อ · ${dateStr} ${timeStr}</span>` +
+          `<span class="hist-badge">${ok ? svgIcon('check', 13) : svgIcon('x', 13)}</span>` +
+          `</div>`;
+      }).join('');
+    }
+    async function loadHistory() {
+      try {
+        const d = await (await fetch(histUrl)).json();
+        if (d.ok) renderHistory(d.attempts || []);
+      } catch {}
+    }
+
     btnStop.addEventListener('click', async () => {
       if (!confirm('หยุด Lab และลบ Topology ทั้งหมด?')) return;
       stopTimers();
@@ -126,6 +150,7 @@ define('png-lab', class extends PngEl {
           const d = await res.json();
           if (!d.ok) throw new Error(d.error || 'grade failed');
           renderGrade(d); gradeModal.hidden = false;
+          loadHistory();
         } catch (err) { alert(`ตรวจไม่สำเร็จ: ${err.message}`); }
         finally { btnGrade.disabled = false; btnGrade.innerHTML = `${svgIcon('badge-check', 18)} ตรวจคำตอบ (${gradeCount} ข้อ)`; }
       });
@@ -175,6 +200,8 @@ define('png-lab', class extends PngEl {
       const ringFill = $('objRingFill'), ringLabel = $('objRingLabel');
       if (ringFill && items.length) { ringFill.style.strokeDashoffset = OBJ_C * (1 - doneCount / items.length); ringLabel.textContent = `${doneCount}/${items.length}`; }
     }
+
+    loadHistory(); // load previous attempts immediately on page open
 
     // ถ้า session ของ lab นี้ยังรันอยู่ (เช่น refresh หน้า) ให้ resume แทนการสร้างใหม่
     (async () => {

@@ -5,6 +5,7 @@ import Course from '../models/Course.js';
 import requireAuth from '../middleware/requireAuth.js';
 import { runChecks } from '../services/gradingService.js';
 import { markComplete } from '../models/Progress.js';
+import LabAttempt from '../models/LabAttempt.js';
 import * as labSessions from '../services/labSessionService.js';
 import { checkPrerequisites } from '../utils/prereqs.js';
 
@@ -123,14 +124,41 @@ router.post('/:courseId/:m/:l/grade', requireAuth, async (req, res) => {
     await labSessions.touch(userId);
     const { score, total, results } = await runChecks(session.nodes, lab.gradingChecks);
     const pct = total > 0 ? Math.round((score / total) * 100) : 0;
-    if (pct >= 60) {
-      try { await markComplete(userId, courseId, m, l, 'lab', pct); } catch (e) { req.log.error({ err: e }, 'progress save failed'); }
-    }
+    const passed = pct >= 60;
+
+    await Promise.all([
+      passed
+        ? markComplete(userId, courseId, m, l, 'lab', pct).catch((e) => req.log.error({ err: e }, 'progress save failed'))
+        : null,
+      LabAttempt.create({
+        user: userId, course: courseId, moduleIdx: m, lessonIdx: l,
+        pct, passed, score, total,
+        results: results.map((r, i) => ({
+          description: lab.gradingChecks[i]?.description || `ข้อ ${i + 1}`,
+          passed: r.passed,
+          points: r.points ?? 1,
+        })),
+      }).catch((e) => req.log.error({ err: e }, 'attempt save failed')),
+    ]);
+
     res.json({ ok: true, score, total, results });
   } catch (err) {
     req.log.error({ err }, 'grading failed');
     res.status(500).json({ ok: false, error: err.message });
   }
+});
+
+// GET /lab/:courseId/:m/:l/history — last 20 grading attempts for this lab
+router.get('/:courseId/:m/:l/history', requireAuth, async (req, res) => {
+  const m = Number(req.params.m);
+  const l = Number(req.params.l);
+  const attempts = await LabAttempt.find({
+    user: req.session.user.id,
+    course: req.params.courseId,
+    moduleIdx: m,
+    lessonIdx: l,
+  }).sort({ at: -1 }).limit(20).lean();
+  res.json({ ok: true, attempts });
 });
 
 // POST /lab/stop — destroy GNS3 project and free resources

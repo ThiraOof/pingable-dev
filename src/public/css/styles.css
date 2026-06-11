@@ -912,6 +912,23 @@ main { flex: 1; }
 }
 .show-more-btn:hover { border-color: var(--border-h); color: var(--text); }
 
+/* ── Lab attempt history (sidebar) ─────────────────────────────────── */
+.lab-history { display: flex; flex-direction: column; gap: 4px; margin-top: var(--s-2); }
+.hist-item {
+  display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: var(--s-2);
+  padding: 5px var(--s-2); border-radius: var(--r-sm);
+  border-left: 3px solid var(--border);
+}
+.hist-item.pass { border-left-color: var(--signal); background: var(--signal-soft); }
+.hist-item.fail { border-left-color: rgba(239,68,68,.5); background: rgba(239,68,68,.06); }
+.hist-pct  { font-size: .85rem; font-weight: 700; font-family: var(--font-mono); }
+.hist-item.pass .hist-pct { color: var(--signal); }
+.hist-item.fail .hist-pct { color: #f87171; }
+.hist-detail { font-size: .75rem; color: var(--muted); }
+.hist-badge  { display: flex; align-items: center; }
+.hist-item.pass .hist-badge { color: var(--signal); }
+.hist-item.fail .hist-badge { color: #f87171; }
+
 /* ── Prerequisite gate ──────────────────────────────────────────────── */
 .prereq-gate {
   margin-top: var(--s-4); padding: var(--s-4) var(--s-5);

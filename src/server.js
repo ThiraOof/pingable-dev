@@ -48,6 +48,7 @@ njkEnv.addFilter('thaidate', (d) => {
 });
 
 const PROD = process.env.NODE_ENV === 'production';
+njkEnv.addGlobal('isProd', PROD);
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/pingable-dev';
 if (PROD && !process.env.SESSION_SECRET) {
   throw new Error('SESSION_SECRET must be set in production');

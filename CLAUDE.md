@@ -8,8 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm start` — run once with plain node
 - `npm run seed` — upsert the demo courses from `scripts/seed.js` **by `slug`** (course `_id`s survive re-seeding, so user progress is preserved; courses removed from the seed set are deleted)
 - `npm run validate` — validate seed-data content without touching the DB (broken node refs in links/checks, invalid `expect` regexes, out-of-range quiz answers). `npm run seed` runs this automatically and refuses to write on errors.
-
-There is no test runner, linter, or build step configured.
+- `npm run build` — bundle the 26 Web Component files (`src/public/js/components/`) into `src/public/js/bundle.js` (ESM, minified via esbuild). Run once before deploying to production. In dev (`NODE_ENV` unset or `development`) the server loads the unbundled files directly via `index.js`; in production it serves `bundle.js`. The bundle is gitignored — rebuild after any component change before deploying.
 
 ## Prerequisites for local development
 
