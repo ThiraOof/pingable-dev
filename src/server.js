@@ -15,6 +15,7 @@ import logger from './config/logger.js';
 import connectDB from './config/db.js';
 import { injectDSD } from './dsd.js';
 import { startSweeper } from './services/labSessionService.js';
+import { gns3Gate, authorizeUpgrade, upgradeProxy } from './middleware/gns3Proxy.js';
 import authRoutes from './routes/authRoutes.js';
 import courseRoutes from './routes/courseRoutes.js';
 import learnRoutes from './routes/learnRoutes.js';
@@ -51,6 +52,24 @@ if (PROD && !process.env.SESSION_SECRET) {
   throw new Error('SESSION_SECRET must be set in production');
 }
 if (PROD) app.set('trust proxy', 1); // behind the HTTPS load balancer
+
+const sessionMiddleware = session({
+  secret: process.env.SESSION_SECRET || 'dev-secret',
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({ mongoUrl: MONGODB_URI, touchAfter: 24 * 3600 }),
+  cookie: {
+    httpOnly: true,
+    sameSite: 'lax', // primary CSRF defence, backed by the origin guard below
+    secure: PROD,
+    maxAge: 7 * 24 * 3600 * 1000,
+  },
+});
+
+// GNS3 proxy (Web-UI assets + project-scoped API). Mounted before helmet so
+// the proxied Web-UI keeps its own inline scripts, and before the body
+// parsers so request bodies stream through untouched.
+app.use(gns3Gate(sessionMiddleware));
 
 // Security headers. CSP notes: the DSD renderer injects inline <style> into
 // every shadow template (hence style-src 'unsafe-inline'); the lab page
@@ -94,18 +113,7 @@ app.use(pinoHttp({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(join(__dirname, 'public')));
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'dev-secret',
-  resave: false,
-  saveUninitialized: false,
-  store: MongoStore.create({ mongoUrl: MONGODB_URI, touchAfter: 24 * 3600 }),
-  cookie: {
-    httpOnly: true,
-    sameSite: 'lax', // primary CSRF defence, backed by the origin guard below
-    secure: PROD,
-    maxAge: 7 * 24 * 3600 * 1000,
-  },
-}));
+app.use(sessionMiddleware);
 
 // CSRF guard: block state-changing requests only when a header positively
 // names a FOREIGN origin. Missing or "null" Origin/Referer (curl, privacy
@@ -174,6 +182,20 @@ const server = app.listen(PORT, () => {
   // Reconcile lab sessions left over from a previous run, then keep sweeping
   // idle sessions / orphaned GNS3 projects.
   startSweeper();
+});
+
+// WebSocket upgrades for the proxied GNS3 Web-UI (project notifications +
+// node consoles). Authenticate the session on the upgrade request, then only
+// forward sockets aimed at the user's own lab project.
+server.on('upgrade', (req, socket, head) => {
+  sessionMiddleware(req, {}, async () => {
+    try {
+      if (await authorizeUpgrade(req)) return upgradeProxy(req, socket, head);
+    } catch (err) {
+      logger.error({ err }, 'gns3-proxy: upgrade authorization failed');
+    }
+    socket.destroy();
+  });
 });
 
 // Graceful shutdown: stop accepting connections, let Mongo writes finish.

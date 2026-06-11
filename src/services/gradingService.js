@@ -28,6 +28,10 @@ const PAGER_RE = /--More--|\(END\)|^:\s*$/m;
 const NODE_USER = process.env.GNS3_NODE_USER || 'vyos';
 const NODE_PASS = process.env.GNS3_NODE_PASS || 'vyos';
 
+// AggregateError (e.g. ECONNREFUSED on both IPv4+IPv6) has an empty .message.
+const errMsg = (err) =>
+  err.message || err.errors?.[0]?.message || err.code || 'connection failed';
+
 /**
  * One telnet session to a GNS3 node console: connect + log in once, then run
  * any number of commands over the same socket (one login per node instead of
@@ -182,7 +186,7 @@ export async function runChecks(nodes, checks) {
       await session.connect();
     } catch (err) {
       session.close();
-      return failAll(indices, `Error: ${err.message}`);
+      return failAll(indices, `Error: ${errMsg(err)}`);
     }
 
     for (const i of indices) {
@@ -197,7 +201,7 @@ export async function runChecks(nodes, checks) {
           points: passed ? (check.points ?? 1) : 0,
         };
       } catch (err) {
-        results[i] = { description: check.description, passed: false, output: `Error: ${err.message}`, points: 0 };
+        results[i] = { description: check.description, passed: false, output: `Error: ${errMsg(err)}`, points: 0 };
       }
     }
     session.close();

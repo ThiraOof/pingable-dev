@@ -29,7 +29,11 @@ async function request(method, path, body = null) {
 // ── Projects ──────────────────────────────────────────────────────────────────
 
 export async function createProject(name) {
-  return request('POST', '/projects', { name });
+  // auto_close (GNS3 default: true) closes the project — powering off every
+  // node and invalidating console ports — the moment the Web-UI's
+  // notification socket disconnects (i.e. the user closes the lab tab).
+  // Our sweeper / stop button governs project lifetime instead.
+  return request('POST', '/projects', { name, auto_close: false });
 }
 
 export async function deleteProject(projectId) {
@@ -158,17 +162,24 @@ async function buildLabInProject(projectId, labDefinition) {
 
   await startAllNodes(projectId);
 
-  const base = new URL(GNS3_BASE);
-  // The browser may reach GNS3 through a different origin than the server
-  // does (e.g. internal IP vs public domain in production) — GNS3_PUBLIC_URL
-  // overrides the iframe origin. Keep CSP frame-src in server.js in sync.
-  const publicOrigin = (process.env.GNS3_PUBLIC_URL || `${base.protocol}//${base.hostname}:${base.port}`).replace(/\/+$/, '');
-  const webUiUrl = `${publicOrigin}/#/project/${projectId}`;
+  // GNS3's canonical Web-UI entry is the `bundled` route: it bootstraps a
+  // "local server" from the page's own origin (location.hostname:port) and
+  // lands on that server's project list. We point it at our origin so every
+  // /v2 call flows through our auth proxy (src/middleware/gns3Proxy.js) — GNS3
+  // can stay on a private network. The project list is filtered by the proxy
+  // to just this user's project. (The web-ui uses path-based routing, so a
+  // "#/project/<id>" deep link does nothing here; deep-linking needs a
+  // client-generated server uuid we don't have, so we land on the list.)
+  // Setting GNS3_PUBLIC_URL opts into direct mode against an exposed GNS3
+  // origin (keep CSP frame-src in sync).
+  const webUiUrl = process.env.GNS3_PUBLIC_URL
+    ? `${process.env.GNS3_PUBLIC_URL.replace(/\/+$/, '')}/static/web-ui/bundled`
+    : `/static/web-ui/bundled`;
 
   // Build name → console info map for grading service.
   // GNS3 returns console_host "0.0.0.0" (listen-all), so fall back to the
   // GNS3 server's own hostname so we can actually connect.
-  const gns3Host = base.hostname || '127.0.0.1';
+  const gns3Host = new URL(GNS3_BASE).hostname || '127.0.0.1';
   const nodes = {};
   for (const [name, node] of Object.entries(nameToNode)) {
     const rawHost = node.console_host;
