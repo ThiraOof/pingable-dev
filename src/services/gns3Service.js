@@ -81,12 +81,26 @@ export async function getTemplates() {
   return request('GET', '/templates');
 }
 
+export async function getProjects() {
+  return request('GET', '/projects');
+}
+
 // ── High-level: Build a lab topology from a Course lab definition ──────────────
 
 export async function buildLab(labDefinition, labTitle) {
   const project = await createProject(`pingable_${Date.now()}_${labTitle.replace(/\s+/g, '_')}`);
   const projectId = project.project_id;
 
+  // From here on, never leave a half-built project running on the GNS3 server.
+  try {
+    return await buildLabInProject(projectId, labDefinition);
+  } catch (err) {
+    try { await deleteProject(projectId); } catch {}
+    throw err;
+  }
+}
+
+async function buildLabInProject(projectId, labDefinition) {
   await openProject(projectId);
 
   const nameToNode = {};
@@ -153,9 +167,14 @@ export async function buildLab(labDefinition, labTitle) {
   const nodes = {};
   for (const [name, node] of Object.entries(nameToNode)) {
     const rawHost = node.console_host;
+    // GNS3 allocates a console port number even for console-less nodes
+    // (ethernet_switch reports console: <port> with console_type "none" and
+    // nothing listening), so only record consoles we can actually telnet to —
+    // the boot probe and grader treat a null consolePort as "no console".
+    const hasTelnetConsole = node.console && /telnet/.test(node.console_type || '');
     nodes[name] = {
       consoleHost: (!rawHost || rawHost === '0.0.0.0') ? gns3Host : rawHost,
-      consolePort: node.console,
+      consolePort: hasTelnetConsole ? node.console : null,
     };
   }
 

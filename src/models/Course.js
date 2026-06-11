@@ -41,10 +41,11 @@ const quizQuestionSchema = new mongoose.Schema({
 
 // ── A lesson is one of: reading | lab | quiz ────────────────────────
 const lessonSchema = new mongoose.Schema({
-  type:       { type: String, enum: ['reading', 'lab', 'quiz'], required: true },
-  title:      { type: String, required: true },
-  order:      { type: Number, default: 0 },
-  estMinutes: { type: Number },        // shown in UI ("~10 นาที")
+  type:        { type: String, enum: ['reading', 'lab', 'quiz'], required: true },
+  title:       { type: String, required: true },
+  description: { type: String },       // lab sidebar subtitle (seed data has it; was being stripped)
+  order:       { type: Number, default: 0 },
+  estMinutes:  { type: Number },       // shown in UI ("~10 นาที")
 
   // type === 'reading'
   sections:   [readingSectionSchema],

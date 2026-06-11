@@ -1,6 +1,8 @@
 import net from 'net';
 
-const TOTAL_TIMEOUT_MS = 20000; // covers connect + prompt wait + command output (ping can take ~5s)
+const CONNECT_TIMEOUT_MS = 25000; // connect + (optional) getty login + first prompt
+const COMMAND_TIMEOUT_MS = 20000; // one command's output (ping can take ~5s)
+const PROBE_TIMEOUT_MS   = 4000;  // boot probe: console answers fast once getty/CLI is up
 
 // Strip ANSI escape codes and non-printable chars (except newline/tab)
 function stripAnsi(str) {
@@ -27,145 +29,180 @@ const NODE_USER = process.env.GNS3_NODE_USER || 'vyos';
 const NODE_PASS = process.env.GNS3_NODE_PASS || 'vyos';
 
 /**
- * Open a telnet session to a GNS3 node console, log in if prompted,
- * wait for the CLI prompt, send one command, collect output, return it.
- *
- * Works for both the built-in nodes (VPCS/IOS — no login, >/# prompt) and
- * appliances that require a getty login and use a $-terminated prompt (VyOS).
+ * One telnet session to a GNS3 node console: connect + log in once, then run
+ * any number of commands over the same socket (one login per node instead of
+ * one per grading check).
  */
-function runCommand(host, port, nodeName, command) {
-  return new Promise((resolve, reject) => {
-    const socket = new net.Socket();
-    let buffer = '';
-    let stage = 'waiting_prompt'; // → 'waiting_output' → done
+class ConsoleSession {
+  constructor(host, port, nodeName) {
+    this.host = host;
+    this.port = port;
+    this.nodeName = nodeName;
+    this.buffer = '';
+    this.closed = false;
+    this.error = null;
+    this._notify = null;
+    this.socket = new net.Socket();
+    this.socket.on('data', (chunk) => {
+      this.buffer += stripAnsi(chunk.toString('utf8'));
+      this._notify?.();
+    });
+    this.socket.on('error', (err) => { this.error = err; this._notify?.(); });
+    this.socket.on('close', () => { this.closed = true; this._notify?.(); });
+  }
+
+  close() {
+    if (!this.socket.destroyed) this.socket.destroy();
+  }
+
+  // Resolve once predicate() is true; reject on socket error, close (unless
+  // closeResolves) or timeout. onData may consume login/pager prompts first.
+  _waitFor(predicate, timeoutMs, { onData, closeResolves = false } = {}) {
+    return new Promise((resolve, reject) => {
+      const done = (fn, arg) => { clearTimeout(timer); this._notify = null; fn(arg); };
+      const timer = setTimeout(
+        () => done(reject, new Error(`Timeout (${timeoutMs}ms) on ${this.nodeName} at ${this.host}:${this.port}`)),
+        timeoutMs,
+      );
+      const check = () => {
+        if (this.error) return done(reject, this.error);
+        onData?.();
+        if (predicate()) return done(resolve);
+        if (this.closed) {
+          if (closeResolves) return done(resolve);
+          return done(reject, new Error(`Connection closed before prompt on ${this.nodeName}`));
+        }
+      };
+      this._notify = check;
+      check();
+    });
+  }
+
+  // Connect, answer an optional getty login (VyOS), wait for the CLI prompt.
+  async connect(timeoutMs = CONNECT_TIMEOUT_MS) {
     let sentUser = false;
     let sentPass = false;
-
-    const finish = (result) => {
-      clearTimeout(globalTimer);
-      if (!socket.destroyed) socket.destroy();
-      resolve(result);
-    };
-
-    const fail = (err) => {
-      clearTimeout(globalTimer);
-      if (!socket.destroyed) socket.destroy();
-      reject(err);
-    };
-
-    // One timer covers connect + login + prompt wait + command output
-    const globalTimer = setTimeout(
-      () => fail(new Error(`Timeout (${TOTAL_TIMEOUT_MS}ms) on ${nodeName} at ${host}:${port}`)),
-      TOTAL_TIMEOUT_MS,
-    );
-
-    socket.connect(port, host);
-
-    socket.on('connect', () => {
-      socket.write('\n');
-    });
-
-    socket.on('data', (chunk) => {
-      buffer += stripAnsi(chunk.toString('utf8'));
-
-      if (stage === 'waiting_prompt') {
-        // Handle an optional getty login before the shell prompt appears.
-        if (PASSWORD_RE.test(buffer) && !sentPass) {
+    this.socket.connect(this.port, this.host, () => this.socket.write('\n'));
+    await this._waitFor(() => PROMPT_RE.test(this.buffer), timeoutMs, {
+      onData: () => {
+        if (PASSWORD_RE.test(this.buffer) && !sentPass) {
           sentPass = true;
-          buffer = '';
-          socket.write(NODE_PASS + '\n');
-          return;
-        }
-        if (LOGIN_RE.test(buffer) && !sentUser) {
+          this.buffer = '';
+          this.socket.write(NODE_PASS + '\n');
+        } else if (LOGIN_RE.test(this.buffer) && !sentUser) {
           sentUser = true;
-          buffer = '';
-          socket.write(NODE_USER + '\n');
-          return;
+          this.buffer = '';
+          this.socket.write(NODE_USER + '\n');
         }
-        if (PROMPT_RE.test(buffer)) {
-          stage = 'waiting_output';
-          buffer = '';
-          socket.write(command + '\n');
-        }
-      } else {
-        if (PAGER_RE.test(buffer)) {
+      },
+    });
+    this.buffer = '';
+  }
+
+  // Send one command, auto-advance any pager, collect output until the prompt.
+  async run(command, timeoutMs = COMMAND_TIMEOUT_MS) {
+    if (this.closed || this.error) {
+      throw this.error || new Error(`Connection to ${this.nodeName} already closed`);
+    }
+    this.buffer = '';
+    this.socket.write(command + '\n');
+    await this._waitFor(() => PROMPT_RE.test(this.buffer), timeoutMs, {
+      closeResolves: true, // some consoles drop the link after output; keep what we got
+      onData: () => {
+        if (!this.closed && PAGER_RE.test(this.buffer)) {
           // Advance the pager and drop the marker so it can't re-trigger.
-          buffer = buffer.replace(/--More--|\(END\)|^:\s*$/gm, '');
-          socket.write(' ');
-          return;
+          this.buffer = this.buffer.replace(/--More--|\(END\)|^:\s*$/gm, '');
+          this.socket.write(' ');
         }
-        if (PROMPT_RE.test(buffer)) {
-          finish(buffer);
-        }
-      }
+      },
     });
+    return this.buffer;
+  }
+}
 
-    socket.on('error', (err) => fail(err));
-
-    socket.on('close', () => {
-      if (stage === 'waiting_prompt') {
-        fail(new Error(`Connection closed before prompt on ${nodeName}`));
-      } else {
-        finish(buffer);
-      }
-    });
-  });
+/**
+ * Boot probe: a node counts as booted once its console answers with a getty
+ * login or CLI prompt (a QEMU console accepts TCP long before the OS is up,
+ * so a plain connect is not enough). Console-less nodes (built-in switches)
+ * pass immediately. Never throws.
+ */
+export async function probeNode(host, port, timeoutMs = PROBE_TIMEOUT_MS) {
+  if (!port) return true;
+  const s = new ConsoleSession(host, port, 'probe');
+  s.socket.connect(port, host, () => s.socket.write('\n'));
+  try {
+    await s._waitFor(
+      () => PROMPT_RE.test(s.buffer) || LOGIN_RE.test(s.buffer) || PASSWORD_RE.test(s.buffer),
+      timeoutMs,
+    );
+    return true;
+  } catch {
+    return false;
+  } finally {
+    s.close();
+  }
 }
 
 /**
  * Run all grading checks against the active GNS3 session.
+ *
+ * Checks are grouped by target node: each node gets ONE console session
+ * (one connect + login), its commands run sequentially on that socket, and
+ * the node groups run in parallel. Results keep the original check order.
  *
  * @param {Object} nodes  - name → { consoleHost, consolePort }  (from buildLab)
  * @param {Array}  checks - [{ description, node, command, expect, points }]
  * @returns {{ score, total, results[] }}
  */
 export async function runChecks(nodes, checks) {
-  let score = 0;
+  const results = new Array(checks.length);
   let total = 0;
-  const results = [];
 
-  for (const check of checks) {
-    const pts = check.points ?? 1;
-    total += pts;
+  const byNode = new Map();
+  checks.forEach((check, i) => {
+    total += check.points ?? 1;
+    if (!byNode.has(check.node)) byNode.set(check.node, []);
+    byNode.get(check.node).push(i);
+  });
 
-    const nodeInfo = nodes[check.node];
-    if (!nodeInfo) {
-      results.push({
-        description: check.description,
-        passed: false,
-        output: `Node "${check.node}" not found in active session`,
-        points: 0,
-      });
-      continue;
+  const failAll = (indices, message) => {
+    for (const i of indices) {
+      results[i] = { description: checks[i].description, passed: false, output: message, points: 0 };
+    }
+  };
+
+  await Promise.all([...byNode.entries()].map(async ([nodeName, indices]) => {
+    const nodeInfo = nodes?.[nodeName];
+    if (!nodeInfo?.consolePort) {
+      return failAll(indices, `Node "${nodeName}" not found in active session`);
     }
 
+    const session = new ConsoleSession(nodeInfo.consoleHost, nodeInfo.consolePort, nodeName);
     try {
-      const raw = await runCommand(
-        nodeInfo.consoleHost,
-        nodeInfo.consolePort,
-        check.node,
-        check.command,
-      );
-
-      const passed = new RegExp(check.expect, 'i').test(raw);
-      const earned = passed ? pts : 0;
-      score += earned;
-
-      results.push({
-        description: check.description,
-        passed,
-        output: raw.trim().slice(0, 500), // cap output for storage
-        points: earned,
-      });
+      await session.connect();
     } catch (err) {
-      results.push({
-        description: check.description,
-        passed: false,
-        output: `Error: ${err.message}`,
-        points: 0,
-      });
+      session.close();
+      return failAll(indices, `Error: ${err.message}`);
     }
-  }
 
+    for (const i of indices) {
+      const check = checks[i];
+      try {
+        const raw = await session.run(check.command);
+        const passed = new RegExp(check.expect, 'i').test(raw);
+        results[i] = {
+          description: check.description,
+          passed,
+          output: raw.trim().slice(0, 500), // cap output for storage
+          points: passed ? (check.points ?? 1) : 0,
+        };
+      } catch (err) {
+        results[i] = { description: check.description, passed: false, output: `Error: ${err.message}`, points: 0 };
+      }
+    }
+    session.close();
+  }));
+
+  const score = results.reduce((n, r) => n + r.points, 0);
   return { score, total, results };
 }

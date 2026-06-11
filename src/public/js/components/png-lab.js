@@ -36,6 +36,50 @@ define('png-lab', class extends PngEl {
         el.querySelector('.ps-icon').textContent = (allDone || idx < activeIdx) ? '✓' : idx === errorIdx ? '✕' : (idx + 1);
       });
     }
+    const statusUrl = `/lab/${cid}/${M}/${L}/status`;
+    let pollTimer = null;
+    const stopTimers = () => { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } };
+
+    function setReady() {
+      labStatus.textContent = 'Lab พร้อมใช้งาน'; labStatus.className = 'lab-status status-ready';
+      if (btnGrade) btnGrade.disabled = false;
+    }
+    function labGone() { // ถูกปิดฝั่ง server (idle timeout) หรือหยุดจากแท็บอื่น
+      stopTimers(); gns3Frame.src = '';
+      provision.hidden = true; stoppedCard.hidden = false; labLoading.hidden = false;
+      $('stoppedText').textContent = 'Lab ถูกปิดเพราะไม่มีการใช้งานนานเกินไป — เริ่มใหม่ได้เลย';
+      labStatus.textContent = 'Lab หยุดทำงานแล้ว'; labStatus.className = 'lab-status status-stopped';
+      if (btnGrade) btnGrade.disabled = true;
+    }
+    // โพลถี่ระหว่างอุปกรณ์บูต (VyOS ใช้ ~1-2 นาที) — เปิดปุ่มตรวจเมื่อทุก console ตอบ
+    // แล้วค่อยโพลช้าเป็น heartbeat เพื่อบอก server ว่ายังเปิดหน้านี้อยู่
+    function bootWatch() {
+      stopTimers();
+      labStatus.textContent = 'กำลังบูตอุปกรณ์…'; labStatus.className = 'lab-status status-loading';
+      if (btnGrade) btnGrade.disabled = true;
+      let polls = 0;
+      const tick = async () => {
+        try {
+          const st = await (await fetch(statusUrl)).json();
+          if (!st.ok) return;
+          if (!st.active || !st.sameLab) return labGone();
+          if (st.status !== 'ready') return;
+          if (st.allBooted || ++polls > 36) { setReady(); heartbeat(); } // ~3 นาทีแล้วปล่อยให้ลองตรวจเอง
+          else labStatus.textContent = `กำลังบูตอุปกรณ์… ${st.bootedCount}/${st.nodeCount}`;
+        } catch { /* network สะดุด — รอบหน้าค่อยว่ากัน */ }
+      };
+      pollTimer = setInterval(tick, 5000); tick();
+    }
+    function heartbeat() {
+      stopTimers();
+      pollTimer = setInterval(async () => {
+        try {
+          const st = await (await fetch(statusUrl)).json();
+          if (st.ok && !st.active) labGone();
+        } catch {}
+      }, 60000);
+    }
+
     async function startLab() {
       stoppedCard.hidden = true; provision.hidden = false; provision.classList.remove('failed');
       provisionSub.textContent = 'initializing workspace…'; labLoading.hidden = false;
@@ -49,10 +93,8 @@ define('png-lab', class extends PngEl {
         if (!d.ok) throw new Error(d.error || 'start failed');
         clearInterval(timer); paintSteps(STEPS.length, { allDone: true });
         provisionSub.textContent = 'topology ready ✓'; gns3Frame.src = d.gns3Url;
-        setTimeout(() => {
-          labLoading.hidden = true; labStatus.textContent = 'Lab พร้อมใช้งาน';
-          labStatus.className = 'lab-status status-ready'; if (btnGrade) btnGrade.disabled = false;
-        }, 500);
+        setTimeout(() => { labLoading.hidden = true; }, 500);
+        bootWatch();
       } catch (err) {
         clearInterval(timer); paintSteps(i, { errorIdx: i }); provision.classList.add('failed');
         provisionSub.textContent = `ข้อผิดพลาด: ${err.message}`;
@@ -61,6 +103,8 @@ define('png-lab', class extends PngEl {
     }
     btnStop.addEventListener('click', async () => {
       if (!confirm('หยุด Lab และลบ Topology ทั้งหมด?')) return;
+      stopTimers();
+      $('stoppedText').textContent = 'Lab หยุดทำงานแล้ว — คืนทรัพยากรเรียบร้อย';
       gns3Frame.src = ''; provision.hidden = true; stoppedCard.hidden = false; labLoading.hidden = false;
       labStatus.textContent = 'กำลังหยุด...'; labStatus.className = 'lab-status status-loading';
       await fetch('/lab/stop', { method: 'POST' });
@@ -132,6 +176,17 @@ define('png-lab', class extends PngEl {
       if (ringFill && items.length) { ringFill.style.strokeDashoffset = OBJ_C * (1 - doneCount / items.length); ringLabel.textContent = `${doneCount}/${items.length}`; }
     }
 
-    startLab();
+    // ถ้า session ของ lab นี้ยังรันอยู่ (เช่น refresh หน้า) ให้ resume แทนการสร้างใหม่
+    (async () => {
+      try {
+        const st = await (await fetch(statusUrl)).json();
+        if (st.ok && st.active && st.sameLab && st.status === 'ready' && st.gns3Url) {
+          gns3Frame.src = st.gns3Url; labLoading.hidden = true;
+          if (st.allBooted) { setReady(); heartbeat(); } else bootWatch();
+          return;
+        }
+      } catch {}
+      startLab();
+    })();
   }
 });
