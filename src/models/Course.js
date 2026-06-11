@@ -81,7 +81,9 @@ const courseSchema = new mongoose.Schema({
   level:          { type: String, enum: ['beginner', 'intermediate', 'advanced', 'expert'], default: 'beginner' },
   track:          { type: String },    // catalog grouping label e.g. "CCNP Enterprise"
   estimatedHours: { type: Number },
-  prerequisites:  [String],            // free-text Thai prereq lines
+  prerequisites:  [String],            // free-text Thai prereq lines (display only)
+  requiredCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }], // enforced prereqs
+  requiredPercent: { type: Number, default: 100, min: 0, max: 100 }, // min completion % of each required course
   thumbnail:      { type: String, default: '/img/default-course.svg' },
   modules:        [moduleSchema],
   published:      { type: Boolean, default: false },

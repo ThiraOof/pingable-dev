@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import Course from '../models/Course.js';
 import requireAuth from '../middleware/requireAuth.js';
 import { markComplete, getProgress, completedSet } from '../models/Progress.js';
+import { checkPrerequisites } from '../utils/prereqs.js';
 
 const router = express.Router();
 
@@ -43,6 +44,9 @@ router.get('/:courseId/:m/:l', requireAuth, async (req, res) => {
   const { course, mod, lesson } = await locate(courseId, m, l);
   if (!course) return res.redirect('/courses');
   if (!lesson) return res.redirect(`/courses/${courseId}`);
+
+  const { met } = await checkPrerequisites(req.session.user.id, course);
+  if (!met) return res.redirect(`/courses/${courseId}`);
 
   if (lesson.type === 'lab') return res.redirect(`/lab/${courseId}/${m}/${l}`);
 

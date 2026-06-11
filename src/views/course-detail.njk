@@ -15,6 +15,23 @@
     <ul>{% for p in course.prerequisites %}<li>{{ p }}</li>{% endfor %}</ul>
   </div>
   {% endif %}
+
+  {% if user and not prereqsMet %}
+  <div class="prereq-gate">
+    <png-icon name="lock" size="18"></png-icon>
+    <strong>ต้องผ่านวิชาพื้นฐานก่อน</strong>
+    <p>เรียนคอร์สต่อไปนี้ให้ครบ {{ prereqsInfo.items[0].required }}% ก่อนเข้าสู่คอร์สนี้</p>
+    <div class="prereq-items">
+      {% for item in prereqsInfo.items %}
+      <a class="prereq-item {% if item.met %}prereq-done{% endif %}" href="/courses/{{ item.course._id }}">
+        <span class="prereq-title">{{ item.course.title }}</span>
+        <span class="prereq-pct">{{ item.actual }}%<span class="prereq-req"> / {{ item.required }}%</span></span>
+        <div class="prereq-bar"><div class="prereq-fill" style="width:{{ item.actual }}%"></div></div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
 </div>
 
 <div class="course-progress-bar">
@@ -26,9 +43,15 @@
        {% if course.estimatedHours %}· ใช้เวลาทั้งหมด ~{{ course.estimatedHours }} ชั่วโมง{% endif %}</p>
   </div>
   {% if nextUp %}
+  {% if prereqsMet !== false %}
   <png-button variant="primary" href="/learn/{{ course._id }}/{{ nextUp.m }}/{{ nextUp.l }}" icon-end="arrow-right">
     {% if doneTotal > 0 %}เรียนต่อ{% else %}เริ่มเรียน{% endif %}
   </png-button>
+  {% else %}
+  <png-button variant="secondary" disabled>
+    <png-icon name="lock" size="15"></png-icon> ยังไม่ผ่านวิชาพื้นฐาน
+  </png-button>
+  {% endif %}
   {% endif %}
   {% else %}
   <div class="cpb-meta">

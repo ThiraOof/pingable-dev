@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import Course from '../models/Course.js';
 import Progress, { getProgress, completedSet, coursePercent, totalLessons, lessonCounts } from '../models/Progress.js';
+import { checkPrerequisites } from '../utils/prereqs.js';
 
 const router = express.Router();
 
@@ -62,7 +63,10 @@ router.get('/:courseId', async (req, res) => {
   const course = await Course.findById(req.params.courseId);
   if (!course) return res.redirect('/courses');
 
-  const progress = userId ? await getProgress(userId, course._id) : null;
+  const [progress, prereqsInfo] = await Promise.all([
+    userId ? getProgress(userId, course._id) : null,
+    checkPrerequisites(userId, course),
+  ]);
   const done = completedSet(progress);
   const percent = coursePercent(course, progress);
 
@@ -90,6 +94,8 @@ router.get('/:courseId', async (req, res) => {
     lessonTotal: totalLessons(course),
     doneTotal: progress ? progress.completed.length : 0,
     nextUp,
+    prereqsMet: prereqsInfo.met,
+    prereqsInfo,
   });
 });
 

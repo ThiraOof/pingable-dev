@@ -6,6 +6,7 @@ import requireAuth from '../middleware/requireAuth.js';
 import { runChecks } from '../services/gradingService.js';
 import { markComplete } from '../models/Progress.js';
 import * as labSessions from '../services/labSessionService.js';
+import { checkPrerequisites } from '../utils/prereqs.js';
 
 const router = express.Router();
 
@@ -47,6 +48,9 @@ router.get('/:courseId/:m/:l', requireAuth, async (req, res) => {
   if (!course) return res.redirect('/courses');
   if (!lab) return res.redirect(`/courses/${courseId}`);
 
+  const { met } = await checkPrerequisites(req.session.user.id, course);
+  if (!met) return res.redirect(`/courses/${courseId}`);
+
   res.render('lab.njk', { course, lab, m, l });
 });
 
@@ -57,8 +61,11 @@ router.post('/:courseId/:m/:l/start', requireAuth, startLimiter, async (req, res
   const l = Number(req.params.l);
 
   try {
-    const { lab } = await locateLab(courseId, m, l);
+    const { course, lab } = await locateLab(courseId, m, l);
     if (!lab) return res.status(404).json({ ok: false, error: 'Lab not found.' });
+
+    const { met } = await checkPrerequisites(req.session.user.id, course);
+    if (!met) return res.status(403).json({ ok: false, error: 'โปรดเรียนคอร์สพื้นฐานให้ครบก่อน' });
 
     const session = await labSessions.startSession(req.session.user.id, courseId, m, l, lab);
     res.json({ ok: true, gns3Url: session.webUiUrl });
