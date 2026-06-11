@@ -21,6 +21,7 @@ import courseRoutes from './routes/courseRoutes.js';
 import learnRoutes from './routes/learnRoutes.js';
 import labRoutes from './routes/labRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -156,6 +157,7 @@ app.use('/courses', courseRoutes);
 app.use('/learn', learnRoutes);
 app.use('/lab', labRoutes);
 app.use('/dashboard', dashboardRoutes);
+app.use('/admin', adminRoutes);
 
 app.get('/', (req, res) => res.render('index.njk'));
 

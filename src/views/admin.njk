@@ -1,0 +1,121 @@
+{% extends "base.njk" %}
+{% block title %}Admin — Pingable{% endblock %}
+
+{% block content %}
+<div class="admin-wrap">
+  <h1 class="admin-title">Admin Panel</h1>
+
+  {# ── Stats ── #}
+  <div class="admin-stats">
+    <div class="admin-stat">
+      <strong>{{ stats.totalUsers }}</strong>
+      <span>ผู้ใช้ทั้งหมด</span>
+    </div>
+    <div class="admin-stat">
+      <strong>{{ stats.adminCount }}</strong>
+      <span>Admin</span>
+    </div>
+    <div class="admin-stat">
+      <strong>{{ stats.activeSessions }}</strong>
+      <span>Lab กำลังใช้งาน</span>
+    </div>
+    <div class="admin-stat">
+      <strong>{{ stats.totalCourses }}</strong>
+      <span>คอร์สที่เผยแพร่</span>
+    </div>
+    <div class="admin-stat">
+      <strong>{{ stats.totalLessonsDone }}</strong>
+      <span>บทเรียนที่จบ (รวม)</span>
+    </div>
+  </div>
+
+  {# ── Active Lab Sessions ── #}
+  <section class="admin-section">
+    <h2>Lab Sessions ที่ใช้งานอยู่
+      <span class="admin-badge">{{ sessionRows | length }}</span>
+    </h2>
+    {% if sessionRows.length %}
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>ผู้ใช้</th>
+            <th>คอร์ส</th>
+            <th>สถานะ</th>
+            <th>Idle (นาที)</th>
+            <th>Project ID</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in sessionRows %}
+          <tr>
+            <td>{{ s.user.username if s.user else '—' }}</td>
+            <td>{{ s.course.title if s.course else '—' }}</td>
+            <td>
+              <span class="status-chip status-{{ s.status }}">{{ s.status }}</span>
+            </td>
+            <td class="{% if s.idleMinutes >= 30 %}idle-warn{% endif %}">
+              {{ s.idleMinutes }}
+            </td>
+            <td class="mono">{{ s.projectId | truncate(12, true, '') if s.projectId else '—' }}</td>
+            <td>
+              <form method="POST" action="/admin/sessions/{{ s._id }}/stop"
+                    onsubmit="return confirm('หยุด lab ของ {{ s.user.username if s.user else 'user' }} ใช่ไหม?')">
+                <button type="submit" class="admin-btn-danger">หยุด</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="admin-empty">ไม่มี lab session ที่ใช้งานอยู่</p>
+    {% endif %}
+  </section>
+
+  {# ── Users ── #}
+  <section class="admin-section">
+    <h2>ผู้ใช้ทั้งหมด
+      <span class="admin-badge">{{ userRows | length }}</span>
+    </h2>
+    {% if userRows.length %}
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>สมัครวันที่</th>
+            <th>บทเรียนจบ</th>
+            <th>แล็บผ่าน</th>
+            <th>แบบทดสอบผ่าน</th>
+            <th>Lab ใช้งาน</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in userRows %}
+          <tr>
+            <td><strong>{{ u.username }}</strong></td>
+            <td class="muted">{{ u.email }}</td>
+            <td>
+              <span class="role-chip role-{{ u.role }}">{{ u.role }}</span>
+            </td>
+            <td class="muted">{{ u.createdAt | thaidate }}</td>
+            <td>{{ u.lessonsDone }}</td>
+            <td>{{ u.labsPassed }}</td>
+            <td>{{ u.quizzesPassed }}</td>
+            <td>{% if u.hasActiveSession %}<span class="status-chip status-ready">●</span>{% else %}—{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="admin-empty">ยังไม่มีผู้ใช้</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
