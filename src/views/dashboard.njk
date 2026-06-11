@@ -61,7 +61,7 @@
       <a href="/learn/{{ a.courseId }}/{{ a.m }}/{{ a.l }}" class="dash-activity-title">{{ a.lessonTitle }}</a>
       <span class="dash-activity-meta">
         {% if a.score is not none and a.score is not undefined %}<span class="dash-score">{{ a.score }}%</span>{% endif %}
-        {{ a.at | thaidate }}
+        <span class="dash-date">{{ a.at | thaidate }}</span>
       </span>
     </li>
     {% endfor %}

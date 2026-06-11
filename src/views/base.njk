@@ -12,6 +12,7 @@
   {% block head %}{% endblock %}
 </head>
 <body>
+  <a href="#main-content" class="skip-link">ข้ามไปยังเนื้อหาหลัก</a>
   <png-navbar{% if user %} username="{{ user.username }}"{% endif %}></png-navbar>
 
   {% if user and not user.emailVerified %}
@@ -26,7 +27,7 @@
   </div>
   {% endif %}
 
-  <main>
+  <main id="main-content">
     {% block content %}{% endblock %}
   </main>
 

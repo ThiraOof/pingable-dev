@@ -30,12 +30,22 @@
         <input type="email" id="email" name="email" required placeholder="you@example.com" autocomplete="email">
       </div>
       <div class="form-group">
-        <label for="password">รหัสผ่าน</label>
-        <input type="password" id="password" name="password" required placeholder="••••••••" autocomplete="current-password">
+        <div class="auth-link-row">
+          <label for="password">รหัสผ่าน</label>
+          <a href="/auth/forgot-password" tabindex="-1">ลืมรหัสผ่าน?</a>
+        </div>
+        <div class="pw-wrap">
+          <input type="password" id="password" name="password" required placeholder="••••••••" autocomplete="current-password">
+          <button type="button" class="pw-toggle" aria-label="แสดง/ซ่อนรหัสผ่าน" data-target="password">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
       </div>
-      <button type="submit" class="btn btn-primary btn-block">เข้าสู่ระบบ</button>
+      <button type="submit" class="btn btn-primary btn-block" data-submit>เข้าสู่ระบบ</button>
     </form>
     <p class="auth-link">ยังไม่มีบัญชี? <a href="/auth/register">สมัครสมาชิก</a></p>
   </div>
 </png-auth>
 {% endblock %}
+
+{% block scripts %}<script type="module" src="/js/auth.js"></script>{% endblock %}
