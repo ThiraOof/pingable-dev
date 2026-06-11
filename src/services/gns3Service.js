@@ -88,7 +88,8 @@ export async function getProjects() {
 // ── High-level: Build a lab topology from a Course lab definition ──────────────
 
 export async function buildLab(labDefinition, labTitle) {
-  const project = await createProject(`pingable_${Date.now()}_${labTitle.replace(/\s+/g, '_')}`);
+  const safeTitle = labTitle.replace(/[/\\]/g, '-').replace(/\s+/g, '_');
+  const project = await createProject(`pingable_${Date.now()}_${safeTitle}`);
   const projectId = project.project_id;
 
   // From here on, never leave a half-built project running on the GNS3 server.

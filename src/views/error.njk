@@ -1,0 +1,13 @@
+{% extends "base.njk" %}
+{% block title %}{{ code }} — Pingable{% endblock %}
+
+{% block content %}
+<div class="error-page">
+  <div class="error-code">{{ code }}</div>
+  <p>{{ message }}</p>
+  <div class="error-actions">
+    <png-button variant="primary" href="/courses" icon-end="arrow-right">ดูคอร์สเรียน</png-button>
+    <png-button variant="ghost" href="/">กลับหน้าแรก</png-button>
+  </div>
+</div>
+{% endblock %}

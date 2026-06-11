@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
 import Course from '../models/Course.js';
 import requireAuth from '../middleware/requireAuth.js';
@@ -21,6 +22,7 @@ const startLimiter = rateLimit({
 
 // Resolve a lab lesson (type === 'lab') from course/module/lesson indices.
 async function locateLab(courseId, m, l) {
+  if (!mongoose.isValidObjectId(courseId)) return {};
   const course = await Course.findById(courseId);
   if (!course) return {};
   const lesson = course.modules?.[m]?.lessons?.[l];
@@ -64,7 +66,7 @@ router.post('/:courseId/:m/:l/start', requireAuth, startLimiter, async (req, res
     if (err instanceof labSessions.LabBusyError) {
       return res.status(409).json({ ok: false, error: err.message });
     }
-    console.error('GNS3 buildLab error:', err);
+    req.log.error({ err }, 'GNS3 buildLab failed');
     res.status(500).json({ ok: false, error: err.message });
   }
 });
@@ -115,11 +117,11 @@ router.post('/:courseId/:m/:l/grade', requireAuth, async (req, res) => {
     const { score, total, results } = await runChecks(session.nodes, lab.gradingChecks);
     const pct = total > 0 ? Math.round((score / total) * 100) : 0;
     if (pct >= 60) {
-      try { await markComplete(userId, courseId, m, l, 'lab', pct); } catch (e) { console.error('progress save:', e); }
+      try { await markComplete(userId, courseId, m, l, 'lab', pct); } catch (e) { req.log.error({ err: e }, 'progress save failed'); }
     }
     res.json({ ok: true, score, total, results });
   } catch (err) {
-    console.error('Grading error:', err);
+    req.log.error({ err }, 'grading failed');
     res.status(500).json({ ok: false, error: err.message });
   }
 });

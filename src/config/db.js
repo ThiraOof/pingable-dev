@@ -1,11 +1,12 @@
 import mongoose from 'mongoose';
+import logger from './logger.js';
 
 async function connectDB() {
   try {
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/pingable-dev');
-    console.log('MongoDB connected');
+    logger.info('MongoDB connected');
   } catch (err) {
-    console.error('MongoDB connection error:', err.message);
+    logger.fatal({ err }, 'MongoDB connection error');
     process.exit(1);
   }
 }

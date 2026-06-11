@@ -1,13 +1,17 @@
 import 'dotenv/config';
 import express from 'express';
+import 'express-async-errors'; // patches Express 4 so async route errors hit the error handler instead of crashing the process
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import mongoose from 'mongoose';
 import nunjucks from 'nunjucks';
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
 import helmet from 'helmet';
+import { pinoHttp } from 'pino-http';
 import { marked } from 'marked';
 
+import logger from './config/logger.js';
 import connectDB from './config/db.js';
 import { injectDSD } from './dsd.js';
 import { startSweeper } from './services/labSessionService.js';
@@ -75,6 +79,17 @@ app.use(helmet({
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 }));
 
+// Request logging (skip static assets; quiet success lines, full error objects)
+app.use(pinoHttp({
+  logger,
+  autoLogging: { ignore: (req) => /^\/(css|js|img|favicon)/.test(req.url) },
+  customLogLevel: (req, res, err) => ((err || res.statusCode >= 500) ? 'error' : res.statusCode >= 400 ? 'warn' : 'info'),
+  serializers: {
+    req: (req) => ({ method: req.method, url: req.url }),
+    res: (res) => ({ status: res.statusCode }),
+  },
+}));
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -136,10 +151,47 @@ app.use('/dashboard', dashboardRoutes);
 
 app.get('/', (req, res) => res.render('index.njk'));
 
+// 404 — anything that fell through the routes
+app.use((req, res) => {
+  if (req.method !== 'GET') return res.status(404).json({ ok: false, error: 'Not found' });
+  res.status(404).render('error.njk', { code: 404, message: 'ไม่พบหน้าที่คุณต้องการ — อาจถูกย้ายหรือลบไปแล้ว' });
+});
+
+// Global error handler (express-async-errors routes async failures here too).
+// GETs are humans → error page; everything else is fetch() → JSON.
+app.use((err, req, res, next) => {
+  (req.log || logger).error({ err }, 'unhandled route error');
+  if (res.headersSent) return next(err);
+  if (req.method === 'GET') {
+    return res.status(500).render('error.njk', { code: 500, message: 'เกิดข้อผิดพลาดภายในระบบ กรุณาลองใหม่อีกครั้ง' });
+  }
+  res.status(500).json({ ok: false, error: 'เกิดข้อผิดพลาดภายในระบบ' });
+});
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Pingable-Dev running at http://localhost:${PORT}`);
+const server = app.listen(PORT, () => {
+  logger.info(`Pingable-Dev running at http://localhost:${PORT}`);
   // Reconcile lab sessions left over from a previous run, then keep sweeping
   // idle sessions / orphaned GNS3 projects.
   startSweeper();
+});
+
+// Graceful shutdown: stop accepting connections, let Mongo writes finish.
+// Lab sessions live in MongoDB, so nothing is lost across a restart — the
+// sweeper reconciles any GNS3 project state on the next boot.
+function shutdown(signal) {
+  logger.info({ signal }, 'shutting down');
+  server.close(() => {
+    mongoose.disconnect().finally(() => process.exit(0));
+  });
+  server.closeIdleConnections?.();
+  setTimeout(() => process.exit(1), 10000).unref(); // safety net if a connection hangs
+}
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+process.on('unhandledRejection', (err) => logger.error({ err }, 'unhandled promise rejection'));
+process.on('uncaughtException', (err) => {
+  logger.fatal({ err }, 'uncaught exception — exiting');
+  process.exit(1);
 });

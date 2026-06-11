@@ -891,3 +891,12 @@ main { flex: 1; }
   .dash-course { flex-wrap: wrap; }
   .dash-activity-meta { display: none; }
 }
+
+/* ── Error page (404/500) ───────────────────────────────────────────── */
+.error-page { text-align: center; padding: var(--s-8) var(--s-4); max-width: 520px; margin-inline: auto; }
+.error-code {
+  font-family: var(--font-display); font-size: clamp(4rem, 12vw, 6.5rem); font-weight: 800;
+  color: var(--surface-2); -webkit-text-stroke: 2px var(--border-h); line-height: 1;
+}
+.error-page p { color: var(--muted); margin: var(--s-4) 0 var(--s-6); }
+.error-actions { display: flex; gap: var(--s-3); justify-content: center; flex-wrap: wrap; }

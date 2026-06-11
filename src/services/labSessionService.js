@@ -1,6 +1,7 @@
 import LabSession from '../models/LabSession.js';
 import * as gns3 from './gns3Service.js';
 import { probeNode } from './gradingService.js';
+import logger from '../config/logger.js';
 
 // Labs are ephemeral: every running session costs GNS3 RAM/CPU, so anything
 // without a recent heartbeat (the lab page polls /status) gets torn down.
@@ -14,7 +15,7 @@ export class LabBusyError extends Error {}
 async function teardown(projectId) {
   if (!projectId) return;
   try { await gns3.deleteProject(projectId); }
-  catch (err) { console.error('GNS3 deleteProject error:', err.message); }
+  catch (err) { logger.error({ err, projectId }, 'GNS3 deleteProject failed'); }
 }
 
 export function getSession(userId) {
@@ -110,7 +111,7 @@ async function sweepIdle() {
   const cutoff = new Date(Date.now() - IDLE_MINUTES * 60 * 1000);
   const stale = await LabSession.find({ lastActivityAt: { $lt: cutoff } });
   for (const doc of stale) {
-    console.log(`[lab-sweeper] idle > ${IDLE_MINUTES}min — tearing down project ${doc.projectId}`);
+    logger.info({ projectId: doc.projectId, user: String(doc.user) }, `lab-sweeper: idle > ${IDLE_MINUTES}min, tearing down`);
     await teardown(doc.projectId);
     await LabSession.deleteOne({ _id: doc._id });
   }
@@ -123,14 +124,14 @@ async function sweepIdle() {
 async function sweepOrphans() {
   let projects;
   try { projects = await gns3.getProjects(); }
-  catch (err) { console.error('[lab-sweeper] GNS3 unreachable:', err.message); return; }
+  catch (err) { logger.warn({ err }, 'lab-sweeper: GNS3 unreachable'); return; }
 
   const known = new Set((await LabSession.find().select('projectId')).map((d) => d.projectId));
   for (const p of projects || []) {
     const stamp = /^pingable_(\d+)_/.exec(p.name || '')?.[1];
     if (!stamp || known.has(p.project_id)) continue;
     if (Date.now() - Number(stamp) < ORPHAN_MIN_AGE_MS) continue;
-    console.log(`[lab-sweeper] deleting orphaned GNS3 project ${p.name}`);
+    logger.info({ project: p.name }, 'lab-sweeper: deleting orphaned project');
     await teardown(p.project_id);
   }
 }
@@ -138,7 +139,7 @@ async function sweepOrphans() {
 /** Start the periodic sweep (also runs once at startup to reconcile after a restart). */
 export function startSweeper() {
   const run = () =>
-    sweepIdle().then(sweepOrphans).catch((err) => console.error('[lab-sweeper]', err.message));
+    sweepIdle().then(sweepOrphans).catch((err) => logger.error({ err }, 'lab-sweeper failed'));
   run();
   setInterval(run, SWEEP_INTERVAL_MS).unref();
 }

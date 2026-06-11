@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Course from '../models/Course.js';
 import requireAuth from '../middleware/requireAuth.js';
 import { markComplete, getProgress, completedSet } from '../models/Progress.js';
@@ -26,6 +27,7 @@ function neighbours(course, m, l) {
 
 // Resolve the course + lesson from route params, or null.
 async function locate(courseId, m, l) {
+  if (!mongoose.isValidObjectId(courseId)) return {};
   const course = await Course.findById(courseId);
   if (!course) return {};
   const mod = course.modules[m];
