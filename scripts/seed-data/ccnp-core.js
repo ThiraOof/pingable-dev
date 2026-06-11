@@ -6,6 +6,7 @@
 import { vyos, pc, sw } from './_vyos.js';
 
 export default {
+  slug: 'ccnp-core',
   title: 'CCNP Enterprise: Core Networking (v9)',
   description: 'เจาะลึกสถาปัตยกรรมเครือข่ายองค์กร, การ forward ของอุปกรณ์, VLAN/Trunk และ Spanning Tree ระดับมืออาชีพ',
   level: 'advanced',

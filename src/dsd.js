@@ -63,7 +63,7 @@ const T = {
     const glyph = `<span class="brand-mark"><svg class="brand-glyph" width="26" height="26" viewBox="0 0 24 24" fill="none"><circle class="topo-ping" cx="12" cy="12" r="5"/><circle class="topo-ping ping-2" cx="12" cy="12" r="5"/><circle class="topo-core" cx="12" cy="12" r="3.4"/></svg></span>`;
     const links = a.username
       ? `<a href="/courses">${svgIcon('layers', 18)} คอร์สเรียน</a><span class="nav-user">${svgIcon('user', 16)} ${esc(a.username)}</span><form method="POST" action="/auth/logout" style="display:inline"><button type="submit" class="btn-link">${svgIcon('logout', 16)} ออกจากระบบ</button></form>`
-      : `<a href="/auth/login">เข้าสู่ระบบ</a><a href="/auth/register" class="btn btn-primary">สมัครฟรี</a>`;
+      : `<a href="/courses">${svgIcon('layers', 18)} คอร์สเรียน</a><a href="/auth/login">เข้าสู่ระบบ</a><a href="/auth/register" class="btn btn-primary">สมัครฟรี</a>`;
     return { host: BLOCK, html: `<nav class="navbar"><a href="/" class="nav-brand">${glyph} Pingable</a><div class="nav-links">${links}</div></nav>` };
   },
 

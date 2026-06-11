@@ -24,23 +24,34 @@ const key = (m, l) => `${m}-${l}`;
 
 /**
  * Idempotently mark a lesson complete for a user. For graded lessons the
- * highest score seen is kept. Returns the updated Progress document.
+ * highest score seen is kept. Atomic — concurrent calls (double-click on
+ * "เรียนจบ", parallel grades) can't duplicate an entry.
  */
 export async function markComplete(userId, courseId, moduleIdx, lessonIdx, type, score) {
-  let doc = await Progress.findOne({ user: userId, course: courseId });
-  if (!doc) doc = new Progress({ user: userId, course: courseId, completed: [] });
+  const owner = { user: userId, course: courseId };
 
-  const existing = doc.completed.find((c) => c.moduleIdx === moduleIdx && c.lessonIdx === lessonIdx);
-  if (existing) {
-    if (typeof score === 'number' && (existing.score == null || score > existing.score)) {
-      existing.score = score;
-      existing.at = new Date();
-    }
-  } else {
-    doc.completed.push({ moduleIdx, lessonIdx, type, score, at: new Date() });
+  // Ensure the per-(user, course) doc exists; a racing upsert loses on the
+  // unique index, which is fine — the doc is there either way.
+  try {
+    await Progress.updateOne(owner, { $setOnInsert: { completed: [] } }, { upsert: true });
+  } catch (err) {
+    if (err.code !== 11000) throw err;
   }
-  await doc.save();
-  return doc;
+
+  // Append the entry only if this lesson isn't recorded yet (single atomic op).
+  const { modifiedCount } = await Progress.updateOne(
+    { ...owner, completed: { $not: { $elemMatch: { moduleIdx, lessonIdx } } } },
+    { $push: { completed: { moduleIdx, lessonIdx, type, score, at: new Date() } } },
+  );
+
+  // Already recorded → just keep the best score for graded lessons.
+  if (!modifiedCount && typeof score === 'number') {
+    await Progress.updateOne(
+      owner,
+      { $max: { 'completed.$[e].score': score } },
+      { arrayFilters: [{ 'e.moduleIdx': moduleIdx, 'e.lessonIdx': lessonIdx }] },
+    );
+  }
 }
 
 /** Fetch progress for a user+course (or null). */

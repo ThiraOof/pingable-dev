@@ -18,6 +18,7 @@
 </div>
 
 <div class="course-progress-bar">
+  {% if user %}
   <png-progress-ring percent="{{ percent }}" size="64"></png-progress-ring>
   <div class="cpb-meta">
     <strong>ความคืบหน้าของคุณ</strong>
@@ -28,6 +29,13 @@
   <png-button variant="primary" href="/learn/{{ course._id }}/{{ nextUp.m }}/{{ nextUp.l }}" icon-end="arrow-right">
     {% if doneTotal > 0 %}เรียนต่อ{% else %}เริ่มเรียน{% endif %}
   </png-button>
+  {% endif %}
+  {% else %}
+  <div class="cpb-meta">
+    <strong>พร้อมเริ่มเรียนหรือยัง?</strong>
+    <p>{{ lessonTotal }} บทเรียน{% if course.estimatedHours %} · ใช้เวลาทั้งหมด ~{{ course.estimatedHours }} ชั่วโมง{% endif %} · สมัครเรียนฟรี</p>
+  </div>
+  <png-button variant="primary" href="/auth/login?next=/courses/{{ course._id }}" icon-end="arrow-right">เข้าสู่ระบบเพื่อเริ่มเรียน</png-button>
   {% endif %}
 </div>
 

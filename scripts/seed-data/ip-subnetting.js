@@ -2,6 +2,7 @@
 // ทฤษฎี subnetting แบบเจาะลึก + แล็บ VPCS จริง (/26, default gateway)
 
 export default {
+  slug: 'ip-subnetting',
   title: 'IP Addressing & Subnetting',
   description: 'เจาะลึก subnet mask, prefix, VLSM และ default gateway พร้อมลงมือคำนวณและตั้งค่าจริงบน VPCS',
   level: 'intermediate',

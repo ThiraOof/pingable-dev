@@ -1,7 +1,7 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Course from '../models/Course.js';
-import requireAuth from '../middleware/requireAuth.js';
-import { getProgress, completedSet, coursePercent, totalLessons } from '../models/Progress.js';
+import Progress, { getProgress, completedSet, coursePercent, totalLessons } from '../models/Progress.js';
 
 const router = express.Router();
 
@@ -26,20 +26,24 @@ function lessonCounts(course) {
   return { readings, labs, quizzes };
 }
 
-// GET /courses — catalog laned by level, with per-course progress
-router.get('/', requireAuth, async (req, res) => {
-  const userId = req.session.user.id;
+// GET /courses — catalog laned by level, with per-course progress.
+// Public: guests can browse; progress only shows when logged in.
+router.get('/', async (req, res) => {
+  const userId = req.session.user?.id;
   const courses = await Course.find({ published: true }).select('-modules.lessons.topology');
 
-  const enriched = await Promise.all(courses.map(async (course) => {
-    const progress = await getProgress(userId, course._id);
-    return {
-      doc: course,
-      moduleCount: (course.modules || []).length,
-      lessonTotal: totalLessons(course),
-      counts: lessonCounts(course),
-      percent: coursePercent(course, progress),
-    };
+  // One query for all progress docs instead of one per course.
+  const progresses = userId
+    ? await Progress.find({ user: userId, course: { $in: courses.map((c) => c._id) } })
+    : [];
+  const byCourse = new Map(progresses.map((p) => [String(p.course), p]));
+
+  const enriched = courses.map((course) => ({
+    doc: course,
+    moduleCount: (course.modules || []).length,
+    lessonTotal: totalLessons(course),
+    counts: lessonCounts(course),
+    percent: coursePercent(course, byCourse.get(String(course._id))),
   }));
 
   const lanes = LEVELS
@@ -49,13 +53,14 @@ router.get('/', requireAuth, async (req, res) => {
   res.render('courses.njk', { lanes });
 });
 
-// GET /courses/:courseId — course detail: modules, lessons, progress
-router.get('/:courseId', requireAuth, async (req, res) => {
-  const userId = req.session.user.id;
+// GET /courses/:courseId — course detail: modules, lessons, progress (public)
+router.get('/:courseId', async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.courseId)) return res.redirect('/courses');
+  const userId = req.session.user?.id;
   const course = await Course.findById(req.params.courseId);
   if (!course) return res.redirect('/courses');
 
-  const progress = await getProgress(userId, course._id);
+  const progress = userId ? await getProgress(userId, course._id) : null;
   const done = completedSet(progress);
   const percent = coursePercent(course, progress);
 

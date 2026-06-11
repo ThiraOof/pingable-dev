@@ -46,7 +46,8 @@ if (PROD) app.set('trust proxy', 1); // behind the HTTPS load balancer
 // iframes the GNS3 Web-UI (frame-src must allow the GNS3 origin); fonts come
 // from Google Fonts. upgrade-insecure-requests is dropped so the http GNS3
 // iframe keeps working in dev.
-const GNS3_ORIGIN = `${process.env.GNS3_HOST || 'http://localhost'}:${process.env.GNS3_PORT || 3080}`;
+const GNS3_ORIGIN = (process.env.GNS3_PUBLIC_URL
+  || `${process.env.GNS3_HOST || 'http://localhost'}:${process.env.GNS3_PORT || 3080}`).replace(/\/+$/, '');
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -61,6 +62,10 @@ app.use(helmet({
     },
   },
   crossOriginEmbedderPolicy: false, // the GNS3 iframe is cross-origin
+  // helmet's default no-referrer policy makes some browsers send
+  // "Origin: null" even on same-origin form posts, which broke the CSRF
+  // guard below — use the browser-default policy instead.
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 }));
 
 // Middleware
@@ -80,18 +85,19 @@ app.use(session({
   },
 }));
 
-// CSRF guard: state-changing requests must come from our own origin. Modern
-// browsers always send Origin (or at least Referer) on cross-site POSTs;
-// requests with neither header (curl, native form posts in old browsers) pass
-// — the sameSite=lax session cookie covers that hole.
+// CSRF guard: block state-changing requests only when a header positively
+// names a FOREIGN origin. Missing or "null" Origin/Referer (curl, privacy
+// extensions, sandboxed contexts, strict referrer policies) pass — a real
+// cross-site browser request won't carry our sameSite=lax session cookie
+// anyway, so that hole is covered.
 app.use((req, res, next) => {
   if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
-  const source = req.get('origin') || req.get('referer');
-  // 'null' origin comes from sandboxed/redirected contexts — let sameSite=lax cover it
-  if (!source || source === 'null') return next();
   const expected = `${req.protocol}://${req.get('host')}`;
-  if (!PROD) console.log('[csrf]', { method: req.method, path: req.path, source, expected });
-  if (source === expected || source.startsWith(expected + '/')) return next();
+  const origin = req.get('origin');
+  const referer = req.get('referer');
+  const originOk = !origin || origin === 'null' || origin === expected;
+  const refererOk = !referer || referer === expected || referer.startsWith(expected + '/');
+  if (originOk && refererOk) return next();
   res.status(403).json({ ok: false, error: 'Cross-origin request blocked' });
 });
 

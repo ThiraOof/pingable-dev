@@ -6,6 +6,7 @@
 import { vyos, pc, sw } from './_vyos.js';
 
 export default {
+  slug: 'ccnp-advanced-routing',
   title: 'CCNP Enterprise: Advanced Routing (v9)',
   description: 'การ routing ขั้นสูงสำหรับองค์กร: EIGRP, OSPF หลายพื้นที่ และพื้นฐาน BGP ระหว่างองค์กร',
   level: 'expert',

@@ -3,6 +3,7 @@ import './load-env.js';
 
 import mongoose from 'mongoose';
 import Course from '../src/models/Course.js';
+import { validateCourses, reportValidation } from './validate-seed.js';
 
 // Each course lives in its own file under seed-data/ so content stays readable
 // and new courses can be added later simply by dropping in another module.
@@ -33,15 +34,37 @@ function lessonStats(course) {
 }
 
 async function seed() {
+  // Refuse to write broken content — these mistakes only surface at runtime.
+  if (!reportValidation(validateCourses(courses))) process.exit(1);
+
   await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/pingable-dev');
   console.log('MongoDB connected');
 
-  await Course.deleteMany({});
-  console.log('Cleared existing courses');
+  // Upsert by slug so course _ids survive re-seeding — Progress and LabSession
+  // reference courses by _id, so replacing the collection would orphan every
+  // user's progress. Courses from before slugs existed are matched by title.
+  const keptIds = [];
+  for (const data of courses) {
+    let doc = await Course.findOne({ slug: data.slug })
+      || await Course.findOne({ slug: null, title: data.title });
+    if (doc) {
+      doc.set(data);
+      await doc.save();
+      console.log(`  updated  ${data.slug}`);
+    } else {
+      doc = await Course.create(data);
+      console.log(`  created  ${data.slug}`);
+    }
+    keptIds.push(doc._id);
+  }
 
-  const inserted = await Course.insertMany(courses);
-  console.log(`Seeded ${inserted.length} course(s):`);
-  inserted.forEach((c) => {
+  // Remove courses that are no longer in the seed set.
+  const { deletedCount } = await Course.deleteMany({ _id: { $nin: keptIds } });
+  if (deletedCount) console.log(`  removed  ${deletedCount} stale course(s)`);
+
+  const all = await Course.find({ _id: { $in: keptIds } });
+  console.log(`Seeded ${all.length} course(s):`);
+  all.forEach((c) => {
     const s = lessonStats(c);
     console.log(`  [${c.level.padEnd(12)}] ${c.title}`);
     console.log(`     ${c.modules.length} modules · 📖 ${s.reading} reading · 🧪 ${s.lab} lab · ❓ ${s.quiz} quiz`);

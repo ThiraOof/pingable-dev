@@ -73,6 +73,9 @@ const moduleSchema = new mongoose.Schema({
 });
 
 const courseSchema = new mongoose.Schema({
+  // Stable identifier for the seeder: re-seeding upserts by slug so course
+  // _ids survive and Progress/LabSession refs stay valid.
+  slug:           { type: String, unique: true, sparse: true },
   title:          { type: String, required: true },
   description:    { type: String },
   level:          { type: String, enum: ['beginner', 'intermediate', 'advanced', 'expert'], default: 'beginner' },

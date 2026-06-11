@@ -158,7 +158,11 @@ async function buildLabInProject(projectId, labDefinition) {
   await startAllNodes(projectId);
 
   const base = new URL(GNS3_BASE);
-  const webUiUrl = `${base.protocol}//${base.hostname}:${base.port}/#/project/${projectId}`;
+  // The browser may reach GNS3 through a different origin than the server
+  // does (e.g. internal IP vs public domain in production) — GNS3_PUBLIC_URL
+  // overrides the iframe origin. Keep CSP frame-src in server.js in sync.
+  const publicOrigin = (process.env.GNS3_PUBLIC_URL || `${base.protocol}//${base.hostname}:${base.port}`).replace(/\/+$/, '');
+  const webUiUrl = `${publicOrigin}/#/project/${projectId}`;
 
   // Build name → console info map for grading service.
   // GNS3 returns console_host "0.0.0.0" (listen-all), so fall back to the

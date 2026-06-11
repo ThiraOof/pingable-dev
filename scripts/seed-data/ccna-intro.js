@@ -2,6 +2,7 @@
 // โมเดลอ้างอิง, Ethernet/Switching, Network Layer, การแก้ปัญหา + แล็บ VPCS จริง
 
 export default {
+  slug: 'ccna-intro',
   title: 'CCNA: Introduction to Networks',
   description: 'คอร์สแรกของชุด CCNA — โมเดล OSI/TCP-IP, Ethernet & switching, IPv4/IPv6 และการวินิจฉัยปัญหาเครือข่าย พร้อมแล็บลงมือทำ',
   level: 'intermediate',

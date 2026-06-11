@@ -2,6 +2,7 @@
 // คอร์สแม่แบบที่สมบูรณ์: บทเรียนทฤษฎี + แบบทดสอบ + แล็บ VPCS จริงครบทุกโมดูล
 
 export default {
+  slug: 'networking-basics',
   title: 'Networking Basics — พื้นฐานเครือข่าย',
   description: 'เริ่มต้นจากศูนย์: เครือข่ายคืออะไร อุปกรณ์มีอะไรบ้าง IP address ทำงานอย่างไร พร้อมลงมือตั้งค่าและ ping บน Topology จริง',
   level: 'beginner',

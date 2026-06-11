@@ -6,7 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - `npm run dev` — run with nodemon (auto-reload) at http://localhost:3000
 - `npm start` — run once with plain node
-- `npm run seed` — wipe the `courses` collection and re-insert the demo courses from `scripts/seed.js`
+- `npm run seed` — upsert the demo courses from `scripts/seed.js` **by `slug`** (course `_id`s survive re-seeding, so user progress is preserved; courses removed from the seed set are deleted)
+- `npm run validate` — validate seed-data content without touching the DB (broken node refs in links/checks, invalid `expect` regexes, out-of-range quiz answers). `npm run seed` runs this automatically and refuses to write on errors.
 
 There is no test runner, linter, or build step configured.
 
@@ -17,7 +18,7 @@ The app talks to two external services; both must be running or the relevant fea
 - **MongoDB** at `mongodb://localhost:27017/pingable-dev` (override with `MONGODB_URI`). The process calls `process.exit(1)` if it cannot connect on startup.
 - **GNS3 server** at `http://localhost:3080` (override with `GNS3_HOST` / `GNS3_PORT`). Required only when starting/grading a lab, not for browsing courses.
 
-Config is read from `.env` (gitignored; no `.env.example` exists). Variables used in code: `PORT`, `NODE_ENV`, `SESSION_SECRET`, `MONGODB_URI`, `GNS3_HOST`, `GNS3_PORT`, `GNS3_USER`, `GNS3_PASS`, `GNS3_VYOS_TEMPLATE`, `GNS3_NODE_USER`, `GNS3_NODE_PASS`, `LAB_IDLE_MINUTES`.
+Config is read from `.env` (gitignored; copy `.env.example` to start). Variables used in code: `PORT`, `NODE_ENV`, `SESSION_SECRET`, `MONGODB_URI`, `GNS3_HOST`, `GNS3_PORT`, `GNS3_USER`, `GNS3_PASS`, `GNS3_VYOS_TEMPLATE`, `GNS3_NODE_USER`, `GNS3_NODE_PASS`, `GNS3_PUBLIC_URL` (browser-facing GNS3 origin for the lab iframe when it differs from `GNS3_HOST`, e.g. in production; also used for CSP `frame-src`), `LAB_IDLE_MINUTES`.
 
 ### VyOS appliance for configuration labs
 
@@ -35,7 +36,7 @@ ESM Express app (`"type": "module"` — use `import`, not `require`) doing serve
 
 **Entry point** `src/server.js`: configures Nunjucks (views in `src/views`, `.njk`), session middleware, static `src/public`, mounts `/auth`, `/courses`, `/lab`. A global middleware exposes `req.session.user` to every template as `res.locals.user`.
 
-**Auth** is session-based (`express-session`), not JWT. Sessions are stored in MongoDB via `connect-mongo` (they survive restarts); cookies are `sameSite: 'lax'` and `secure` in production. `SESSION_SECRET` is required in production — `server.js` throws at startup without it. `requireAuth` (`src/middleware/requireAuth.js`) gates routes by checking `req.session.user` and redirects to `/auth/login`. Passwords are hashed via a `User` pre-save hook (bcrypt); never set `password` to a plaintext value expecting it to be re-hashed unless it changed (the hook checks `isModified`). `authRoutes` coerces credential fields to plain strings before they reach Mongo (blocks `email[$gt]=`-style operator injection) and validates username/email/password shape server-side.
+**Auth** is session-based (`express-session`), not JWT. Sessions are stored in MongoDB via `connect-mongo` (they survive restarts); cookies are `sameSite: 'lax'` and `secure` in production. `SESSION_SECRET` is required in production — `server.js` throws at startup without it. `requireAuth` (`src/middleware/requireAuth.js`) gates routes by checking `req.session.user` and redirects to `/auth/login`, remembering the blocked GET URL in `session.returnTo` so login lands the user back there (also settable via `/auth/login?next=/...`, same-site paths only). The course catalog (`/courses`, `/courses/:id`) is **public** — progress only renders when logged in; `/learn` and `/lab` stay auth-gated. Passwords are hashed via a `User` pre-save hook (bcrypt); never set `password` to a plaintext value expecting it to be re-hashed unless it changed (the hook checks `isModified`). `authRoutes` coerces credential fields to plain strings before they reach Mongo (blocks `email[$gt]=`-style operator injection) and validates username/email/password shape server-side.
 
 **Security middleware** (`src/server.js`): `helmet` with a custom CSP — `style-src` needs `'unsafe-inline'` (the DSD renderer injects inline `<style>` into every shadow template) and `frame-src` must include the GNS3 origin or the lab iframe breaks; `upgrade-insecure-requests` is disabled so the http GNS3 iframe works in dev. A lightweight CSRF guard rejects non-GET requests whose `Origin`/`Referer` doesn't match our own origin (requests with neither header pass — `sameSite: 'lax'` covers them). Rate limits (`express-rate-limit`, in-memory per instance): 20/15 min per IP on login+register (shared window), 10/10 min per user on lab start.
 

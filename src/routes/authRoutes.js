@@ -21,8 +21,20 @@ const authLimiter = rateLimit({
 const str = (v) => (typeof v === 'string' ? v.trim() : '');
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Where to land after a successful login/register: the page the user was
+// blocked from (requireAuth) or an explicit, same-site-only ?next= target.
+function consumeReturnTo(req) {
+  const dest = req.session.returnTo;
+  delete req.session.returnTo;
+  return (typeof dest === 'string' && dest.startsWith('/') && !dest.startsWith('//')) ? dest : '/courses';
+}
+
 router.get('/login', (req, res) => {
   if (req.session.user) return res.redirect('/courses');
+  const next = req.query.next;
+  if (typeof next === 'string' && next.startsWith('/') && !next.startsWith('//')) {
+    req.session.returnTo = next;
+  }
   res.render('login.njk', { error: null });
 });
 
@@ -38,7 +50,7 @@ router.post('/login', authLimiter, async (req, res) => {
       return res.render('login.njk', { error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
     }
     req.session.user = { id: user._id, username: user.username, role: user.role };
-    res.redirect('/courses');
+    res.redirect(consumeReturnTo(req));
   } catch (err) {
     res.render('login.njk', { error: 'เกิดข้อผิดพลาด กรุณาลองใหม่' });
   }
@@ -68,7 +80,7 @@ router.post('/register', authLimiter, async (req, res) => {
     const user = new User({ username, email, password });
     await user.save();
     req.session.user = { id: user._id, username: user.username, role: user.role };
-    res.redirect('/courses');
+    res.redirect(consumeReturnTo(req));
   } catch (err) {
     const msg = err.code === 11000
       ? 'อีเมลหรือชื่อผู้ใช้นี้ถูกใช้ไปแล้ว'
