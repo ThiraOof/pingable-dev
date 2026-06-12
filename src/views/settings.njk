@@ -1,0 +1,69 @@
+{% extends "base.njk" %}
+{% block title %}ตั้งค่าบัญชี — Pingable{% endblock %}
+
+{% block content %}
+<png-page-header title="ตั้งค่าบัญชี" subtitle="จัดการข้อมูลบัญชีและรหัสผ่านของคุณ"></png-page-header>
+
+<div class="settings-wrap">
+  <div class="auth-card">
+    <h2>ข้อมูลบัญชี</h2>
+    <p class="auth-sub">สมาชิกตั้งแต่ {{ account.createdAt | thaidate }}</p>
+    <div class="form-group">
+      <label>ชื่อผู้ใช้</label>
+      <input type="text" value="{{ account.username }}" disabled>
+    </div>
+    <div class="form-group">
+      <label>อีเมล</label>
+      <input type="email" value="{{ account.email }}" disabled>
+      {% if account.emailVerified %}
+        <p class="field-note ok">✓ ยืนยันอีเมลแล้ว</p>
+      {% else %}
+        <p class="field-note">ยังไม่ได้ยืนยันอีเมล — เช็คกล่องจดหมายของคุณ</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="auth-card">
+    <h2>เปลี่ยนรหัสผ่าน</h2>
+    <p class="auth-sub">รหัสผ่านใหม่อย่างน้อย 8 ตัวอักษร มีตัวอักษรและตัวเลขอย่างน้อยอย่างละ 1 ตัว</p>
+    {% if info %}
+      <div class="alert alert-success">{{ info }}</div>
+    {% endif %}
+    {% if error %}
+      <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+    <form method="POST" action="/auth/settings/password">
+      <div class="form-group">
+        <label for="currentPassword">รหัสผ่านปัจจุบัน</label>
+        <div class="pw-wrap">
+          <input type="password" id="currentPassword" name="currentPassword" required placeholder="••••••••" autocomplete="current-password">
+          <button type="button" class="pw-toggle" aria-label="แสดง/ซ่อนรหัสผ่าน" data-target="currentPassword">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="password">รหัสผ่านใหม่</label>
+        <div class="pw-wrap">
+          <input type="password" id="password" name="password" required placeholder="อย่างน้อย 8 ตัวอักษร" minlength="8" autocomplete="new-password">
+          <button type="button" class="pw-toggle" aria-label="แสดง/ซ่อนรหัสผ่าน" data-target="password">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="confirmPassword">ยืนยันรหัสผ่านใหม่</label>
+        <div class="pw-wrap">
+          <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="••••••••" autocomplete="new-password">
+          <button type="button" class="pw-toggle" aria-label="แสดง/ซ่อนรหัสผ่าน" data-target="confirmPassword">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block" data-submit>บันทึกรหัสผ่านใหม่</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}<script type="module" src="/js/auth.js"></script>{% endblock %}

@@ -2,6 +2,7 @@ import express from 'express';
 import { randomBytes } from 'crypto';
 import { rateLimit } from 'express-rate-limit';
 import User from '../models/User.js';
+import requireAuth from '../middleware/requireAuth.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../services/emailService.js';
 import { issueResetToken, findUserByResetToken, resetPassword } from '../services/passwordResetService.js';
 
@@ -13,10 +14,15 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
+    const msg = 'พยายามมากเกินไป — กรุณารอ 15 นาทีแล้วลองใหม่';
+    // settings.njk needs the account loaded — use the plain error page there
+    if (req.path.includes('settings')) {
+      return res.status(429).render('error.njk', { code: 429, message: msg });
+    }
     const view = req.path.includes('register') ? 'register.njk'
       : req.path.includes('password') ? 'forgot-password.njk'
       : 'login.njk';
-    res.status(429).render(view, { error: 'พยายามมากเกินไป — กรุณารอ 15 นาทีแล้วลองใหม่', info: null });
+    res.status(429).render(view, { error: msg, info: null });
   },
 });
 
@@ -42,6 +48,12 @@ function makeVerificationToken() {
   return randomBytes(32).toString('hex');
 }
 
+// Account lockout: the per-IP rate limit can be dodged (botnets, IPv6 pools),
+// so wrong passwords against one account also count per account. Read per call
+// so tests can lower the threshold.
+const LOCK_AFTER = () => Number(process.env.LOGIN_LOCK_AFTER || 10);
+const LOCK_MINUTES = 15;
+
 router.get('/login', (req, res) => {
   if (req.session.user) return res.redirect('/dashboard');
   const next = req.query.next;
@@ -62,8 +74,31 @@ router.post('/login', authLimiter, async (req, res) => {
   }
   try {
     const user = await User.findOne({ email });
-    if (!user || !(await user.comparePassword(password))) {
+    if (!user) {
       return res.render('login.njk', { error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง', info: null });
+    }
+
+    // Saying "locked" does confirm the account exists, but only to someone who
+    // already hammered it with wrong passwords — the owner needs to know why
+    // the correct password suddenly fails.
+    if (user.lockUntil && user.lockUntil > new Date()) {
+      const mins = Math.max(1, Math.ceil((user.lockUntil - Date.now()) / 60000));
+      return res.render('login.njk', {
+        error: `บัญชีถูกล็อกชั่วคราวจากการพยายามเข้าสู่ระบบผิดหลายครั้ง — ลองใหม่ในอีก ${mins} นาที`,
+        info: null,
+      });
+    }
+
+    if (!(await user.comparePassword(password))) {
+      const failed = (user.failedLogins || 0) + 1;
+      await User.updateOne({ _id: user._id }, failed >= LOCK_AFTER()
+        ? { $set: { failedLogins: 0, lockUntil: new Date(Date.now() + LOCK_MINUTES * 60000) } }
+        : { $set: { failedLogins: failed } });
+      return res.render('login.njk', { error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง', info: null });
+    }
+
+    if (user.failedLogins || user.lockUntil) {
+      await User.updateOne({ _id: user._id }, { $set: { failedLogins: 0 }, $unset: { lockUntil: 1 } });
     }
     req.session.user = {
       id: user._id, username: user.username, role: user.role,
@@ -205,6 +240,36 @@ router.post('/reset-password', authLimiter, async (req, res) => {
   }
   req.log.info({ user: String(user._id) }, 'password reset completed');
   res.redirect('/auth/login?info=reset');
+});
+
+// ── Account settings ─────────────────────────────────────────────────────────
+
+router.get('/settings', requireAuth, async (req, res) => {
+  const account = await User.findById(req.session.user.id)
+    .select('username email emailVerified createdAt').lean();
+  if (!account) return res.redirect('/auth/login');
+  res.render('settings.njk', { account, error: null, info: null });
+});
+
+router.post('/settings/password', requireAuth, authLimiter, async (req, res) => {
+  const account = await User.findById(req.session.user.id);
+  if (!account) return res.redirect('/auth/login');
+
+  const current = typeof req.body.currentPassword === 'string' ? req.body.currentPassword : '';
+  const password = typeof req.body.password === 'string' ? req.body.password : '';
+  const confirmPassword = typeof req.body.confirmPassword === 'string' ? req.body.confirmPassword : '';
+  const respond = (error, info) => res.render('settings.njk', { account, error, info });
+
+  if (!(await account.comparePassword(current))) {
+    return respond('รหัสผ่านปัจจุบันไม่ถูกต้อง', null);
+  }
+  const error = passwordError(password, confirmPassword);
+  if (error) return respond(error, null);
+
+  account.password = password; // hashed by the pre-save hook
+  await account.save();
+  req.log.info({ user: String(account._id) }, 'password changed via settings');
+  respond(null, 'เปลี่ยนรหัสผ่านสำเร็จ');
 });
 
 router.post('/logout', (req, res) => {

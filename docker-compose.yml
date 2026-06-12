@@ -1,0 +1,31 @@
+# App + MongoDB. GNS3 is NOT containerized here — it needs KVM/QEMU and is
+# typically a separate host; default points at GNS3 on the Docker host.
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: mongodb://mongo:27017/pingable-dev
+      GNS3_HOST: ${GNS3_HOST:-http://host.docker.internal}
+      GNS3_PORT: ${GNS3_PORT:-3080}
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # Linux: reach GNS3 on the host
+    depends_on:
+      mongo:
+        condition: service_healthy # server.js exits if Mongo is unreachable at boot
+
+  mongo:
+    image: mongo:7
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand('ping').ok"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+volumes:
+  mongo-data:

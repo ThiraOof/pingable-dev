@@ -75,6 +75,44 @@
     {% endif %}
   </section>
 
+  {# ── Lab difficulty ── #}
+  <section class="admin-section">
+    <h2>สถิติการตรวจ Lab (เรียงจากผ่านยากสุด)
+      <span class="admin-badge">{{ labRows | length }}</span>
+    </h2>
+    {% if labRows.length %}
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Lab</th>
+            <th>คอร์ส</th>
+            <th>ครั้งที่ตรวจ</th>
+            <th>ผู้เรียน</th>
+            <th>อัตราผ่าน</th>
+            <th>คะแนนเฉลี่ย</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in labRows %}
+          <tr>
+            <td><strong>{{ r.labTitle }}</strong></td>
+            <td class="muted">{{ r.courseTitle }}</td>
+            <td>{{ r.attempts }}</td>
+            <td>{{ r.userCount }}</td>
+            <td class="{% if r.passRate < 50 %}idle-warn{% endif %}">{{ r.passRate }}%</td>
+            <td>{{ r.avgPct }}%</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="admin-empty" style="margin-top:8px">อัตราผ่านต่ำ = โจทย์/คำใบ้อาจยากเกินไป หรือเช็คเข้มเกิน — ใช้ตัดสินใจปรับเนื้อหา</p>
+    {% else %}
+    <p class="admin-empty">ยังไม่มีการตรวจ lab</p>
+    {% endif %}
+  </section>
+
   {# ── Users ── #}
   <section class="admin-section">
     <h2>ผู้ใช้ทั้งหมด

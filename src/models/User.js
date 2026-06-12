@@ -13,6 +13,9 @@ const userSchema = new mongoose.Schema({
   // leak can't be used to take over accounts (see passwordResetService).
   resetTokenHash: { type: String },
   resetTokenExp:  { type: Date },
+  // Per-account brute-force lockout (the IP rate limit alone is dodgeable).
+  failedLogins: { type: Number, default: 0 },
+  lockUntil:    { type: Date },
   enrolledCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
 }, { timestamps: true });
 
