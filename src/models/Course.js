@@ -79,7 +79,7 @@ const courseSchema = new mongoose.Schema({
   title:          { type: String, required: true },
   description:    { type: String },
   level:          { type: String, enum: ['beginner', 'intermediate', 'advanced', 'expert'], default: 'beginner' },
-  track:          { type: String },    // catalog grouping label e.g. "CCNP Enterprise"
+  track:          { type: String },    // catalog grouping label e.g. "Enterprise Networking"
   estimatedHours: { type: Number },
   prerequisites:  [String],            // free-text Thai prereq lines (display only)
   requiredCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }], // enforced prereqs

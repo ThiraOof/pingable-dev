@@ -1,12 +1,12 @@
-// CCNA: Introduction to Networks (ITN) — ระดับกลาง
+// Introduction to Networks — ระดับกลาง
 // โมเดลอ้างอิง, Ethernet/Switching, Network Layer, การแก้ปัญหา + แล็บ VPCS จริง
 
 export default {
   slug: 'ccna-intro',
-  title: 'CCNA: Introduction to Networks',
-  description: 'คอร์สแรกของชุด CCNA — โมเดล OSI/TCP-IP, Ethernet & switching, IPv4/IPv6 และการวินิจฉัยปัญหาเครือข่าย พร้อมแล็บลงมือทำ',
+  title: 'Introduction to Networks',
+  description: 'คอร์สแรกของชุด Networking — โมเดล OSI/TCP-IP, Ethernet & switching, IPv4/IPv6 และการวินิจฉัยปัญหาเครือข่าย พร้อมแล็บลงมือทำ',
   level: 'intermediate',
-  track: 'CCNA',
+  track: 'Networking',
   estimatedHours: 70,
   prerequisites: ['เข้าใจ IP addressing และ subnetting (คอร์ส IP Addressing & Subnetting)', 'คุ้นเคยกับการใช้ ping/trace'],
   published: true,

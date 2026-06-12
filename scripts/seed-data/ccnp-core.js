@@ -1,4 +1,4 @@
-// CCNP Enterprise: Core Networking (v9) — ระดับสูง
+// Enterprise Core Networking — ระดับสูง
 // ทฤษฎี + แบบทดสอบ + แล็บลงมือทำบน VyOS (โอเพนซอร์ส แทนภาพ Cisco IOS ที่ติดลิขสิทธิ์)
 // คำสั่งตัวอย่างอ้างอิงไวยากรณ์ VyOS 1.4+/1.5 — การให้คะแนนเน้นผลลัพธ์เชิงฟังก์ชัน
 // (ping/เส้นทาง/สถานะ) จึงไม่ผูกกับเวอร์ชันไวยากรณ์ที่ต่างกัน
@@ -7,12 +7,12 @@ import { vyos, pc, sw } from './_vyos.js';
 
 export default {
   slug: 'ccnp-core',
-  title: 'CCNP Enterprise: Core Networking (v9)',
+  title: 'Enterprise Core Networking',
   description: 'เจาะลึกสถาปัตยกรรมเครือข่ายองค์กร, การ forward ของอุปกรณ์, VLAN/Trunk และ Spanning Tree ระดับมืออาชีพ',
   level: 'advanced',
-  track: 'CCNP Enterprise',
+  track: 'Enterprise Networking',
   estimatedHours: 60,
-  prerequisites: ['ผ่านระดับ CCNA หรือเทียบเท่า', 'เข้าใจ routing/switching และ subnetting อย่างมั่นใจ'],
+  prerequisites: ['ผ่านชุดคอร์ส Networking (เช่น Introduction to Networks) หรือเทียบเท่า', 'เข้าใจ routing/switching และ subnetting อย่างมั่นใจ'],
   published: true,
   modules: [
     {

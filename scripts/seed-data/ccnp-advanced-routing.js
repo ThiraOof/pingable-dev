@@ -1,4 +1,4 @@
-// CCNP Enterprise: Advanced Routing (v9) — ระดับผู้เชี่ยวชาญ
+// Enterprise Advanced Routing — ระดับผู้เชี่ยวชาญ
 // ทฤษฎี + แบบทดสอบ + แล็บลงมือทำบน VyOS (โอเพนซอร์ส แทนภาพ Cisco IOS ที่ติดลิขสิทธิ์)
 // คำสั่งตัวอย่างอ้างอิงไวยากรณ์ VyOS 1.4+/1.5 — การให้คะแนนเน้นผลลัพธ์เชิงฟังก์ชัน
 // (ping/เส้นทาง/translation) จึงไม่ผูกกับเวอร์ชันไวยากรณ์ที่ต่างกัน
@@ -7,12 +7,12 @@ import { vyos, pc, sw } from './_vyos.js';
 
 export default {
   slug: 'ccnp-advanced-routing',
-  title: 'CCNP Enterprise: Advanced Routing (v9)',
+  title: 'Enterprise Advanced Routing',
   description: 'การ routing ขั้นสูงสำหรับองค์กร: EIGRP, OSPF หลายพื้นที่ และพื้นฐาน BGP ระหว่างองค์กร',
   level: 'expert',
-  track: 'CCNP Enterprise',
+  track: 'Enterprise Networking',
   estimatedHours: 60,
-  prerequisites: ['ผ่าน CCNP Enterprise: Core Networking หรือเทียบเท่า', 'เข้าใจ routing พื้นฐานและ subnetting อย่างลึกซึ้ง'],
+  prerequisites: ['ผ่าน Enterprise Core Networking หรือเทียบเท่า', 'เข้าใจ routing พื้นฐานและ subnetting อย่างลึกซึ้ง'],
   published: true,
   modules: [
     {

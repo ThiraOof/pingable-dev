@@ -4,7 +4,7 @@
 
 - เนื้อหาแบบ Course → Module → Lesson (ทฤษฎี / Lab / Quiz) เก็บ progress ต่อผู้ใช้
 - Lab provision GNS3 topology สดต่อคน คนละ project แยกขาดจากกัน (proxy บังคับสิทธิ์ — GNS3 ไม่ต้อง expose)
-- Lab ของคอร์ส CCNP ใช้ [VyOS](https://vyos.io) (open source) แทน Cisco IOS ที่ติดไลเซนส์
+- Lab ของคอร์ส Enterprise Networking ใช้ [VyOS](https://vyos.io) (open source) แทน Cisco IOS ที่ติดไลเซนส์
 - ควบคุมต้นทุน: 1 lab ต่อผู้ใช้, เพดานรวมทั้งระบบ (`LAB_MAX_CONCURRENT`), sweeper ปิด lab ร้าง
 
 ## Quick start (dev)
