@@ -717,7 +717,7 @@ main { flex: 1; }
 .lab-layout ~ footer { display: none; }
 
 /* ════════════════════════════════════════════════════════════════════
-   NetAcad-style Learn + Lab: lanes, modules, lessons, reading, quiz
+   Learn + Lab: lanes, modules, lessons, reading, quiz
    ════════════════════════════════════════════════════════════════════ */
 
 /* ── Catalog level lanes ─────────────────────────────────────── */
