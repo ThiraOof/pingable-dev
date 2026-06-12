@@ -84,6 +84,10 @@ router.post('/:courseId/:m/:l/start', requireAuth, startLimiter, async (req, res
     if (err instanceof labSessions.LabBusyError) {
       return res.status(409).json({ ok: false, error: err.message });
     }
+    if (err instanceof labSessions.LabCapacityError) {
+      // ทุกห้อง Lab ถูกใช้งานอยู่ — ไม่ใช่ข้อผิดพลาดของผู้ใช้ ให้ลองใหม่ทีหลัง
+      return res.status(503).set('Retry-After', '60').json({ ok: false, error: err.message });
+    }
     req.log.error({ err }, 'GNS3 buildLab failed');
     res.status(500).json({ ok: false, error: err.message });
   }

@@ -11,6 +11,13 @@ const BUILD_STALE_MS    = 5 * 60 * 1000;  // a 'building' doc older than this = 
 const ORPHAN_MIN_AGE_MS = 10 * 60 * 1000; // never reap GNS3 projects younger than this (build may be in flight)
 
 export class LabBusyError extends Error {}
+export class LabCapacityError extends Error {}
+
+// Global cap on concurrent lab sessions: every session is real QEMU VMs on the
+// GNS3 host, so admission control is what keeps one classroom-sized burst from
+// OOMing the box. Read per call so tests (and a restart after .env edits) pick
+// it up; <= 0 disables the cap.
+const maxConcurrent = () => Number(process.env.LAB_MAX_CONCURRENT || 10);
 
 async function teardown(projectId) {
   if (!projectId) return;
@@ -57,6 +64,23 @@ export async function startSession(userId, courseId, m, l, lab) {
   } catch (err) {
     if (err.code === 11000) throw new LabBusyError('Lab กำลังถูกสร้างอยู่ — กรุณารอสักครู่แล้วลองใหม่');
     throw err;
+  }
+
+  // Admission control, checked AFTER the claim so it is race-safe: a brand-new
+  // session (no prev doc) bumped the global count by one — if that pushed us
+  // past the cap, release the slot before any GNS3 work happens. Two racing
+  // newcomers at the boundary may both back off (transient over-rejection);
+  // the cap itself is never exceeded once builds start. A user rebuilding an
+  // existing session doesn't change the count and is always admitted.
+  const max = maxConcurrent();
+  if (!prev && max > 0) {
+    const active = await LabSession.countDocuments();
+    if (active > max) {
+      await LabSession.deleteOne({ user: userId, status: 'building' }).catch(() => {});
+      throw new LabCapacityError(
+        `ห้อง Lab เต็มชั่วคราว (กำลังถูกใช้งานครบ ${max} ห้อง) — กรุณารอสักครู่แล้วลองใหม่`,
+      );
+    }
   }
 
   await teardown(prev?.projectId); // one live lab per user
@@ -107,7 +131,7 @@ export async function probeBoot(session) {
 
 // ── Sweeper ───────────────────────────────────────────────────────────────────
 
-async function sweepIdle() {
+export async function sweepIdle() {
   const cutoff = new Date(Date.now() - IDLE_MINUTES * 60 * 1000);
   const stale = await LabSession.find({ lastActivityAt: { $lt: cutoff } });
   for (const doc of stale) {
@@ -121,7 +145,7 @@ async function sweepIdle() {
 // (crashed builds, projects from before sessions were persisted). Project
 // names embed their creation time (pingable_<ms>_<title>), so fresh projects
 // whose session doc may not carry a projectId yet are left alone.
-async function sweepOrphans() {
+export async function sweepOrphans() {
   let projects;
   try { projects = await gns3.getProjects(); }
   catch (err) { logger.warn({ err }, 'lab-sweeper: GNS3 unreachable'); return; }

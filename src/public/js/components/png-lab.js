@@ -92,13 +92,24 @@ define('png-lab', class extends PngEl {
       try {
         const res = await fetch(`/lab/${cid}/${M}/${L}/start`, { method: 'POST' });
         const d = await res.json();
-        if (!d.ok) throw new Error(d.error || 'start failed');
+        if (!d.ok) {
+          const e = new Error(d.error || 'start failed');
+          e.status = res.status;
+          throw e;
+        }
         clearInterval(timer); paintSteps(STEPS.length, { allDone: true });
         provisionSub.textContent = 'topology ready ✓'; gns3Frame.src = d.gns3Url;
         setTimeout(() => { labLoading.hidden = true; }, 500);
         bootWatch();
       } catch (err) {
-        clearInterval(timer); paintSteps(i, { errorIdx: i }); provision.classList.add('failed');
+        clearInterval(timer);
+        if (err.status === 503) { // ห้อง Lab เต็ม — ไม่ใช่ความผิดพลาด ให้ปุ่มลองใหม่แทน
+          provision.hidden = true; stoppedCard.hidden = false;
+          $('stoppedText').textContent = err.message;
+          labStatus.textContent = 'ห้อง Lab เต็มชั่วคราว'; labStatus.className = 'lab-status status-stopped';
+          return;
+        }
+        paintSteps(i, { errorIdx: i }); provision.classList.add('failed');
         provisionSub.textContent = `ข้อผิดพลาด: ${err.message}`;
         labStatus.textContent = 'เตรียม Lab ไม่สำเร็จ'; labStatus.className = 'lab-status status-error';
       }

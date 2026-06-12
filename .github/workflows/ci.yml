@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # The labSession/prereqs suites need a real MongoDB (they exercise the
+    # atomic start-lock / unique-index semantics, which mocks can't prove).
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # Seed-data content checks (broken node refs, bad regexes, quiz answers)
+      - run: npm run validate
+
+      - run: npm test
+        env:
+          MONGODB_TEST_URI: mongodb://127.0.0.1:27017
+
+      # The production bundle must stay buildable
+      - run: npm run build
