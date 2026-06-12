@@ -23,13 +23,13 @@
   </div>
   <div class="hero-visual">
     <png-terminal title="R1 — console">
-      <p><span class="prompt">R1#</span> show ip interface brief</p>
-      <p class="out">Interface          IP-Address    Status</p>
-      <p class="out">Gig0/0             192.168.1.1   <span class="ok">up</span></p>
-      <p class="out">Gig0/1             10.0.0.1      <span class="ok">up</span></p>
-      <p><span class="prompt">R1#</span> ping 10.0.0.2</p>
-      <p class="out">!!!!! <span class="ok">Success rate is 100 percent</span></p>
-      <p><span class="prompt">R1#</span> <span class="cursor">_</span></p>
+      <p><span class="prompt">vyos@R1:~$</span> show interfaces</p>
+      <p class="out">Interface    IP Address       S/L</p>
+      <p class="out">eth0         192.168.1.1/24   <span class="ok">u/u</span></p>
+      <p class="out">eth1         10.0.0.1/30      <span class="ok">u/u</span></p>
+      <p><span class="prompt">vyos@R1:~$</span> ping 10.0.0.2 count 3</p>
+      <p class="out">3 packets transmitted, <span class="ok">0% packet loss</span></p>
+      <p><span class="prompt">vyos@R1:~$</span> <span class="cursor">_</span></p>
     </png-terminal>
   </div>
 </png-hero>
