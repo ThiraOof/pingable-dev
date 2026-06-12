@@ -2,7 +2,8 @@ import express from 'express';
 import { randomBytes } from 'crypto';
 import { rateLimit } from 'express-rate-limit';
 import User from '../models/User.js';
-import { sendVerificationEmail } from '../services/emailService.js';
+import { sendVerificationEmail, sendPasswordResetEmail } from '../services/emailService.js';
+import { issueResetToken, findUserByResetToken, resetPassword } from '../services/passwordResetService.js';
 
 const router = express.Router();
 
@@ -12,13 +13,24 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
-    const view = req.path.includes('register') ? 'register.njk' : 'login.njk';
+    const view = req.path.includes('register') ? 'register.njk'
+      : req.path.includes('password') ? 'forgot-password.njk'
+      : 'login.njk';
     res.status(429).render(view, { error: 'พยายามมากเกินไป — กรุณารอ 15 นาทีแล้วลองใหม่', info: null });
   },
 });
 
 const str = (v) => (typeof v === 'string' ? v.trim() : '');
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Shared by register and reset-password — keep the policy in one place.
+function passwordError(password, confirmPassword) {
+  return (password.length < 8) ? 'รหัสผ่านต้องยาวอย่างน้อย 8 ตัวอักษร'
+    : (password.length > 72) ? 'รหัสผ่านยาวเกินไป (สูงสุด 72 ตัวอักษร)'
+    : (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) ? 'รหัสผ่านต้องมีตัวอักษรและตัวเลขอย่างน้อย 1 ตัว'
+    : (password !== confirmPassword) ? 'รหัสผ่านไม่ตรงกัน'
+    : null;
+}
 
 function consumeReturnTo(req) {
   const dest = req.session.returnTo;
@@ -36,7 +48,9 @@ router.get('/login', (req, res) => {
   if (typeof next === 'string' && next.startsWith('/') && !next.startsWith('//')) {
     req.session.returnTo = next;
   }
-  const info = req.query.info === 'verified' ? 'ยืนยันอีเมลสำเร็จแล้ว — กรุณาเข้าสู่ระบบ' : null;
+  const info = req.query.info === 'verified' ? 'ยืนยันอีเมลสำเร็จแล้ว — กรุณาเข้าสู่ระบบ'
+    : req.query.info === 'reset' ? 'ตั้งรหัสผ่านใหม่สำเร็จ — เข้าสู่ระบบด้วยรหัสผ่านใหม่ได้เลย'
+    : null;
   res.render('login.njk', { error: null, info });
 });
 
@@ -75,11 +89,7 @@ router.post('/register', authLimiter, async (req, res) => {
   const error =
     (username.length < 3 || username.length > 32) ? 'ชื่อผู้ใช้ต้องยาว 3–32 ตัวอักษร'
     : (!EMAIL_RE.test(email) || email.length > 254) ? 'รูปแบบอีเมลไม่ถูกต้อง'
-    : (password.length < 8) ? 'รหัสผ่านต้องยาวอย่างน้อย 8 ตัวอักษร'
-    : (password.length > 72) ? 'รหัสผ่านยาวเกินไป (สูงสุด 72 ตัวอักษร)'
-    : (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) ? 'รหัสผ่านต้องมีตัวอักษรและตัวเลขอย่างน้อย 1 ตัว'
-    : (password !== confirmPassword) ? 'รหัสผ่านไม่ตรงกัน'
-    : null;
+    : passwordError(password, confirmPassword);
   if (error) return res.render('register.njk', { error });
 
   try {
@@ -140,6 +150,61 @@ router.post('/resend', authLimiter, async (req, res) => {
     req.log.error({ err: e }, 'resend verification failed'),
   );
   res.redirect('/dashboard');
+});
+
+// ── Password reset ────────────────────────────────────────────────────────────
+
+router.get('/forgot-password', (req, res) => {
+  if (req.session.user) return res.redirect('/dashboard');
+  res.render('forgot-password.njk', { error: null, info: null });
+});
+
+// Always answer with the same message whether the account exists or not —
+// this endpoint must not leak which emails are registered.
+router.post('/forgot-password', authLimiter, async (req, res) => {
+  const email = str(req.body.email).toLowerCase();
+  if (!EMAIL_RE.test(email)) {
+    return res.render('forgot-password.njk', { error: 'รูปแบบอีเมลไม่ถูกต้อง', info: null });
+  }
+  const token = await issueResetToken(email);
+  if (token) {
+    sendPasswordResetEmail(email, token).catch((e) =>
+      req.log.error({ err: e }, 'failed to send password reset email'),
+    );
+  }
+  res.render('forgot-password.njk', {
+    error: null,
+    info: 'ถ้าอีเมลนี้มีบัญชีอยู่ เราได้ส่งลิงก์ตั้งรหัสผ่านใหม่ไปให้แล้ว (ลิงก์ใช้ได้ 1 ชั่วโมง) — เช็คกล่องจดหมายและสแปมด้วยนะ',
+  });
+});
+
+// GET /auth/reset-password/:token — the emailed link; show the new-password form
+router.get('/reset-password/:token', async (req, res) => {
+  const user = await findUserByResetToken(req.params.token);
+  if (!user) {
+    return res.render('forgot-password.njk', {
+      error: 'ลิงก์ตั้งรหัสผ่านหมดอายุหรือถูกใช้ไปแล้ว — กรุณาขอลิงก์ใหม่', info: null,
+    });
+  }
+  res.render('reset-password.njk', { token: req.params.token, error: null });
+});
+
+router.post('/reset-password', authLimiter, async (req, res) => {
+  const token = str(req.body.token);
+  const password = typeof req.body.password === 'string' ? req.body.password : '';
+  const confirmPassword = typeof req.body.confirmPassword === 'string' ? req.body.confirmPassword : '';
+
+  const error = passwordError(password, confirmPassword);
+  if (error) return res.render('reset-password.njk', { token, error });
+
+  const user = await resetPassword(token, password);
+  if (!user) {
+    return res.render('forgot-password.njk', {
+      error: 'ลิงก์ตั้งรหัสผ่านหมดอายุหรือถูกใช้ไปแล้ว — กรุณาขอลิงก์ใหม่', info: null,
+    });
+  }
+  req.log.info({ user: String(user._id) }, 'password reset completed');
+  res.redirect('/auth/login?info=reset');
 });
 
 router.post('/logout', (req, res) => {

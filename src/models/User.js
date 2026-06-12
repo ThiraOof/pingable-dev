@@ -9,6 +9,10 @@ const userSchema = new mongoose.Schema({
   emailVerified: { type: Boolean, default: false },
   emailToken:    { type: String },
   emailTokenExp: { type: Date },
+  // Password reset: only the sha256 of the emailed token is stored, so a DB
+  // leak can't be used to take over accounts (see passwordResetService).
+  resetTokenHash: { type: String },
+  resetTokenExp:  { type: Date },
   enrolledCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
 }, { timestamps: true });
 
