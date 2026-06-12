@@ -710,6 +710,10 @@ main { flex: 1; }
 .footer-brand { display: inline-flex; align-items: center; gap: var(--s-2); color: var(--text); font-family: var(--font-display); font-weight: 700; }
 .footer-brand .ico { color: var(--signal); }
 .footer-copy { margin-left: auto; }
+.footer-disclaimer {
+  max-width: var(--maxw); margin: var(--s-4) auto 0;
+  font-size: .75rem; opacity: .75;
+}
 .lab-layout ~ footer { display: none; }
 
 /* ════════════════════════════════════════════════════════════════════

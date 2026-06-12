@@ -6,6 +6,7 @@
 //
 // CLI:  node scripts/validate-seed.js   (also run automatically by seed.js)
 
+import { pathToFileURL } from 'node:url';
 import './load-env.js';
 
 const LESSON_TYPES = new Set(['reading', 'lab', 'quiz']);
@@ -108,7 +109,10 @@ export function reportValidation({ errors, warnings }) {
 }
 
 // CLI entry: node scripts/validate-seed.js
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/').split('/').pop())) {
+// Compare full file URLs — a basename endsWith() check wrongly matches when
+// imported from seed.js ("validate-seed.js".endsWith("seed.js")) and its
+// process.exit(0) would kill the seeder before it writes anything.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const mods = await Promise.all([
     import('./seed-data/networking-basics.js'),
     import('./seed-data/ip-subnetting.js'),

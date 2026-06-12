@@ -67,7 +67,7 @@ const T = {
     return { host: BLOCK, html: `<nav class="navbar"><a href="/" class="nav-brand">${glyph} Pingable</a><div class="nav-links">${links}</div></nav>` };
   },
 
-  'png-footer': () => ({ host: BLOCK, html: `<footer class="footer"><div class="footer-inner"><span class="footer-brand">${svgIcon('activity', 16)} Pingable</span><span>เรียน Network ผ่าน Lab จริงในเบราว์เซอร์</span><span class="footer-copy">&copy; 2026 Pingable — Network Labs ออนไลน์</span></div></footer>` }),
+  'png-footer': () => ({ host: BLOCK, html: `<footer class="footer"><div class="footer-inner"><span class="footer-brand">${svgIcon('activity', 16)} Pingable</span><span>เรียน Network ผ่าน Lab จริงในเบราว์เซอร์</span><span class="footer-copy">&copy; 2026 Pingable — Network Labs ออนไลน์</span></div><p class="footer-disclaimer">Cisco, CCNA, CCNP และ CCNP Enterprise เป็นเครื่องหมายการค้าจดทะเบียนของ Cisco Systems, Inc. Pingable ไม่ได้รับการรับรองจาก Cisco และไม่มีส่วนเกี่ยวข้องกับ Cisco Systems, Inc.</p></footer>` }),
 
   'png-hero': () => ({ host: BLOCK, html: `<section class="hero"><slot></slot></section>` }),
   'png-features': () => ({ host: BLOCK, html: `<section class="features"><div class="features-inner"><slot></slot></div></section>` }),
