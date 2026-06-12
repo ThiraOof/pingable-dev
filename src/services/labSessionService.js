@@ -29,8 +29,30 @@ export function getSession(userId) {
   return LabSession.findOne({ user: userId });
 }
 
+// "ตอนนี้มีคนทำ Lab อยู่ N คน" for the catalog/dashboard. Counts ready
+// sessions whose page heartbeat fired within the last 5 minutes; cached 60s
+// so the public catalog can't hammer Mongo.
+let activeCountCache = { n: 0, expiresAt: 0 };
+export async function countActiveLabs() {
+  if (Date.now() < activeCountCache.expiresAt) return activeCountCache.n;
+  const n = await LabSession.countDocuments({
+    status: 'ready',
+    lastActivityAt: { $gt: new Date(Date.now() - 5 * 60 * 1000) },
+  });
+  activeCountCache = { n, expiresAt: Date.now() + 60_000 };
+  return n;
+}
+
 export function touch(userId) {
   return LabSession.updateOne({ user: userId }, { $set: { lastActivityAt: new Date() } });
+}
+
+/** บันทึกว่าผู้ใช้เปิดคำใบ้ index นี้ใน run ปัจจุบัน (idempotent ต่อใบ) */
+export function recordHint(userId, idx) {
+  return LabSession.updateOne(
+    { user: userId },
+    { $addToSet: { hintsUsed: idx }, $set: { lastActivityAt: new Date() } },
+  );
 }
 
 /**
@@ -57,6 +79,7 @@ export async function startSession(userId, courseId, m, l, lab) {
           course: courseId, moduleIdx: m, lessonIdx: l,
           status: 'building', projectId: null, webUiUrl: null,
           nodes: {}, bootedNodes: [], lastActivityAt: new Date(),
+          hintsUsed: [], startedAt: new Date(),
         },
       },
       { upsert: true }, // default `new: false` → pre-update doc (null when inserted)

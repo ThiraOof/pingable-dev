@@ -1,6 +1,12 @@
 import express from 'express';
 import Course from '../models/Course.js';
+import User from '../models/User.js';
 import Progress, { completedSet, coursePercent, totalLessons, lessonCounts } from '../models/Progress.js';
+import { countActiveLabs } from '../services/labSessionService.js';
+import { getStats } from '../services/achievementService.js';
+import { levelFor } from '../config/xp.js';
+import { BADGES } from '../config/badges.js';
+import { goalLabel, sortCoursesByGoal } from '../config/goals.js';
 import requireAuth from '../middleware/requireAuth.js';
 
 const router = express.Router();
@@ -16,8 +22,11 @@ function findNextUp(course, done) {
 }
 
 async function collectDashboardData(userId) {
-  const progresses = await Progress.find({ user: userId }).sort({ updatedAt: -1 });
-  const allCourses = await Course.find({ published: true });
+  const [progresses, allCourses, userDoc] = await Promise.all([
+    Progress.find({ user: userId }).sort({ updatedAt: -1 }),
+    Course.find({ published: true }),
+    User.findById(userId).select('goal').lean(),
+  ]);
   const courseById = new Map(allCourses.map((c) => [String(c._id), c]));
 
   const myCourses = [];
@@ -57,9 +66,12 @@ async function collectDashboardData(userId) {
 
   activity.sort((a, b) => new Date(b.at) - new Date(a.at));
 
+  // คอร์สแนะนำเรียงตามเป้าหมายของผู้ใช้ (ไม่ตั้งเป้าหมาย = ลำดับเดิม)
   const startedIds = new Set(progresses.map((p) => String(p.course)));
-  const suggestions = allCourses
-    .filter((c) => !startedIds.has(String(c._id)) && totalLessons(c) > 0)
+  const suggestions = sortCoursesByGoal(
+    allCourses.filter((c) => !startedIds.has(String(c._id)) && totalLessons(c) > 0),
+    userDoc?.goal,
+  )
     .slice(0, 3)
     .map((course) => ({
       course,
@@ -71,6 +83,7 @@ async function collectDashboardData(userId) {
     myCourses,
     activity,
     suggestions,
+    goalLabel: goalLabel(userDoc?.goal),
     stats: {
       coursesStarted: myCourses.length,
       lessonsDone,
@@ -82,8 +95,21 @@ async function collectDashboardData(userId) {
 }
 
 router.get('/', requireAuth, async (req, res) => {
-  const data = await collectDashboardData(req.session.user.id);
-  res.render('dashboard.njk', { ...data, activity: data.activity.slice(0, 50) });
+  const [data, activeLabs, stats] = await Promise.all([
+    collectDashboardData(req.session.user.id),
+    countActiveLabs(),
+    getStats(req.session.user.id),
+  ]);
+  const gamify = stats ? {
+    xp: stats.xp || 0,
+    level: levelFor(stats.xp || 0),
+    streak: stats.streak || {},
+    earnedIds: (stats.badges || []).map((b) => b.id),
+  } : null;
+  res.render('dashboard.njk', {
+    ...data, activity: data.activity.slice(0, 50), activeLabs,
+    gamify, badgeRegistry: BADGES,
+  });
 });
 
 // GET /dashboard/export — printable progress report (all activity, no truncation)

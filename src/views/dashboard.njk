@@ -6,6 +6,12 @@
   <div class="dash-head">
     <h1>สวัสดี, {{ user.username }}</h1>
     <p>ภาพรวมการเรียนของคุณ — เก็บทีละบท เดี๋ยวก็ถึงปลายทาง</p>
+    {% if goalLabel %}
+    <png-chip icon="sparkles">เป้าหมาย: {{ goalLabel }} — <a href="/auth/settings">เปลี่ยน</a></png-chip>
+    {% endif %}
+    {% if activeLabs and activeLabs > 0 %}
+    <png-eyebrow live>ตอนนี้มี {{ activeLabs }} คนกำลังทำ Lab อยู่</png-eyebrow>
+    {% endif %}
   </div>
 
   <div class="dash-stats">
@@ -15,6 +21,37 @@
     <div class="dash-stat"><strong>{{ stats.quizzesPassed }}</strong><span>แบบทดสอบที่ผ่าน</span></div>
     <div class="dash-stat"><strong>{% if stats.avgScore is not none %}{{ stats.avgScore }}%{% else %}—{% endif %}</strong><span>คะแนนเฉลี่ย</span></div>
   </div>
+
+  {% if gamify %}
+  <div class="dash-gamify">
+    <div class="dash-gamify-card dash-level">
+      <div class="dash-gamify-label">ตำแหน่งปัจจุบัน</div>
+      <div class="dash-level-name">{{ gamify.level.title }}</div>
+      {% if gamify.level.next %}
+      <div class="dash-level-bar"><span style="width: {{ gamify.level.progressPct }}%"></span></div>
+      <p class="dash-gamify-sub">อีก {{ gamify.level.next.xpNeeded }} XP เลื่อนตำแหน่งเป็น {{ gamify.level.next.title }}</p>
+      {% else %}
+      <p class="dash-gamify-sub">ตำแหน่งสูงสุดแล้ว 🎖️</p>
+      {% endif %}
+      <p class="dash-gamify-xp">{{ gamify.xp }} XP สะสม</p>
+    </div>
+    <div class="dash-gamify-card dash-streak">
+      <div class="dash-streak-fire">🔥</div>
+      <strong>{{ gamify.streak.current or 0 }} วันติด</strong>
+      <span class="dash-gamify-sub">สถิติสูงสุด {{ gamify.streak.longest or 0 }} วัน</span>
+    </div>
+    <div class="dash-gamify-card dash-badges">
+      <div class="dash-gamify-label">Badges ({{ gamify.earnedIds.length }}/{{ badgeRegistry.length }})</div>
+      <div class="badge-grid">
+        {% for b in badgeRegistry %}
+        <span class="badge-item {{ 'earned' if b.id in gamify.earnedIds else 'locked' }}" title="{{ b.title }} — {{ b.desc }}">
+          <span class="badge-icon">{{ b.icon }}</span><small>{{ b.title }}</small>
+        </span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
 
   <div class="dash-export-row">
     <png-button variant="secondary" href="/dashboard/export" icon="download">ส่งออกรายงาน PDF</png-button>

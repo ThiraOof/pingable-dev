@@ -61,6 +61,12 @@ export function validateCourses(courses) {
               }
             }
           });
+          if (lesson.scenario) {
+            if (!lesson.scenario.body) err(`${where} scenario has no body`);
+            if (lesson.scenario.priority && !['low', 'medium', 'high'].includes(lesson.scenario.priority)) {
+              err(`${where} scenario priority "${lesson.scenario.priority}" not in low/medium/high`);
+            }
+          }
           (lesson.gradingChecks || []).forEach((ck, i) => {
             if (!names.has(ck.node)) err(`${where} check #${i} ("${ck.description}") targets unknown node "${ck.node}"`);
             if (!ck.command) err(`${where} check #${i} missing command`);
@@ -119,6 +125,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     import('./seed-data/ccna-intro.js'),
     import('./seed-data/ccnp-core.js'),
     import('./seed-data/ccnp-advanced-routing.js'),
+    import('./seed-data/playground.js'),
   ]);
   const ok = reportValidation(validateCourses(mods.map((m) => m.default)));
   process.exit(ok ? 0 : 1);

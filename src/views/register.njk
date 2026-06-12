@@ -30,6 +30,17 @@
         <label for="email">อีเมล</label>
         <input type="email" id="email" name="email" required placeholder="you@example.com" autocomplete="email">
       </div>
+      {% if goals %}
+      <div class="form-group">
+        <label for="goal">เป้าหมายของคุณ <span class="field-optional">(ไม่บังคับ — เราจะเรียงคอร์สแนะนำให้ตรงทาง)</span></label>
+        <select id="goal" name="goal">
+          <option value="">— เลือกเป้าหมาย —</option>
+          {% for key, g in goals %}
+          <option value="{{ key }}">{{ g.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
       <div class="form-group">
         <label for="password">รหัสผ่าน</label>
         <div class="pw-wrap">

@@ -8,6 +8,7 @@ import { runChecks } from '../services/gradingService.js';
 import { markComplete } from '../models/Progress.js';
 import LabAttempt from '../models/LabAttempt.js';
 import * as labSessions from '../services/labSessionService.js';
+import { award } from '../services/achievementService.js';
 import { checkPrerequisites } from '../utils/prereqs.js';
 
 const router = express.Router();
@@ -138,28 +139,77 @@ router.post('/:courseId/:m/:l/grade', requireAuth, async (req, res) => {
     await labSessions.touch(userId);
     const { score, total, results } = await runChecks(session.nodes, lab.gradingChecks);
     const pct = total > 0 ? Math.round((score / total) * 100) : 0;
-    const passed = pct >= 60;
+    const passed = pct >= (lab.passThreshold ?? 60);
+    const hintsUsed = session.hintsUsed?.length || 0;
 
-    await Promise.all([
-      passed
-        ? markComplete(userId, courseId, m, l, 'lab', pct).catch((e) => req.log.error({ err: e }, 'progress save failed'))
-        : null,
-      LabAttempt.create({
-        user: userId, course: courseId, moduleIdx: m, lessonIdx: l,
-        pct, passed, score, total,
-        results: results.map((r, i) => ({
-          description: lab.gradingChecks[i]?.description || `ข้อ ${i + 1}`,
-          passed: r.passed,
-          points: r.points ?? 1,
-        })),
-      }).catch((e) => req.log.error({ err: e }, 'attempt save failed')),
+    // ประวัติ "ก่อน" บันทึก attempt รอบนี้ — ใช้ตัดสิน one-shot / comeback
+    const where = { user: userId, course: courseId, moduleIdx: m, lessonIdx: l };
+    const [priorAttempts, priorFails] = await Promise.all([
+      LabAttempt.countDocuments(where),
+      LabAttempt.countDocuments({ ...where, passed: false }),
     ]);
 
-    res.json({ ok: true, score, total, results });
+    let firstCompletion = false;
+    if (passed) {
+      firstCompletion = (await markComplete(userId, courseId, m, l, 'lab', pct)
+        .catch((e) => { req.log.error({ err: e }, 'progress save failed'); return null; }))?.inserted ?? false;
+    }
+    await LabAttempt.create({
+      user: userId, course: courseId, moduleIdx: m, lessonIdx: l,
+      pct, passed, score, total, hintsUsed,
+      results: results.map((r, i) => ({
+        description: lab.gradingChecks[i]?.description || `ข้อ ${i + 1}`,
+        passed: r.passed,
+        points: r.points ?? 1,
+      })),
+    }).catch((e) => req.log.error({ err: e }, 'attempt save failed'));
+
+    // Streak/XP/badges — สถิติพังต้องไม่ล้มการตรวจ จึง catch ทิ้งเสมอ
+    const gamify = await award(userId, 'grade', {
+      courseId, moduleIdx: m, lessonIdx: l,
+      pct, passed, firstCompletion,
+      passedChecks: results.filter((r) => r.passed).length,
+      attemptNumber: priorAttempts + 1,
+      failedBefore: priorFails,
+      hintsUsed,
+      durationMin: session.startedAt ? (Date.now() - new Date(session.startedAt).getTime()) / 60000 : null,
+      estMinutes: lab.estMinutes || 0,
+    }).catch((e) => { req.log.error({ err: e }, 'achievement award failed'); return null; });
+
+    // Failed checks carry their human-written hint; `expect` itself never
+    // leaves the server (it is the answer — trivially satisfiable with echo).
+    res.json({
+      ok: true, score, total, gamify,
+      results: results.map((r, i) => (r.passed ? r : { ...r, failHint: lab.gradingChecks[i]?.failHint })),
+    });
   } catch (err) {
     req.log.error({ err }, 'grading failed');
     res.status(500).json({ ok: false, error: err.message });
   }
+});
+
+// POST /lab/:courseId/:m/:l/hint/:idx — เปิดคำใบ้ "แบบมีราคา"
+// เนื้อคำใบ้ไม่ถูกฝังใน HTML ของหน้า (เปิด devtools อ่านฟรีไม่ได้) — ต้องขอ
+// ผ่าน endpoint นี้ซึ่งบันทึกการใช้ลง session ฝั่ง server เพื่อให้โบนัส
+// no-hint เชื่อถือได้ การขอใบเดิมซ้ำไม่โดนหักเพิ่ม ($addToSet)
+router.post('/:courseId/:m/:l/hint/:idx', requireAuth, async (req, res) => {
+  const m = Number(req.params.m);
+  const l = Number(req.params.l);
+  const idx = Number(req.params.idx);
+
+  const { lab } = await locateLab(req.params.courseId, m, l);
+  if (!lab) return res.status(404).json({ ok: false, error: 'Lab not found.' });
+  if (!Number.isInteger(idx) || idx < 0 || idx >= (lab.hints?.length || 0)) {
+    return res.status(400).json({ ok: false, error: 'invalid hint index' });
+  }
+
+  const session = await labSessions.getSession(req.session.user.id);
+  if (!matchesLab(session, req.params.courseId, m, l)) {
+    return res.status(409).json({ ok: false, error: 'เริ่ม Lab ก่อนจึงจะเปิดคำใบ้ได้' });
+  }
+
+  await labSessions.recordHint(req.session.user.id, idx);
+  res.json({ ok: true, hint: lab.hints[idx] });
 });
 
 // GET /lab/:courseId/:m/:l/history — last 20 grading attempts for this lab

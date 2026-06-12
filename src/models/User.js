@@ -6,6 +6,10 @@ const userSchema = new mongoose.Schema({
   email:    { type: String, required: true, unique: true, lowercase: true },
   password: { type: String, required: true },
   role:          { type: String, enum: ['student', 'admin'], default: 'student' },
+  // เป้าหมายการเรียน (src/config/goals.js) — ใช้จัดลำดับคอร์สแนะนำบน dashboard
+  goal:          { type: String, enum: ['exam-ccna', 'job-noc', 'job-neteng', 'career-switch', 'hobby'] },
+  // opt-out จาก leaderboard (ยังนับอันดับ แต่ชื่อแสดงเป็น "ผู้ไม่ประสงค์ออกนาม")
+  hideFromLeaderboard: { type: Boolean, default: false },
   emailVerified: { type: Boolean, default: false },
   emailToken:    { type: String },
   emailTokenExp: { type: Date },

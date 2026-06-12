@@ -1,0 +1,37 @@
+{% extends "base.njk" %}
+{% block title %}อันดับประจำสัปดาห์ — Pingable{% endblock %}
+
+{% block content %}
+<png-page-header title="อันดับประจำสัปดาห์" subtitle="นับ XP ที่เก็บได้ตั้งแต่วันจันทร์ — รีเซ็ตทุกสัปดาห์ ใครก็ขึ้นแท่นได้"></png-page-header>
+
+<div class="lb-wrap">
+  {% if myRank %}
+  <div class="lb-me-card">
+    <span>อันดับของคุณสัปดาห์นี้</span>
+    <strong>#{{ myRank }}</strong>
+    <span class="lb-me-xp">{{ myXp }} XP จากผู้เล่น {{ totalPlayers }} คน</span>
+  </div>
+  {% else %}
+  <div class="lb-me-card empty">
+    <span>สัปดาห์นี้คุณยังไม่มี XP เลย — ทำแล็บสักข้อแล้วกลับมาดูอันดับ!</span>
+    <png-button variant="primary" href="/courses" icon-end="arrow-right">ไปเก็บ XP</png-button>
+  </div>
+  {% endif %}
+
+  {% if board.length %}
+  <ol class="lb-list">
+    {% for row in board %}
+    <li class="lb-row{% if row.isMe %} me{% endif %}{% if row.rank <= 3 %} top{% endif %}">
+      <span class="lb-rank">{% if row.rank == 1 %}🥇{% elif row.rank == 2 %}🥈{% elif row.rank == 3 %}🥉{% else %}{{ row.rank }}{% endif %}</span>
+      <span class="lb-name">{{ row.username }}{% if row.isMe %} <small>(คุณ)</small>{% endif %}</span>
+      <span class="lb-xp">{{ row.xp }} XP</span>
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <div class="empty-state"><p>ยังไม่มีใครเก็บ XP ในสัปดาห์นี้ — เป็นคนแรกสิ!</p></div>
+  {% endif %}
+
+  <p class="lb-note">เริ่มนับใหม่ทุกวันจันทร์ 00:00 น. (เวลาไทย) · ไม่อยากแสดงชื่อ? ปิดได้ใน<a href="/auth/settings">ตั้งค่าบัญชี</a></p>
+</div>
+{% endblock %}

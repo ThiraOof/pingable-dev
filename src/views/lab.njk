@@ -6,10 +6,12 @@
   course-id="{{ course._id }}" m="{{ m }}" l="{{ l }}"
   course-title="{{ course.title }}"
   title="{{ lab.title }}" desc="{{ lab.description }}"
+  pass-threshold="{{ lab.passThreshold or 60 }}"
   grade-count="{{ (lab.gradingChecks | length) if lab.gradingChecks else 0 }}">
   <script type="application/json">
 { "objectives": {{ (lab.objectives or []) | dump | safe }},
-  "hints": {{ (lab.hints or []) | dump | safe }} }
+  "hintCount": {{ (lab.hints | length) if lab.hints else 0 }},
+  "scenario": {{ (lab.scenario or none) | dump | safe }} }
   </script>
 </png-lab>
 {% endblock %}

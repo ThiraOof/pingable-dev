@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import Course from '../models/Course.js';
 import requireAuth from '../middleware/requireAuth.js';
 import { markComplete, getProgress, completedSet } from '../models/Progress.js';
+import { award } from '../services/achievementService.js';
 import { checkPrerequisites } from '../utils/prereqs.js';
 
 const router = express.Router();
@@ -69,8 +70,11 @@ router.post('/:courseId/:m/:l/complete', requireAuth, async (req, res) => {
   const { course, lesson } = await locate(courseId, m, l);
   if (!lesson) return res.status(404).json({ ok: false, error: 'Lesson not found.' });
 
-  await markComplete(req.session.user.id, courseId, m, l, lesson.type);
-  res.json({ ok: true });
+  const { inserted } = await markComplete(req.session.user.id, courseId, m, l, lesson.type);
+  const gamify = await award(req.session.user.id, 'reading', {
+    courseId, moduleIdx: m, lessonIdx: l, firstCompletion: inserted,
+  }).catch((e) => { req.log.error({ err: e }, 'achievement award failed'); return null; });
+  res.json({ ok: true, gamify });
 });
 
 // POST /learn/:courseId/:m/:l/quiz — grade quiz answers server-side
@@ -101,9 +105,15 @@ router.post('/:courseId/:m/:l/quiz', requireAuth, async (req, res) => {
 
   const pct = total > 0 ? Math.round((score / total) * 100) : 0;
   const passed = pct >= (lesson.passThreshold ?? 60);
-  if (passed) await markComplete(req.session.user.id, courseId, m, l, 'quiz', pct);
+  let firstCompletion = false;
+  if (passed) {
+    firstCompletion = (await markComplete(req.session.user.id, courseId, m, l, 'quiz', pct)).inserted;
+  }
+  const gamify = await award(req.session.user.id, 'quiz', {
+    courseId, moduleIdx: m, lessonIdx: l, pct, passed, firstCompletion,
+  }).catch((e) => { req.log.error({ err: e }, 'achievement award failed'); return null; });
 
-  res.json({ ok: true, score, total, pct, passed, threshold: lesson.passThreshold ?? 60, results });
+  res.json({ ok: true, score, total, pct, passed, threshold: lesson.passThreshold ?? 60, results, gamify });
 });
 
 export default router;

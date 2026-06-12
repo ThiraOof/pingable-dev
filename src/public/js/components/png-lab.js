@@ -8,6 +8,7 @@ define('png-lab', class extends PngEl {
     const sr = this.hydrate();
     const cid = this.attr('course-id'), M = this.attr('m'), L = this.attr('l');
     const gradeCount = +this.attr('grade-count', '0');
+    const passThreshold = +this.attr('pass-threshold', '60');
     const ICO_CHK = svgIcon('check', 14), ICO_X = svgIcon('x', 14), ICO_CHK_L = svgIcon('check', 22), ICO_X_L = svgIcon('x', 22);
 
     document.querySelector('png-footer')?.setAttribute('hidden', '');  // full-height page
@@ -114,7 +115,9 @@ define('png-lab', class extends PngEl {
         labStatus.textContent = 'เตรียม Lab ไม่สำเร็จ'; labStatus.className = 'lab-status status-error';
       }
     }
+    let lastAttempts = []; // ครั้งล่าสุดไว้เทียบ "ดีขึ้น/ลดลง" ตอนตรวจรอบใหม่
     function renderHistory(attempts) {
+      lastAttempts = attempts;
       if (!historyList || !historyWrap || !attempts.length) return;
       historyWrap.hidden = false;
       historyList.innerHTML = attempts.map((a) => {
@@ -175,6 +178,26 @@ define('png-lab', class extends PngEl {
     });
     if (btnRestart) btnRestart.addEventListener('click', startLab);
 
+    // คำใบ้แบบมีราคา: เนื้อหาไม่อยู่ในหน้า ต้องยิง endpoint ที่บันทึกการใช้
+    sr.querySelectorAll('.hint-unlock').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const item = btn.closest('.hint-item'), idx = item?.dataset.idx;
+        if (!item || item.classList.contains('unlocked')) return;
+        btn.disabled = true;
+        try {
+          const r = await fetch(`/lab/${cid}/${M}/${L}/hint/${idx}`, { method: 'POST' });
+          const d = await r.json();
+          if (!d.ok) throw new Error(d.error || 'failed');
+          const p = item.querySelector('.hint-text');
+          p.textContent = d.hint; p.hidden = false;
+          item.classList.remove('hint-locked'); item.classList.add('unlocked');
+          btn.innerHTML = `${svgIcon('check', 14)} คำใบ้ที่ ${Number(idx) + 1}`;
+        } catch (err) {
+          alert(err.message || 'เปิดคำใบ้ไม่สำเร็จ');
+        } finally { btn.disabled = false; }
+      });
+    });
+
     const sidebar = $('labSidebar'), scrim = $('labScrim'), btnToggle = $('btnToggleSidebar');
     if (btnToggle) btnToggle.addEventListener('click', () => { sidebar.classList.add('open'); scrim.hidden = false; });
     if (scrim) scrim.addEventListener('click', () => { sidebar.classList.remove('open'); scrim.hidden = true; });
@@ -183,11 +206,12 @@ define('png-lab', class extends PngEl {
     if (btnGrade) {
       btnGrade.addEventListener('click', async () => {
         btnGrade.disabled = true; btnGrade.textContent = 'กำลังตรวจ...';
+        const prevPct = lastAttempts[0]?.pct; // เก็บก่อน loadHistory จะเขียนทับด้วยรอบนี้
         try {
           const res = await fetch(`/lab/${cid}/${M}/${L}/grade`, { method: 'POST' });
           const d = await res.json();
           if (!d.ok) throw new Error(d.error || 'grade failed');
-          renderGrade(d); gradeModal.hidden = false;
+          renderGrade(d, prevPct); renderGamify(d.gamify); gradeModal.hidden = false;
           loadHistory();
         } catch (err) { alert(`ตรวจไม่สำเร็จ: ${err.message}`); }
         finally { btnGrade.disabled = false; btnGrade.innerHTML = `${svgIcon('badge-check', 18)} ตรวจคำตอบ (${gradeCount} ข้อ)`; }
@@ -197,9 +221,9 @@ define('png-lab', class extends PngEl {
     if (btnClose) btnClose.addEventListener('click', () => { gradeModal.hidden = true; });
     gradeModal.addEventListener('click', (e) => { if (e.target === gradeModal) gradeModal.hidden = true; });
 
-    function renderGrade({ score, total, results }) {
+    function renderGrade({ score, total, results }, prevPct) {
       const pct = total > 0 ? Math.round((score / total) * 100) : 0;
-      const passed = pct >= 60, okCount = results.filter((r) => r.passed).length;
+      const passed = pct >= passThreshold, okCount = results.filter((r) => r.passed).length;
       const scoreRing = $('scoreRing'), scoreFill = $('scoreRingFill');
       scoreRing.className = 'score-ring ' + (passed ? 'pass' : 'fail');
       scoreFill.style.strokeDashoffset = SCORE_C;
@@ -208,7 +232,14 @@ define('png-lab', class extends PngEl {
       const banner = $('gradeBanner');
       banner.innerHTML = (passed ? ICO_CHK_L + ' ผ่านแล้ว!' : ICO_X_L + ' ยังไม่ผ่าน — ลองอีกครั้ง');
       banner.className = 'grade-banner ' + (passed ? 'pass' : 'fail');
-      $('gradeScoreText').textContent = `ได้ ${score} จาก ${total} คะแนน · ผ่าน ${okCount}/${results.length} ข้อ`;
+      const failCount = results.length - okCount;
+      let txt = `ได้ ${score} จาก ${total} คะแนน · ผ่าน ${okCount}/${results.length} ข้อ`;
+      if (failCount) txt += ` — เหลืออีก ${failCount} ข้อ (${total - score} คะแนน) ใกล้แล้ว!`;
+      if (typeof prevPct === 'number') {
+        const diff = pct - prevPct;
+        txt += diff > 0 ? ` · ดีขึ้นจากครั้งก่อน +${diff}%` : diff < 0 ? ` · ลดลงจากครั้งก่อน ${diff}%` : ' · เท่าครั้งก่อน';
+      }
+      $('gradeScoreText').textContent = txt;
       resultList.innerHTML = '';
       for (const r of results) {
         const li = document.createElement('li');
@@ -217,12 +248,29 @@ define('png-lab', class extends PngEl {
           `<div class="grade-result-row"><span class="grade-icon ${r.passed ? 'pass' : 'fail'}">${r.passed ? ICO_CHK : ICO_X}</span>` +
           `<span class="grade-desc">${esc(r.description)}</span><span class="grade-pts">${r.passed ? r.points : 0} / ${r.points} pt</span>` +
           (r.output ? '<span class="grade-toggle">output ▾</span>' : '') + `</div>` +
+          (!r.passed && r.failHint ? `<div class="grade-fail-hint">${svgIcon('sparkles', 14)} ${esc(r.failHint)}</div>` : '') +
           (r.output ? `<pre class="grade-output">${esc(r.output)}</pre>` : '');
         if (r.output) li.querySelector('.grade-result-row').addEventListener('click', () => li.classList.toggle('expanded'));
         resultList.appendChild(li);
       }
       updateObjectives(results);
     }
+    // แถบ XP/streak/badge ใต้สรุปคะแนน — โชว์เฉพาะตอนมีอะไรให้อวด
+    function renderGamify(g) {
+      sr.getElementById('gradeGamify')?.remove();
+      if (!g) return;
+      const chips = [];
+      if (g.xpGained > 0) chips.push(`<span class="gamify-chip xp">+${g.xpGained} XP</span>`);
+      if (g.levelUp) chips.push(`<span class="gamify-chip level">🎉 เลื่อนตำแหน่งเป็น ${esc(g.levelUp.title)}!</span>`);
+      for (const b of g.newBadges || []) chips.push(`<span class="gamify-chip badge" title="${esc(b.desc)}">${b.icon} ${esc(b.title)}</span>`);
+      if (g.streak?.daily && g.streak.current > 1) chips.push(`<span class="gamify-chip streak">🔥 ${g.streak.current} วันติด</span>`);
+      if (!chips.length) return;
+      const div = document.createElement('div');
+      div.className = 'grade-gamify'; div.id = 'gradeGamify';
+      div.innerHTML = chips.join('');
+      sr.querySelector('.grade-score-meta')?.appendChild(div);
+    }
+
     function updateObjectives(results) {
       if (!objectiveList) return;
       const items = [...objectiveList.querySelectorAll('li')];

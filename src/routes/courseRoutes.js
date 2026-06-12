@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import Course from '../models/Course.js';
 import Progress, { getProgress, completedSet, coursePercent, totalLessons, lessonCounts } from '../models/Progress.js';
 import { checkPrerequisites } from '../utils/prereqs.js';
+import { countActiveLabs } from '../services/labSessionService.js';
 import requireAuth from '../middleware/requireAuth.js';
 
 const router = express.Router();
@@ -54,7 +55,7 @@ router.get('/', async (req, res) => {
     .map(({ key, label }) => ({ key, label, courses: enriched.filter((c) => c.doc.level === key) }))
     .filter((lane) => lane.courses.length > 0);
 
-  res.render('courses.njk', { lanes });
+  res.render('courses.njk', { lanes, activeLabs: await countActiveLabs() });
 });
 
 // GET /courses/:courseId — course detail: modules, lessons, progress (public)

@@ -24,6 +24,35 @@
   </div>
 
   <div class="auth-card">
+    <h2>เป้าหมายการเรียน</h2>
+    <p class="auth-sub">ใช้จัดลำดับ "คอร์สถัดไปที่น่าสนใจ" บนแดชบอร์ดให้ตรงกับเส้นทางของคุณ</p>
+    <form method="POST" action="/auth/settings/goal">
+      <div class="form-group">
+        <label for="goal">เป้าหมายของคุณ</label>
+        <select id="goal" name="goal">
+          <option value="">— ยังไม่ระบุ —</option>
+          {% for key, g in goals %}
+          <option value="{{ key }}" {% if account.goal == key %}selected{% endif %}>{{ g.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">บันทึกเป้าหมาย</button>
+    </form>
+  </div>
+
+  <div class="auth-card">
+    <h2>ความเป็นส่วนตัว</h2>
+    <p class="auth-sub">ควบคุมการแสดงชื่อของคุณบน<a href="/leaderboard">ตารางอันดับประจำสัปดาห์</a></p>
+    <form method="POST" action="/auth/settings/leaderboard">
+      <label class="toggle-row">
+        <input type="checkbox" name="hideFromLeaderboard" {% if account.hideFromLeaderboard %}checked{% endif %}>
+        <span>ซ่อนชื่อของฉันจากตารางอันดับ (แสดงเป็น "ผู้ไม่ประสงค์ออกนาม")</span>
+      </label>
+      <button type="submit" class="btn btn-secondary btn-block">บันทึก</button>
+    </form>
+  </div>
+
+  <div class="auth-card">
     <h2>เปลี่ยนรหัสผ่าน</h2>
     <p class="auth-sub">รหัสผ่านใหม่อย่างน้อย 8 ตัวอักษร มีตัวอักษรและตัวเลขอย่างน้อยอย่างละ 1 ตัว</p>
     {% if info %}

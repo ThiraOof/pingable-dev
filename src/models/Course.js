@@ -20,8 +20,18 @@ const checkSchema = new mongoose.Schema({
   node:        { type: String, required: true }, // GNS3 node name e.g. "PC1"
   command:     { type: String, required: true }, // CLI command to run e.g. "ping 192.168.1.2"
   expect:      { type: String, required: true }, // regex to match against output
+  failHint:    { type: String },                 // Thai guidance shown when this check fails
+                                                 // (never expose `expect` itself — it is the answer)
   points:      { type: Number, default: 1 },
 });
+
+// Optional story wrapper for a lab, rendered as a helpdesk ticket above the
+// objectives ("คุณคือวิศวกรใหม่ สาขาเชียงใหม่ ping ไม่ได้ ลูกค้าโวยมา 20 นาทีแล้ว").
+const scenarioSchema = new mongoose.Schema({
+  from:     { type: String },                                  // ผู้แจ้ง
+  priority: { type: String, enum: ['low', 'medium', 'high'] }, // ความเร่งด่วนบน ticket
+  body:     { type: String },                                  // เนื้อเรื่อง (plain text, Thai)
+}, { _id: false });
 
 // ── Theory reading content ──────────────────────────────────────────
 const readingSectionSchema = new mongoose.Schema({
@@ -55,6 +65,7 @@ const lessonSchema = new mongoose.Schema({
     nodes: [nodeSchema],
     links: [linkSchema],
   },
+  scenario:      scenarioSchema,
   objectives:    [String],
   hints:         [String],
   gradingChecks: [checkSchema],

@@ -5,6 +5,7 @@ import User from '../models/User.js';
 import requireAuth from '../middleware/requireAuth.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../services/emailService.js';
 import { issueResetToken, findUserByResetToken, resetPassword } from '../services/passwordResetService.js';
+import { GOALS, GOAL_KEYS } from '../config/goals.js';
 
 const router = express.Router();
 
@@ -112,7 +113,7 @@ router.post('/login', authLimiter, async (req, res) => {
 
 router.get('/register', (req, res) => {
   if (req.session.user) return res.redirect('/dashboard');
-  res.render('register.njk', { error: null });
+  res.render('register.njk', { error: null, goals: GOALS });
 });
 
 router.post('/register', authLimiter, async (req, res) => {
@@ -120,17 +121,18 @@ router.post('/register', authLimiter, async (req, res) => {
   const email = str(req.body.email).toLowerCase();
   const password = typeof req.body.password === 'string' ? req.body.password : '';
   const confirmPassword = typeof req.body.confirmPassword === 'string' ? req.body.confirmPassword : '';
+  const goal = GOAL_KEYS.includes(str(req.body.goal)) ? str(req.body.goal) : undefined; // optional
 
   const error =
     (username.length < 3 || username.length > 32) ? 'ชื่อผู้ใช้ต้องยาว 3–32 ตัวอักษร'
     : (!EMAIL_RE.test(email) || email.length > 254) ? 'รูปแบบอีเมลไม่ถูกต้อง'
     : passwordError(password, confirmPassword);
-  if (error) return res.render('register.njk', { error });
+  if (error) return res.render('register.njk', { error, goals: GOALS });
 
   try {
     const token = makeVerificationToken();
     const user = new User({
-      username, email, password,
+      username, email, password, goal,
       emailToken: token,
       emailTokenExp: new Date(Date.now() + 24 * 60 * 60 * 1000),
     });
@@ -148,7 +150,7 @@ router.post('/register', authLimiter, async (req, res) => {
     const msg = err.code === 11000
       ? 'อีเมลหรือชื่อผู้ใช้นี้ถูกใช้ไปแล้ว'
       : 'เกิดข้อผิดพลาด กรุณาลองใหม่';
-    res.render('register.njk', { error: msg });
+    res.render('register.njk', { error: msg, goals: GOALS });
   }
 });
 
@@ -244,11 +246,32 @@ router.post('/reset-password', authLimiter, async (req, res) => {
 
 // ── Account settings ─────────────────────────────────────────────────────────
 
+const ACCOUNT_FIELDS = 'username email emailVerified createdAt goal hideFromLeaderboard';
+
 router.get('/settings', requireAuth, async (req, res) => {
-  const account = await User.findById(req.session.user.id)
-    .select('username email emailVerified createdAt').lean();
+  const account = await User.findById(req.session.user.id).select(ACCOUNT_FIELDS).lean();
   if (!account) return res.redirect('/auth/login');
-  res.render('settings.njk', { account, error: null, info: null });
+  res.render('settings.njk', { account, goals: GOALS, error: null, info: null });
+});
+
+// POST /auth/settings/leaderboard — opt-in/out จากการแสดงชื่อบน leaderboard
+router.post('/settings/leaderboard', requireAuth, async (req, res) => {
+  const hide = req.body.hideFromLeaderboard === 'on';
+  await User.updateOne({ _id: req.session.user.id }, { $set: { hideFromLeaderboard: hide } });
+  const account = await User.findById(req.session.user.id).select(ACCOUNT_FIELDS).lean();
+  res.render('settings.njk', {
+    account, goals: GOALS, error: null,
+    info: hide ? 'ซ่อนชื่อจากตารางอันดับแล้ว' : 'แสดงชื่อบนตารางอันดับแล้ว',
+  });
+});
+
+// POST /auth/settings/goal — เปลี่ยนเป้าหมายการเรียน (ใช้จัดลำดับคอร์สแนะนำ)
+router.post('/settings/goal', requireAuth, async (req, res) => {
+  const goal = str(req.body.goal);
+  const update = GOAL_KEYS.includes(goal) ? { $set: { goal } } : { $unset: { goal: 1 } };
+  await User.updateOne({ _id: req.session.user.id }, update);
+  const account = await User.findById(req.session.user.id).select(ACCOUNT_FIELDS).lean();
+  res.render('settings.njk', { account, goals: GOALS, error: null, info: 'บันทึกเป้าหมายการเรียนแล้ว' });
 });
 
 router.post('/settings/password', requireAuth, authLimiter, async (req, res) => {

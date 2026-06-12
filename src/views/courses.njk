@@ -4,6 +4,12 @@
 {% block content %}
 <png-page-header title="คอร์สเรียนทั้งหมด" subtitle="เรียนรู้องค์ความรู้เครือข่าย พร้อมลงมือทำ Lab บน Topology จริง — ไล่ระดับตั้งแต่เริ่มต้นจนถึงผู้เชี่ยวชาญ"></png-page-header>
 
+{% if activeLabs and activeLabs > 0 %}
+<div class="live-labs-row">
+  <png-eyebrow live>ตอนนี้มี {{ activeLabs }} คนกำลังทำ Lab อยู่</png-eyebrow>
+</div>
+{% endif %}
+
 <div class="catalog-search-wrap">
   <input type="search" id="course-search" class="catalog-search" placeholder="ค้นหาคอร์ส..." autocomplete="off" spellcheck="false">
 </div>

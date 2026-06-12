@@ -12,6 +12,7 @@ import ipSubnetting from './seed-data/ip-subnetting.js';
 import ccnaIntro from './seed-data/ccna-intro.js';
 import ccnpCore from './seed-data/ccnp-core.js';
 import ccnpAdvancedRouting from './seed-data/ccnp-advanced-routing.js';
+import playground from './seed-data/playground.js';
 
 const courses = [
   networkingBasics,
@@ -19,6 +20,7 @@ const courses = [
   ccnaIntro,
   ccnpCore,
   ccnpAdvancedRouting,
+  playground,
 ];
 
 function lessonStats(course) {

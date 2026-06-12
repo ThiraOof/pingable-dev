@@ -16,6 +16,7 @@ const attemptSchema = new mongoose.Schema({
   score:     { type: Number, required: true },
   total:     { type: Number, required: true },
   results:    [resultSchema],
+  hintsUsed:  { type: Number, default: 0 }, // จำนวนคำใบ้ที่เปิดใน run นั้น (เก็บถาวรแม้ session ถูก sweep)
   shareToken: { type: String },
   at:         { type: Date, default: Date.now },
 }, { timestamps: false });

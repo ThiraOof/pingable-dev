@@ -26,6 +26,9 @@ const key = (m, l) => `${m}-${l}`;
  * Idempotently mark a lesson complete for a user. For graded lessons the
  * highest score seen is kept. Atomic — concurrent calls (double-click on
  * "เรียนจบ", parallel grades) can't duplicate an entry.
+ *
+ * @returns {{ inserted: boolean }} inserted = นี่คือ first completion ของ
+ *   บทเรียนนี้ (achievementService ใช้เป็น gate กัน farm XP จากการทำซ้ำ)
  */
 export async function markComplete(userId, courseId, moduleIdx, lessonIdx, type, score) {
   const owner = { user: userId, course: courseId };
@@ -52,6 +55,8 @@ export async function markComplete(userId, courseId, moduleIdx, lessonIdx, type,
       { arrayFilters: [{ 'e.moduleIdx': moduleIdx, 'e.lessonIdx': lessonIdx }] },
     );
   }
+
+  return { inserted: !!modifiedCount };
 }
 
 /** Fetch progress for a user+course (or null). */

@@ -19,6 +19,13 @@ const labSessionSchema = new mongoose.Schema({
   webUiUrl:  { type: String },
   nodes:     { type: mongoose.Schema.Types.Mixed, default: {} }, // name -> { consoleHost, consolePort }
   bootedNodes:    { type: [String], default: [] },  // nodes whose console already answered a probe
+  // hint indexes the user opened this run — recorded server-side so the
+  // no-hint XP bonus/badge can't be gamed from the client (one doc per user,
+  // reset on every startSession)
+  hintsUsed: { type: [Number], default: [] },
+  // when this run's build was claimed — basis for the speedrunner badge
+  // (createdAt is useless here: the one-doc-per-user upsert keeps it forever)
+  startedAt: { type: Date },
   lastActivityAt: { type: Date, default: Date.now, expires: BACKUP_EXPIRE_SECONDS }, // bumped by heartbeat; sweeper key + TTL backup
 }, { timestamps: true });
 

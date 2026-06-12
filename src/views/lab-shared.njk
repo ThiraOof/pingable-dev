@@ -1,6 +1,17 @@
 {% extends "base.njk" %}
 {% block title %}ผลการตรวจ Lab{% if course %} — {{ course.title }}{% endif %} · Pingable{% endblock %}
 
+{% block head %}
+{# Open Graph: ทำให้ลิงก์ที่แชร์ลง LINE/Facebook ขึ้น preview เป็นการ์ดผลคะแนน #}
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Pingable">
+<meta property="og:title" content="{% if attempt.passed %}ผ่าน{% else %}ลุย{% endif %}{% if labTitle %} {{ labTitle }}{% else %} Lab{% endif %} ได้ {{ attempt.pct }}% บน Pingable">
+<meta property="og:description" content="{{ attempt.score }}/{{ attempt.total }} คะแนน{% if course %} · {{ course.title }}{% endif %} — ฝึกทำ Network Lab บนอุปกรณ์จริงผ่านเบราว์เซอร์ ฟรี">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="ทำ Lab ได้ {{ attempt.pct }}% บน Pingable">
+<meta name="twitter:description" content="{{ attempt.score }}/{{ attempt.total }} คะแนน{% if labTitle %} · {{ labTitle }}{% endif %} — ฝึก Network Lab บนอุปกรณ์จริง ฟรี">
+{% endblock %}
+
 {% block content %}
 <div class="shared-wrap">
 
@@ -38,7 +49,8 @@
   {% endif %}
 
   <div class="shared-footer">
-    <p class="shared-footer-note">ผลการตรวจนี้แชร์จาก Pingable — ระบบเรียนเน็ตเวิร์คออนไลน์</p>
+    <p class="shared-footer-note">ผลการตรวจนี้แชร์จาก Pingable — ฝึกทำ Network Lab บน Router/Switch จริงผ่านเบราว์เซอร์ ตรวจคำตอบอัตโนมัติ เรียนฟรี</p>
+    <png-button variant="primary" href="/auth/register" icon-end="arrow-right">เริ่มเรียนฟรี</png-button>
     <png-button variant="secondary" href="/courses">ดูคอร์สทั้งหมด</png-button>
   </div>
 
