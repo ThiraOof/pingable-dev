@@ -8,7 +8,7 @@ import { vyos, pc, sw } from './_vyos.js';
 export default {
   slug: 'ccnp-advanced-routing',
   title: 'Enterprise Advanced Routing',
-  description: 'การ routing ขั้นสูงสำหรับองค์กร: EIGRP, OSPF หลายพื้นที่ และพื้นฐาน BGP ระหว่างองค์กร',
+  description: 'การ routing ขั้นสูงสำหรับองค์กร: EIGRP, OSPF หลายพื้นที่ และพื้นฐาน BGP ระหว่างองค์กร เนื้อหาครอบคลุมหัวข้อที่สอดคล้องกับ exam objectives ระดับ CCNP',
   level: 'expert',
   track: 'Enterprise Networking',
   estimatedHours: 60,

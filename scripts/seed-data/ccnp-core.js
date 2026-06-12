@@ -8,7 +8,7 @@ import { vyos, pc, sw } from './_vyos.js';
 export default {
   slug: 'ccnp-core',
   title: 'Enterprise Core Networking',
-  description: 'เจาะลึกสถาปัตยกรรมเครือข่ายองค์กร, การ forward ของอุปกรณ์, VLAN/Trunk และ Spanning Tree ระดับมืออาชีพ',
+  description: 'เจาะลึกสถาปัตยกรรมเครือข่ายองค์กร, การ forward ของอุปกรณ์, VLAN/Trunk และ Spanning Tree ระดับมืออาชีพ เนื้อหาครอบคลุมหัวข้อที่สอดคล้องกับ exam objectives ระดับ CCNP',
   level: 'advanced',
   track: 'Enterprise Networking',
   estimatedHours: 60,

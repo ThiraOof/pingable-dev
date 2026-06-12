@@ -4,7 +4,7 @@
 export default {
   slug: 'ccna-intro',
   title: 'Introduction to Networks',
-  description: 'คอร์สแรกของชุด Networking — โมเดล OSI/TCP-IP, Ethernet & switching, IPv4/IPv6 และการวินิจฉัยปัญหาเครือข่าย พร้อมแล็บลงมือทำ',
+  description: 'คอร์สแรกของชุด Networking — โมเดล OSI/TCP-IP, Ethernet & switching, IPv4/IPv6 และการวินิจฉัยปัญหาเครือข่าย พร้อมแล็บลงมือทำ เนื้อหาครอบคลุมหัวข้อที่สอดคล้องกับ exam objectives ระดับ CCNA',
   level: 'intermediate',
   track: 'Networking',
   estimatedHours: 70,
