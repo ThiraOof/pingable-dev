@@ -1,5 +1,5 @@
 import { createProxyMiddleware } from 'http-proxy-middleware';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import * as gns3 from '../services/gns3Service.js';
 import { getSession } from '../services/labSessionService.js';
 import logger from '../config/logger.js';
@@ -36,7 +36,7 @@ const setAuth = (proxyReq) => {
 const proxyMutationLimit = rateLimit({
   windowMs: 60_000,
   max: 200,
-  keyGenerator: (req) => String(req.session?.user?.id ?? req.ip),
+  keyGenerator: (req) => String(req.session?.user?.id ?? ipKeyGenerator(req)),
   skip: (req) => req.method === 'GET' || req.path.startsWith('/static/web-ui'),
   standardHeaders: false,
   legacyHeaders: false,

@@ -154,6 +154,11 @@ app.use((req, res, next) => {
   next();
 });
 
+app.get('/health', async (req, res) => {
+  const db = mongoose.connection.readyState === 1;
+  res.status(db ? 200 : 503).json({ status: db ? 'ok' : 'degraded', db });
+});
+
 // Routes
 app.use('/auth', authRoutes);
 app.use('/courses', courseRoutes);
