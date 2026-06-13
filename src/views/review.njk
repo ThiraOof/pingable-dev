@@ -1,0 +1,88 @@
+{% extends "base.njk" %}
+{% block title %}ทบทวนความรู้ — Pingable{% endblock %}
+
+{% block content %}
+<div class="learn-layout">
+  <article class="quiz review-page">
+    <div class="reading-head">
+      <a href="/dashboard" class="back-link"><png-icon name="arrow-left" size="16"></png-icon> แดชบอร์ด</a>
+      <h1><png-icon name="sparkles" size="26"></png-icon> ทบทวนความรู้</h1>
+      <span class="reading-time">ระบบทวนซ้ำแบบเว้นช่วง — ข้อที่เคยตอบผิดจะกลับมาให้ทบทวนเรื่อย ๆ จนจำได้แม่น</span>
+    </div>
+
+    {% if not item %}
+      {# ไม่มีข้อค้างกำหนด #}
+      <div class="review-empty">
+        <div class="review-empty-icon">🎉</div>
+        {% if total and total > 0 %}
+        <h2>ทบทวนครบแล้ววันนี้!</h2>
+        <p>ยังมี {{ total }} ข้อในคิว แต่ยังไม่ถึงกำหนดทบทวน{% if nextDueAt %} — รอบหน้า {{ nextDueAt | thaidate }}{% endif %}</p>
+        {% else %}
+        <h2>ไม่มีอะไรต้องทบทวน</h2>
+        <p>ทำแบบทดสอบแล้วตอบผิดข้อไหน ข้อนั้นจะถูกเก็บมาให้ทบทวนที่นี่โดยอัตโนมัติ</p>
+        {% endif %}
+        <png-button variant="primary" href="/courses" icon-end="arrow-right">ไปเรียนต่อ</png-button>
+      </div>
+    {% else %}
+      <div class="review-meta">
+        <span class="review-source">{{ courseTitle }} · {{ lessonTitle }}</span>
+        <span class="review-due-count">เหลือในคิว {{ dueCount }} ข้อ</span>
+      </div>
+
+      {% if not feedback %}
+      {# โหมดถาม #}
+      <form method="POST" action="/review/{{ item._id }}/answer" class="review-form">
+        <fieldset class="quiz-q">
+          <legend><span class="prose-inline">{{ q.prompt | markdown | safe }}</span></legend>
+          {% if multi %}<p class="quiz-hint"><png-icon name="sparkles" size="14"></png-icon> เลือกได้มากกว่า 1 ข้อ</p>{% endif %}
+          <div class="quiz-choices">
+            {% for ch in q.choices %}
+            <label class="quiz-choice">
+              <input type="{{ 'checkbox' if multi else 'radio' }}" name="choice" value="{{ loop.index0 }}" {{ 'required' if not multi }}>
+              <span class="choice-mark"></span>
+              <span class="choice-text">{{ ch }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </fieldset>
+        <button type="submit" class="btn btn-primary btn-block">ตอบ</button>
+      </form>
+      {% else %}
+      {# โหมดเฉลย #}
+      <div class="review-result {{ 'pass' if feedback.passed else 'fail' }}">
+        <div class="review-verdict">
+          {% if feedback.passed %}<png-icon name="badge-check" size="22"></png-icon> ถูกต้อง!{% if feedback.graduated %} — จำข้อนี้ได้แม่นแล้ว เก็บออกจากคิว 🎓{% endif %}
+          {% else %}<png-icon name="x-circle" size="22"></png-icon> ยังไม่ถูก — เดี๋ยวเอากลับมาถามใหม่{% endif %}
+        </div>
+        <fieldset class="quiz-q reviewed">
+          <legend><span class="prose-inline">{{ q.prompt | markdown | safe }}</span></legend>
+          <div class="quiz-choices">
+            {% for ch in q.choices %}
+            <label class="quiz-choice
+              {{- ' is-correct' if loop.index0 in feedback.correct }}
+              {{- ' is-wrong' if (loop.index0 in feedback.given and loop.index0 not in feedback.correct) }}">
+              <span class="choice-mark"></span>
+              <span class="choice-text">{{ ch }}</span>
+              {% if loop.index0 in feedback.correct %}<png-icon name="check" size="14"></png-icon>{% endif %}
+            </label>
+            {% endfor %}
+          </div>
+          {% if feedback.explanation %}<div class="quiz-explain">{{ feedback.explanation | markdown | safe }}</div>{% endif %}
+        </fieldset>
+
+        {% if feedback.gamify and feedback.gamify.xpGained %}
+        <div class="grade-gamify">
+          <span class="gamify-chip xp">+{{ feedback.gamify.xpGained }} XP</span>
+          {% if feedback.gamify.streak.daily and feedback.gamify.streak.current > 1 %}<span class="gamify-chip streak">🔥 {{ feedback.gamify.streak.current }} วันติด</span>{% endif %}
+        </div>
+        {% endif %}
+
+        <a href="/review" class="btn btn-primary btn-block">
+          {% if dueCount > 0 %}ข้อถัดไป ({{ dueCount }} เหลือ){% else %}ทบทวนต่อ{% endif %}
+        </a>
+      </div>
+      {% endif %}
+    {% endif %}
+  </article>
+</div>
+{% endblock %}

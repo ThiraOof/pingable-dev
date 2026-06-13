@@ -1,6 +1,6 @@
 import LabSession from '../models/LabSession.js';
 import * as gns3 from './gns3Service.js';
-import { probeNode } from './gradingService.js';
+import { probeNode, runCommands } from './gradingService.js';
 import logger from '../config/logger.js';
 
 // Labs are ephemeral: every running session costs GNS3 RAM/CPU, so anything
@@ -80,6 +80,7 @@ export async function startSession(userId, courseId, m, l, lab) {
           status: 'building', projectId: null, webUiUrl: null,
           nodes: {}, bootedNodes: [], lastActivityAt: new Date(),
           hintsUsed: [], startedAt: new Date(),
+          setup: { state: 'idle', attempts: 0 },
         },
       },
       { upsert: true }, // default `new: false` → pre-update doc (null when inserted)
@@ -150,6 +151,45 @@ export async function probeBoot(session) {
     bootedCount: session.bootedNodes.length,
     allBooted: session.bootedNodes.length >= names.length,
   };
+}
+
+/**
+ * จัดฉากโจทย์ troubleshoot: ฉีด setupCommands ลงอุปกรณ์หลังบูตครบ
+ * (เรียกจาก status route เมื่อ allBooted) — claim แบบ atomic กันสอง poll
+ * รันซ้อนกัน, ล้มได้ retry สูงสุด 3 ครั้งแล้วค่อยถือว่า failed
+ *
+ * @returns {'none'|'idle'|'running'|'done'|'failed'} สถานะปัจจุบันของ setup
+ */
+export async function ensureSetup(session, lab) {
+  const groups = lab?.setupCommands || [];
+  if (!groups.length) return 'none';
+  const state = session.setup?.state || 'idle';
+  if (state === 'done' || state === 'failed' || state === 'running') return state;
+
+  const claimed = await LabSession.findOneAndUpdate(
+    { _id: session._id, 'setup.state': 'idle' },
+    { $set: { 'setup.state': 'running' }, $inc: { 'setup.attempts': 1 } },
+    { new: true },
+  );
+  if (!claimed) return 'running'; // poll อื่นกำลังทำอยู่
+
+  try {
+    for (const group of groups) {
+      const info = session.nodes?.[group.node];
+      if (!info?.consolePort) throw new Error(`setup node "${group.node}" not found in session`);
+      await runCommands(info.consoleHost, info.consolePort, group.node, group.commands);
+    }
+    await LabSession.updateOne({ _id: session._id }, { $set: { 'setup.state': 'done' } });
+    return 'done';
+  } catch (err) {
+    const failedForGood = (claimed.setup?.attempts || 1) >= 3;
+    logger.error({ err, attempts: claimed.setup?.attempts }, 'lab setup injection failed');
+    await LabSession.updateOne(
+      { _id: session._id },
+      { $set: { 'setup.state': failedForGood ? 'failed' : 'idle' } },
+    );
+    return failedForGood ? 'failed' : 'idle';
+  }
 }
 
 // ── Sweeper ───────────────────────────────────────────────────────────────────

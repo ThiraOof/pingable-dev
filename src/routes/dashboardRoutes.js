@@ -2,6 +2,7 @@ import express from 'express';
 import Course from '../models/Course.js';
 import User from '../models/User.js';
 import Progress, { completedSet, coursePercent, totalLessons, lessonCounts } from '../models/Progress.js';
+import ReviewItem from '../models/ReviewItem.js';
 import { countActiveLabs } from '../services/labSessionService.js';
 import { getStats } from '../services/achievementService.js';
 import { levelFor } from '../config/xp.js';
@@ -95,10 +96,11 @@ async function collectDashboardData(userId) {
 }
 
 router.get('/', requireAuth, async (req, res) => {
-  const [data, activeLabs, stats] = await Promise.all([
+  const [data, activeLabs, stats, reviewsDue] = await Promise.all([
     collectDashboardData(req.session.user.id),
     countActiveLabs(),
     getStats(req.session.user.id),
+    ReviewItem.countDocuments({ user: req.session.user.id, dueAt: { $lte: new Date() } }),
   ]);
   const gamify = stats ? {
     xp: stats.xp || 0,
@@ -108,7 +110,7 @@ router.get('/', requireAuth, async (req, res) => {
   } : null;
   res.render('dashboard.njk', {
     ...data, activity: data.activity.slice(0, 50), activeLabs,
-    gamify, badgeRegistry: BADGES,
+    gamify, badgeRegistry: BADGES, reviewsDue,
   });
 });
 

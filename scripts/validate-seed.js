@@ -61,6 +61,16 @@ export function validateCourses(courses) {
               }
             }
           });
+          if (lesson.mode && !['config', 'troubleshoot'].includes(lesson.mode)) {
+            err(`${where} unknown lab mode "${lesson.mode}"`);
+          }
+          (lesson.setupCommands || []).forEach((g, i) => {
+            if (!names.has(g.node)) err(`${where} setupCommands #${i} targets unknown node "${g.node}"`);
+            if (!(g.commands || []).length) err(`${where} setupCommands #${i} has no commands`);
+          });
+          if (lesson.mode === 'troubleshoot' && !(lesson.setupCommands || []).length) {
+            warn(`${where} troubleshoot lab has no setupCommands — nothing will be broken`);
+          }
           if (lesson.scenario) {
             if (!lesson.scenario.body) err(`${where} scenario has no body`);
             if (lesson.scenario.priority && !['low', 'medium', 'high'].includes(lesson.scenario.priority)) {
@@ -125,6 +135,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     import('./seed-data/ccna-intro.js'),
     import('./seed-data/ccnp-core.js'),
     import('./seed-data/ccnp-advanced-routing.js'),
+    import('./seed-data/network-troubleshooting.js'),
     import('./seed-data/playground.js'),
   ]);
   const ok = reportValidation(validateCourses(mods.map((m) => m.default)));

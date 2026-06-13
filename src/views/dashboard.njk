@@ -53,6 +53,14 @@
   </div>
   {% endif %}
 
+  {% if reviewsDue and reviewsDue > 0 %}
+  <a href="/review" class="dash-review-card">
+    <span class="dash-review-icon">📚</span>
+    <span class="dash-review-text"><strong>{{ reviewsDue }} ข้อรอทบทวน</strong>ตอบผิดข้อไหนระบบเก็บมาให้ทวนซ้ำ — ทำตอนนี้ช่วยให้จำได้แม่น</span>
+    <png-icon name="arrow-right" size="18"></png-icon>
+  </a>
+  {% endif %}
+
   <div class="dash-export-row">
     <png-button variant="secondary" href="/dashboard/export" icon="download">ส่งออกรายงาน PDF</png-button>
   </div>

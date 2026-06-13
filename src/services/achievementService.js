@@ -26,6 +26,7 @@ export const bangkokHour = (d = new Date()) => Number(HOUR_FMT.format(d)) % 24;
 function xpFor(type, ctx) {
   if (!ctx.firstCompletion) return 0;
   if (type === 'reading') return XP.reading;
+  if (type === 'review') return XP.review; // เคลียร์คิวทบทวนหนึ่งรอบ
   if (type === 'quiz') return ctx.passed ? XP.quizPass + (ctx.pct === 100 ? XP.quizPerfectBonus : 0) : 0;
   if (type === 'grade') {
     if (!ctx.passed) return 0;

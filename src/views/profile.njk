@@ -1,0 +1,62 @@
+{% extends "base.njk" %}
+{% block title %}{{ profile.username }} — โปรไฟล์ Network Engineer · Pingable{% endblock %}
+
+{% block head %}
+<meta property="og:title" content="{{ profile.username }} — {{ profile.level.title }} บน Pingable">
+<meta property="og:description" content="ผ่าน {{ profile.totalLabsPassed }} แล็บบนอุปกรณ์จริง · {{ profile.badges.length }} badge · {{ profile.completedCourses.length }} คอร์สจบ">
+<meta name="twitter:card" content="summary">
+<style>
+  @media print {
+    png-navbar, png-footer, .profile-cta { display: none !important; }
+    body, main { background: #fff !important; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-wrap">
+  <header class="profile-hero">
+    <div class="profile-avatar">{{ profile.username[0] | upper }}</div>
+    <h1>{{ profile.username }}</h1>
+    <div class="profile-title">{{ profile.level.title }}</div>
+    <p class="profile-since">สมาชิก Pingable ตั้งแต่ {{ profile.memberSince | thaidate }}</p>
+  </header>
+
+  <div class="profile-stats">
+    <div class="profile-stat"><strong>{{ profile.xp }}</strong><span>XP สะสม</span></div>
+    <div class="profile-stat"><strong>{{ profile.totalLabsPassed }}</strong><span>แล็บที่ผ่าน</span></div>
+    <div class="profile-stat"><strong>{{ profile.completedCourses.length }}</strong><span>คอร์สที่จบ</span></div>
+    <div class="profile-stat"><strong>{{ profile.streak.longest or 0 }}</strong><span>สตรีคสูงสุด (วัน)</span></div>
+    {% if profile.bestLab %}<div class="profile-stat"><strong>{{ profile.bestLab }}%</strong><span>คะแนนแล็บสูงสุด</span></div>{% endif %}
+  </div>
+
+  {% if profile.badges.length %}
+  <section class="profile-section">
+    <h2>เหรียญตรา ({{ profile.badges.length }}/{{ profile.badgeTotal }})</h2>
+    <div class="badge-grid">
+      {% for b in profile.badges %}
+      <span class="badge-item earned" title="{{ b.desc }}"><span class="badge-icon">{{ b.icon }}</span><small>{{ b.title }}</small></span>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if profile.completedCourses.length %}
+  <section class="profile-section">
+    <h2>คอร์สที่เรียนจบ</h2>
+    <ul class="profile-courses">
+      {% for c in profile.completedCourses %}
+      <li><png-icon name="badge-check" size="16"></png-icon> {{ c.title }} <span class="course-level level-{{ c.level }}">{{ c.level }}</span></li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% else %}
+  <p class="profile-empty">ยังไม่มีคอร์สที่จบครบ 100% — กำลังเก็บเลเวลอยู่ 💪</p>
+  {% endif %}
+
+  <div class="profile-cta">
+    <p>โปรไฟล์นี้สร้างจากการทำ Lab บนอุปกรณ์เครือข่ายจริงบน Pingable</p>
+    <png-button variant="primary" href="/auth/register" icon-end="arrow-right">สร้างโปรไฟล์ของคุณ</png-button>
+  </div>
+</div>
+{% endblock %}

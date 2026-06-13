@@ -10,6 +10,8 @@ const userSchema = new mongoose.Schema({
   goal:          { type: String, enum: ['exam-ccna', 'job-noc', 'job-neteng', 'career-switch', 'hobby'] },
   // opt-out จาก leaderboard (ยังนับอันดับ แต่ชื่อแสดงเป็น "ผู้ไม่ประสงค์ออกนาม")
   hideFromLeaderboard: { type: Boolean, default: false },
+  // opt-in โปรไฟล์สาธารณะ /u/:username (โชว์ level/badge/คอร์สที่จบ — แนบใน resume ได้)
+  profilePublic: { type: Boolean, default: false },
   emailVerified: { type: Boolean, default: false },
   emailToken:    { type: String },
   emailTokenExp: { type: Date },

@@ -1,0 +1,65 @@
+{% extends "base.njk" %}
+{% block title %}สมุดโน้ตของฉัน — Pingable{% endblock %}
+
+{% block content %}
+<png-page-header title="สมุดโน้ตของฉัน" subtitle="จดคำสั่ง เคล็ดลับ หรือสรุปสิ่งที่เรียนรู้ — เขียนด้วย Markdown จัดกลุ่มตามคอร์สอัตโนมัติ"></png-page-header>
+
+<div class="notes-wrap">
+  {% if editing %}
+  {# โหมดแก้ไขโน้ตเดียว #}
+  <form method="POST" action="/notes/{{ editing._id }}" class="note-editor">
+    <input type="text" name="title" value="{{ editing.title }}" class="note-title-input" placeholder="หัวข้อโน้ต" maxlength="200">
+    {% if editing.sourceLabel %}<p class="note-source">จาก: {% if editing.sourceHref %}<a href="{{ editing.sourceHref }}">{{ editing.sourceLabel }}</a>{% else %}{{ editing.sourceLabel }}{% endif %}</p>{% endif %}
+    <textarea name="body" class="note-body-input" rows="16" placeholder="เขียนโน้ตที่นี่... รองรับ Markdown">{{ editing.body }}</textarea>
+    <div class="note-editor-actions">
+      <png-button variant="secondary" href="/notes">ยกเลิก</png-button>
+      <button type="submit" class="btn btn-primary">บันทึก</button>
+    </div>
+  </form>
+  {% else %}
+  {# รายการโน้ต + ฟอร์มสร้างใหม่ #}
+  <form method="GET" action="/notes" class="note-search-row">
+    <input type="search" name="q" value="{{ q }}" placeholder="ค้นหาในโน้ต..." class="catalog-search">
+  </form>
+
+  <details class="note-new" {% if not groups or not groups.length %}open{% endif %}>
+    <summary><png-icon name="sparkles" size="16"></png-icon> เขียนโน้ตใหม่</summary>
+    <form method="POST" action="/notes" class="note-editor">
+      <input type="text" name="title" class="note-title-input" placeholder="หัวข้อโน้ต" maxlength="200">
+      <textarea name="body" class="note-body-input" rows="6" placeholder="เขียนโน้ต... รองรับ Markdown"></textarea>
+      <div class="note-editor-actions"><button type="submit" class="btn btn-primary">เพิ่มโน้ต</button></div>
+    </form>
+  </details>
+
+  {% if groups and groups.length %}
+    {% for g in groups %}
+    <section class="note-group">
+      <h2 class="note-group-title">{{ g.title }}</h2>
+      <div class="note-cards">
+        {% for n in g.notes %}
+        <article class="note-card">
+          <div class="note-card-head">
+            <h3>{{ n.title }}</h3>
+            <div class="note-card-actions">
+              <a href="/notes/{{ n._id }}/edit" class="note-action" title="แก้ไข"><png-icon name="arrow-right" size="14"></png-icon></a>
+              <form method="POST" action="/notes/{{ n._id }}/delete" onsubmit="return confirm('ลบโน้ตนี้?')" style="display:inline">
+                <button type="submit" class="note-action danger" title="ลบ"><png-icon name="x" size="14"></png-icon></button>
+              </form>
+            </div>
+          </div>
+          {% if n.sourceLabel %}<p class="note-source">{% if n.sourceHref %}<a href="{{ n.sourceHref }}">{{ n.sourceLabel }}</a>{% else %}{{ n.sourceLabel }}{% endif %}</p>{% endif %}
+          <div class="note-body prose-inline">{{ n.body | markdown | safe }}</div>
+          <time class="note-time">{{ n.updatedAt | thaidate }}</time>
+        </article>
+        {% endfor %}
+      </div>
+    </section>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <p>{% if q %}ไม่พบโน้ตที่ตรงกับ "{{ q }}"{% else %}ยังไม่มีโน้ต — เริ่มจดจากด้านบน หรือกดปุ่ม "จดโน้ต" ระหว่างทำ Lab{% endif %}</p>
+    </div>
+  {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

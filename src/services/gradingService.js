@@ -148,6 +148,24 @@ export async function probeNode(host, port, timeoutMs = PROBE_TIMEOUT_MS) {
 }
 
 /**
+ * Run a command sequence on one node console (same telnet machinery as the
+ * grader: connect + auto-login once, commands run sequentially). Used by the
+ * lab setup injector to stage "broken" configs for troubleshoot labs.
+ * Throws on connect/command failure — the caller decides about retries.
+ */
+export async function runCommands(host, port, nodeName, commands) {
+  const session = new ConsoleSession(host, port, nodeName);
+  try {
+    await session.connect();
+    for (const cmd of commands) {
+      await session.run(cmd);
+    }
+  } finally {
+    session.close();
+  }
+}
+
+/**
  * Run all grading checks against the active GNS3 session.
  *
  * Checks are grouped by target node: each node gets ONE console session

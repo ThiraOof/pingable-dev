@@ -42,11 +42,15 @@
 
   <div class="auth-card">
     <h2>ความเป็นส่วนตัว</h2>
-    <p class="auth-sub">ควบคุมการแสดงชื่อของคุณบน<a href="/leaderboard">ตารางอันดับประจำสัปดาห์</a></p>
-    <form method="POST" action="/auth/settings/leaderboard">
+    <p class="auth-sub">ควบคุมการแสดงข้อมูลของคุณต่อสาธารณะ</p>
+    <form method="POST" action="/auth/settings/privacy">
       <label class="toggle-row">
         <input type="checkbox" name="hideFromLeaderboard" {% if account.hideFromLeaderboard %}checked{% endif %}>
-        <span>ซ่อนชื่อของฉันจากตารางอันดับ (แสดงเป็น "ผู้ไม่ประสงค์ออกนาม")</span>
+        <span>ซ่อนชื่อของฉันจาก<a href="/leaderboard">ตารางอันดับ</a> (แสดงเป็น "ผู้ไม่ประสงค์ออกนาม")</span>
+      </label>
+      <label class="toggle-row">
+        <input type="checkbox" name="profilePublic" {% if account.profilePublic %}checked{% endif %}>
+        <span>เปิดโปรไฟล์สาธารณะที่ <a href="/u/{{ account.username }}">/u/{{ account.username }}</a> (โชว์ตำแหน่ง, badge, คอร์สที่จบ — แนบใน resume ได้)</span>
       </label>
       <button type="submit" class="btn btn-secondary btn-block">บันทึก</button>
     </form>

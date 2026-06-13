@@ -55,7 +55,7 @@ define('png-lab', class extends PngEl {
       if (btnGrade) btnGrade.disabled = true;
     }
     // โพลถี่ระหว่างอุปกรณ์บูต (VyOS ใช้ ~1-2 นาที) — เปิดปุ่มตรวจเมื่อทุก console ตอบ
-    // แล้วค่อยโพลช้าเป็น heartbeat เพื่อบอก server ว่ายังเปิดหน้านี้อยู่
+    // และ (สำหรับโจทย์ troubleshoot) เมื่อระบบฉีด config จัดฉากเสร็จแล้วเท่านั้น
     function bootWatch() {
       stopTimers();
       labStatus.textContent = 'กำลังบูตอุปกรณ์…'; labStatus.className = 'lab-status status-loading';
@@ -67,8 +67,19 @@ define('png-lab', class extends PngEl {
           if (!st.ok) return;
           if (!st.active || !st.sameLab) return labGone();
           if (st.status !== 'ready') return;
-          if (st.allBooted || ++polls > 36) { setReady(); heartbeat(); } // ~3 นาทีแล้วปล่อยให้ลองตรวจเอง
-          else labStatus.textContent = `กำลังบูตอุปกรณ์… ${st.bootedCount}/${st.nodeCount}`;
+          if (st.allBooted) {
+            if (st.setup === 'failed') {
+              labStatus.textContent = 'จัดฉากโจทย์ไม่สำเร็จ — กดเริ่ม Lab ใหม่';
+              labStatus.className = 'lab-status status-error';
+              return;
+            }
+            if (st.setup === 'none' || st.setup === 'done') { setReady(); heartbeat(); }
+            else { labStatus.textContent = 'อุปกรณ์พร้อม — กำลังจัดฉากโจทย์… 🎬'; }
+          } else if (++polls > 36 && !st.setup) {
+            setReady(); heartbeat(); // ~3 นาทีแล้วปล่อยให้ลองตรวจเอง (เฉพาะ lab ปกติ)
+          } else {
+            labStatus.textContent = `กำลังบูตอุปกรณ์… ${st.bootedCount}/${st.nodeCount}`;
+          }
         } catch { /* network สะดุด — รอบหน้าค่อยว่ากัน */ }
       };
       pollTimer = setInterval(tick, 5000); tick();
@@ -198,6 +209,33 @@ define('png-lab', class extends PngEl {
       });
     });
 
+    // จดโน้ตด่วน → POST /notes (ผูกคอร์ส + ลิงก์กลับมาหน้า lab นี้)
+    const noteInput = $('labNote'), btnSaveNote = $('btnSaveNote'), noteMsg = $('labNoteMsg');
+    if (btnSaveNote) {
+      btnSaveNote.addEventListener('click', async () => {
+        const body = noteInput.value.trim();
+        if (!body) { noteInput.focus(); return; }
+        btnSaveNote.disabled = true;
+        try {
+          const r = await fetch('/notes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({
+              title: `โน้ตจาก ${this.attr('title')}`,
+              body, course: cid,
+              sourceLabel: this.attr('title'), sourceHref: location.pathname,
+            }),
+          });
+          const d = await r.json();
+          if (!d.ok) throw new Error('failed');
+          noteInput.value = '';
+          noteMsg.textContent = 'บันทึกแล้ว ✓ ดูได้ที่หน้าสมุดโน้ต';
+          setTimeout(() => { noteMsg.textContent = ''; }, 3500);
+        } catch { noteMsg.textContent = 'บันทึกไม่สำเร็จ'; }
+        finally { btnSaveNote.disabled = false; }
+      });
+    }
+
     const sidebar = $('labSidebar'), scrim = $('labScrim'), btnToggle = $('btnToggleSidebar');
     if (btnToggle) btnToggle.addEventListener('click', () => { sidebar.classList.add('open'); scrim.hidden = false; });
     if (scrim) scrim.addEventListener('click', () => { sidebar.classList.remove('open'); scrim.hidden = true; });
@@ -295,7 +333,8 @@ define('png-lab', class extends PngEl {
         const st = await (await fetch(statusUrl)).json();
         if (st.ok && st.active && st.sameLab && st.status === 'ready' && st.gns3Url) {
           gns3Frame.src = st.gns3Url; labLoading.hidden = true;
-          if (st.allBooted) { setReady(); heartbeat(); } else bootWatch();
+          if (st.allBooted && (st.setup === 'none' || st.setup === 'done')) { setReady(); heartbeat(); }
+          else bootWatch();
           return;
         }
       } catch {}

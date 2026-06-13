@@ -246,7 +246,7 @@ router.post('/reset-password', authLimiter, async (req, res) => {
 
 // ── Account settings ─────────────────────────────────────────────────────────
 
-const ACCOUNT_FIELDS = 'username email emailVerified createdAt goal hideFromLeaderboard';
+const ACCOUNT_FIELDS = 'username email emailVerified createdAt goal hideFromLeaderboard profilePublic';
 
 router.get('/settings', requireAuth, async (req, res) => {
   const account = await User.findById(req.session.user.id).select(ACCOUNT_FIELDS).lean();
@@ -254,15 +254,14 @@ router.get('/settings', requireAuth, async (req, res) => {
   res.render('settings.njk', { account, goals: GOALS, error: null, info: null });
 });
 
-// POST /auth/settings/leaderboard — opt-in/out จากการแสดงชื่อบน leaderboard
-router.post('/settings/leaderboard', requireAuth, async (req, res) => {
-  const hide = req.body.hideFromLeaderboard === 'on';
-  await User.updateOne({ _id: req.session.user.id }, { $set: { hideFromLeaderboard: hide } });
+// POST /auth/settings/privacy — opt-in/out จาก leaderboard และโปรไฟล์สาธารณะ
+router.post('/settings/privacy', requireAuth, async (req, res) => {
+  await User.updateOne({ _id: req.session.user.id }, { $set: {
+    hideFromLeaderboard: req.body.hideFromLeaderboard === 'on',
+    profilePublic: req.body.profilePublic === 'on',
+  } });
   const account = await User.findById(req.session.user.id).select(ACCOUNT_FIELDS).lean();
-  res.render('settings.njk', {
-    account, goals: GOALS, error: null,
-    info: hide ? 'ซ่อนชื่อจากตารางอันดับแล้ว' : 'แสดงชื่อบนตารางอันดับแล้ว',
-  });
+  res.render('settings.njk', { account, goals: GOALS, error: null, info: 'บันทึกการตั้งค่าความเป็นส่วนตัวแล้ว' });
 });
 
 // POST /auth/settings/goal — เปลี่ยนเป้าหมายการเรียน (ใช้จัดลำดับคอร์สแนะนำ)

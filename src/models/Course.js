@@ -65,6 +65,16 @@ const lessonSchema = new mongoose.Schema({
     nodes: [nodeSchema],
     links: [linkSchema],
   },
+  // 'config' = สร้างจากศูนย์ (ค่าเริ่มต้น), 'troubleshoot' = ระบบถูกตั้งค่า
+  // "พังมาแล้ว" ด้วย setupCommands — ผู้เรียนต้องหาจุดพังและซ่อม
+  mode: { type: String, enum: ['config', 'troubleshoot'], default: 'config' },
+  // ฉีด config หลังอุปกรณ์บูตครบ (ผ่าน telnet เดียวกับ grader) — ใช้จัดฉาก
+  // โจทย์ troubleshoot; ปุ่มตรวจถูกล็อกจนกว่า setup จะสำเร็จ
+  setupCommands: [new mongoose.Schema({
+    node:     { type: String, required: true },
+    commands: { type: [String], required: true },
+  }, { _id: false })],
+  isBoss:        { type: Boolean, default: false }, // Boss Lab ท้ายคอร์ส (UI เน้นพิเศษ มัก passThreshold สูง)
   scenario:      scenarioSchema,
   objectives:    [String],
   hints:         [String],

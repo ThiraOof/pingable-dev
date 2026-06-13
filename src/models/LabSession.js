@@ -26,6 +26,12 @@ const labSessionSchema = new mongoose.Schema({
   // when this run's build was claimed — basis for the speedrunner badge
   // (createdAt is useless here: the one-doc-per-user upsert keeps it forever)
   startedAt: { type: Date },
+  // troubleshoot-lab setup injection state machine (see labSessionService.ensureSetup):
+  // idle → running → done | (fail → idle, retry; 3 fails → failed)
+  setup: {
+    state:    { type: String, enum: ['idle', 'running', 'done', 'failed'], default: 'idle' },
+    attempts: { type: Number, default: 0 },
+  },
   lastActivityAt: { type: Date, default: Date.now, expires: BACKUP_EXPIRE_SECONDS }, // bumped by heartbeat; sweeper key + TTL backup
 }, { timestamps: true });
 

@@ -111,7 +111,16 @@ router.get('/:courseId/:m/:l/status', requireAuth, async (req, res) => {
   }
 
   const boot = await labSessions.probeBoot(session);
-  res.json({ ok: true, active: true, sameLab: true, status: 'ready', gns3Url: session.webUiUrl, ...boot });
+
+  // โจทย์ troubleshoot: หลังบูตครบค่อยฉีด config "ที่พังมาแล้ว" — ระหว่างนั้น
+  // ปุ่มตรวจฝั่งหน้าเว็บยังล็อกอยู่ (setup: running)
+  let setup = 'none';
+  if (boot.allBooted) {
+    const { lab } = await locateLab(req.params.courseId, m, l);
+    setup = await labSessions.ensureSetup(session, lab);
+  }
+
+  res.json({ ok: true, active: true, sameLab: true, status: 'ready', gns3Url: session.webUiUrl, ...boot, setup });
 });
 
 // POST /lab/:courseId/:m/:l/grade — run automated grading checks
@@ -134,6 +143,10 @@ router.post('/:courseId/:m/:l/grade', requireAuth, async (req, res) => {
     if (!lab) return res.status(404).json({ ok: false, error: 'Lab not found.' });
     if (!lab.gradingChecks?.length) {
       return res.json({ ok: true, score: 0, total: 0, results: [], message: 'No grading checks defined for this lab.' });
+    }
+    // โจทย์ troubleshoot ห้ามตรวจก่อนจัดฉากเสร็จ — ไม่งั้นตรวจบนระบบที่ยังไม่พัง
+    if (lab.setupCommands?.length && session.setup?.state !== 'done') {
+      return res.status(409).json({ ok: false, error: 'กำลังจัดฉากโจทย์อยู่ — รอสักครู่แล้วลองตรวจใหม่' });
     }
 
     await labSessions.touch(userId);

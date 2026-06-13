@@ -6,6 +6,7 @@
   course-id="{{ course._id }}" m="{{ m }}" l="{{ l }}"
   course-title="{{ course.title }}"
   title="{{ lab.title }}" desc="{{ lab.description }}"
+  mode="{{ lab.mode or 'config' }}"{% if lab.isBoss %} is-boss{% endif %}
   pass-threshold="{{ lab.passThreshold or 60 }}"
   grade-count="{{ (lab.gradingChecks | length) if lab.gradingChecks else 0 }}">
   <script type="application/json">

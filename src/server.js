@@ -22,6 +22,9 @@ import learnRoutes from './routes/learnRoutes.js';
 import labRoutes from './routes/labRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import leaderboardRoutes from './routes/leaderboardRoutes.js';
+import reviewRoutes from './routes/reviewRoutes.js';
+import noteRoutes from './routes/noteRoutes.js';
+import profileRoutes from './routes/profileRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -167,6 +170,9 @@ app.use('/learn', learnRoutes);
 app.use('/lab', labRoutes);
 app.use('/dashboard', dashboardRoutes);
 app.use('/leaderboard', leaderboardRoutes);
+app.use('/review', reviewRoutes);
+app.use('/notes', noteRoutes);
+app.use('/u', profileRoutes);
 app.use('/admin', adminRoutes);
 
 app.get('/', (req, res) => res.render('index.njk'));

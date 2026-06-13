@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import Course from '../models/Course.js';
 import requireAuth from '../middleware/requireAuth.js';
 import { markComplete, getProgress, completedSet } from '../models/Progress.js';
+import ReviewItem, { dueAfterDays, BOX_DAYS } from '../models/ReviewItem.js';
 import { award } from '../services/achievementService.js';
 import { checkPrerequisites } from '../utils/prereqs.js';
 
@@ -102,6 +103,16 @@ router.post('/:courseId/:m/:l/quiz', requireAuth, async (req, res) => {
       points: q.points || 1,
     };
   });
+
+  // Spaced repetition: ข้อที่ตอบผิดเข้าคิวทบทวน (กล่อง 0, ครบกำหนดใน 3 วัน)
+  const wrongIdxs = results.map((r, i) => (r.passed ? null : i)).filter((i) => i !== null);
+  await Promise.all(wrongIdxs.map((qIdx) =>
+    ReviewItem.updateOne(
+      { user: req.session.user.id, course: courseId, moduleIdx: m, lessonIdx: l, qIdx },
+      { $set: { box: 0, dueAt: dueAfterDays(BOX_DAYS[0]) }, $inc: { lapses: 1 } },
+      { upsert: true },
+    ).catch(() => {}), // แพ้ race บน unique index ได้ — item มีอยู่แล้วก็พอ
+  ));
 
   const pct = total > 0 ? Math.round((score / total) * 100) : 0;
   const passed = pct >= (lesson.passThreshold ?? 60);
