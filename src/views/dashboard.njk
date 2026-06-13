@@ -25,15 +25,19 @@
   {% if gamify %}
   <div class="dash-gamify">
     <div class="dash-gamify-card dash-level">
-      <div class="dash-gamify-label">ตำแหน่งปัจจุบัน</div>
-      <div class="dash-level-name">{{ gamify.level.title }}</div>
-      {% if gamify.level.next %}
-      <div class="dash-level-bar"><span style="width: {{ gamify.level.progressPct }}%"></span></div>
-      <p class="dash-gamify-sub">อีก {{ gamify.level.next.xpNeeded }} XP เลื่อนตำแหน่งเป็น {{ gamify.level.next.title }}</p>
-      {% else %}
-      <p class="dash-gamify-sub">ตำแหน่งสูงสุดแล้ว 🎖️</p>
-      {% endif %}
-      <p class="dash-gamify-xp">{{ gamify.xp }} XP สะสม</p>
+      <png-mascot class="dash-level-echo" state="happy" size="92" tier="{{ gamify.level.level }}"></png-mascot>
+      <div class="dash-level-info">
+        <div class="dash-gamify-label">ตำแหน่งปัจจุบัน</div>
+        <div class="dash-level-name">{{ gamify.level.title }}</div>
+        {% if gamify.level.next %}
+        <div class="dash-level-bar"><span style="width: {{ gamify.level.progressPct }}%"></span></div>
+        <p class="dash-gamify-sub">อีก {{ gamify.level.next.xpNeeded }} XP เลื่อนตำแหน่งเป็น {{ gamify.level.next.title }}</p>
+        {% if gamify.nextGear %}<p class="dash-level-tease">🔓 เลื่อนขั้นแล้ว Echo จะได้ {{ gamify.nextGear }}</p>{% endif %}
+        {% else %}
+        <p class="dash-gamify-sub">ตำแหน่งสูงสุดแล้ว — Echo เต็มยศ 🎖️</p>
+        {% endif %}
+        <p class="dash-gamify-xp">{{ gamify.xp }} XP สะสม</p>
+      </div>
     </div>
     <div class="dash-gamify-card dash-streak">
       <div class="dash-streak-fire">🔥</div>

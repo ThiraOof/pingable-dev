@@ -6,6 +6,7 @@ import ReviewItem from '../models/ReviewItem.js';
 import { countActiveLabs } from '../services/labSessionService.js';
 import { getStats } from '../services/achievementService.js';
 import { levelFor } from '../config/xp.js';
+import { TIER_GEAR } from '../public/js/components/shared.js';
 import { BADGES } from '../config/badges.js';
 import { goalLabel, sortCoursesByGoal } from '../config/goals.js';
 import requireAuth from '../middleware/requireAuth.js';
@@ -102,9 +103,12 @@ router.get('/', requireAuth, async (req, res) => {
     getStats(req.session.user.id),
     ReviewItem.countDocuments({ user: req.session.user.id, dueAt: { $lte: new Date() } }),
   ]);
+  const level = stats ? levelFor(stats.xp || 0) : null;
   const gamify = stats ? {
     xp: stats.xp || 0,
-    level: levelFor(stats.xp || 0),
+    level,
+    // gear Echo unlocks at the NEXT rank (teaser); TIER_GEAR is 0-indexed by tier
+    nextGear: level.next ? TIER_GEAR[level.level] : null,
     streak: stats.streak || {},
     earnedIds: (stats.badges || []).map((b) => b.id),
   } : null;

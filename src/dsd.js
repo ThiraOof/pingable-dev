@@ -17,7 +17,7 @@ const T = {
   'png-icon': (a) => ({ host: ':host{display:inline-flex;vertical-align:-.18em;line-height:0}', html: svgIcon(a.name, a.size || '24') }),
 
   // <png-mascot state size mark> — Echo. `mark` → compact emblem, else full character.
-  'png-mascot': (a) => ({ host: ':host{display:inline-flex;line-height:0}', html: 'mark' in a ? mascotMark(a.size || 28) : mascot(a.state || 'idle', a.size || 96) }),
+  'png-mascot': (a) => ({ host: ':host{display:inline-flex;line-height:0}', html: 'mark' in a ? mascotMark(a.size || 28) : mascot(a.state || 'idle', a.size || 96, '', a.tier ? +a.tier : null) }),
 
   'png-button': (a) => {
     const cls = ['btn', `btn-${a.variant || 'primary'}`];
