@@ -1,0 +1,41 @@
+{% extends "base.njk" %}
+{% block title %}อีเวนต์ — Pingable{% endblock %}
+
+{% block content %}
+<png-page-header title="อีเวนต์ 🎉" subtitle="กิจกรรมพิเศษที่เปิดเป็นรอบ ๆ — ดวลกับเพื่อน แข่งกับเวลา และอีกมากที่กำลังจะมา"></png-page-header>
+
+<div class="events-wrap">
+  {% if not anyOpen %}
+  <div class="events-empty">
+    <div class="events-empty-icon">🗓️</div>
+    <h2>ยังไม่มีอีเวนต์เปิดอยู่ตอนนี้</h2>
+    <p>อีเวนต์ใช้ทรัพยากร Lab มากกว่าปกติ จึงเปิดเป็นรอบ ๆ — ติดตามประกาศได้เลย ระหว่างนี้ไปฝึกซ้อมก่อนได้!</p>
+    <png-button variant="secondary" href="/courses">ไปฝึกซ้อม</png-button>
+  </div>
+  {% endif %}
+
+  <div class="events-list">
+    {% for ev in events %}
+    <div class="event-card{% if not ev.open %} event-card-soon{% endif %}">
+      <div class="event-card-icon">{{ ev.icon }}</div>
+      <div class="event-card-body">
+        <div class="event-card-head">
+          <h3>{{ ev.title }}</h3>
+          {% if ev.open %}
+          <span class="event-tag live">● LIVE</span>
+          {% else %}
+          <span class="event-tag soon">เร็ว ๆ นี้</span>
+          {% endif %}
+        </div>
+        <p>{{ ev.desc }}</p>
+      </div>
+      {% if ev.open %}
+      <png-button variant="primary" href="{{ ev.href }}" icon-end="arrow-right">เข้าร่วม</png-button>
+      {% else %}
+      <button type="button" class="btn btn-secondary" disabled>ยังไม่เปิด</button>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

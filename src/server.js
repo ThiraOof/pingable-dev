@@ -28,7 +28,9 @@ import profileRoutes from './routes/profileRoutes.js';
 import certRoutes from './routes/certRoutes.js';
 import examRoutes, { sharedRouter as examSharedRouter } from './routes/examRoutes.js';
 import duelRoutes from './routes/duelRoutes.js';
+import eventRoutes from './routes/eventRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import { anyEventActive } from './config/events.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -146,6 +148,7 @@ app.use((req, res, next) => {
   const u = req.session.user || null;
   res.locals.user = u ? { ...u, emailVerified: u.emailVerified ?? true } : null;
   res.locals.mentorEnabled = !!process.env.ANTHROPIC_API_KEY; // AI mentor feature flag (§22)
+  res.locals.eventsActive = !!u && anyEventActive(); // show Events nav link only when an event is live
   res.locals.origin = `${req.protocol}://${req.get('host')}`; // absolute base for og:image etc.
   next();
 });
@@ -182,6 +185,7 @@ app.use('/cert', certRoutes);
 app.use(examSharedRouter);          // /exam/shared/:token (public, before auth-gated /exam)
 app.use('/exam', examRoutes);
 app.use('/duel', duelRoutes);
+app.use('/events', eventRoutes);
 app.use('/admin', adminRoutes);
 
 app.get('/', (req, res) => res.render('index.njk'));

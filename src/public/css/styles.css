@@ -278,6 +278,8 @@ main { flex: 1; }
 .nav-links a:not(.btn):hover .ico { color: var(--signal); }
 .nav-links a.nav-active:not(.btn) { color: var(--signal-h); }
 .nav-links a.nav-active:not(.btn) .ico { color: var(--signal); }
+.nav-links a.nav-event:not(.btn) { color: var(--signal-h); font-weight: 600; }
+.nav-links a.nav-event:not(.btn) .ico { color: var(--signal); }
 .nav-user {
   display: inline-flex; align-items: center; gap: var(--s-2);
   color: var(--text); font-size: .9rem; font-weight: 500;
@@ -1324,6 +1326,27 @@ main { flex: 1; }
 .exam-card-body p { color: var(--muted); font-size: .88rem; margin-bottom: var(--s-2); }
 .exam-card-meta { display: flex; gap: var(--s-4); font-size: .82rem; color: var(--faint); }
 .exam-card-meta span { display: inline-flex; align-items: center; gap: var(--s-1); }
+
+/* Events hub (/events) */
+.events-wrap { max-width: 760px; margin-inline: auto; padding: 0 var(--s-4) var(--s-8); }
+.events-list { display: flex; flex-direction: column; gap: var(--s-3); }
+.event-card {
+  display: flex; align-items: center; gap: var(--s-4);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: var(--s-4) var(--s-5);
+}
+.event-card-soon { opacity: .72; }
+.event-card-icon { font-size: 2rem; line-height: 1; flex-shrink: 0; }
+.event-card-body { flex: 1; min-width: 0; }
+.event-card-head { display: flex; align-items: center; gap: var(--s-2); margin-bottom: var(--s-1); }
+.event-card-head h3 { font-size: 1.1rem; }
+.event-card-body p { color: var(--muted); font-size: .88rem; }
+.event-tag { font-size: .7rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.event-tag.live { color: var(--signal); background: var(--signal-soft); }
+.event-tag.soon { color: var(--faint); border: 1px solid var(--border); }
+.events-empty { text-align: center; padding: var(--s-7) var(--s-4); }
+.events-empty-icon { font-size: 2.5rem; margin-bottom: var(--s-3); }
+.events-empty h2 { margin-bottom: var(--s-2); }
+.events-empty p { color: var(--muted); margin-bottom: var(--s-5); }
 
 /* Exam runner (png-exam) */
 .exam-layout { display: flex; flex-direction: column; height: 100%; }

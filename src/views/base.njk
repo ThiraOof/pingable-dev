@@ -25,7 +25,7 @@
 </head>
 <body>
   <a href="#main-content" class="skip-link">ข้ามไปยังเนื้อหาหลัก</a>
-  <png-navbar{% if user %} username="{{ user.username }}"{% endif %}></png-navbar>
+  <png-navbar{% if user %} username="{{ user.username }}"{% endif %}{% if eventsActive %} events-active="1"{% endif %}></png-navbar>
 
   {% if user and not user.emailVerified %}
   <div class="verify-banner" role="alert">
