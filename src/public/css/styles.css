@@ -30,6 +30,15 @@
   --sky:    #38bdf8;
   --indigo: #818cf8;
 
+  /* Energy core — Echo's cosmic accent (plasma violet).
+     Secondary to signal-green; powers the mascot core + key highlights. */
+  --core:      #a855f7;
+  --core-h:    #c084fc;
+  --core-dim:  #7c3aed;
+  --core-ink:  #1a0733;
+  --core-soft: rgba(168,85,247,.14);
+  --core-glow: 0 0 22px -2px rgba(168,85,247,.7);
+
   /* Status-light semantics (NOC) */
   --up:       #22c55e;
   --warning:  #f5b513;
@@ -45,6 +54,7 @@
   /* Accent composites */
   --gradient:      linear-gradient(135deg, #22c55e, #059669);
   --gradient-soft: linear-gradient(135deg, rgba(34,197,94,.18), rgba(56,189,248,.12));
+  --gradient-core: linear-gradient(140deg, #22c55e 0%, #38bdf8 45%, #a855f7 100%); /* signal→plasma fusion */
   --glow:          0 0 0 1px rgba(34,197,94,.34), 0 12px 38px -10px rgba(34,197,94,.55);
 
   /* Spacing scale (8px base) */
@@ -173,17 +183,61 @@ main { flex: 1; }
 }
 .nav-brand:hover { color: var(--text); }
 .brand-mark { display: inline-grid; place-items: center; flex: none; }
-.brand-glyph { display: block; overflow: visible; }
-.brand-glyph .topo-core { fill: var(--signal); }
-.brand-glyph .topo-ping {
-  fill: none; stroke: var(--signal); stroke-width: 1.4;
-  transform-origin: 12px 12px; animation: ping-ring 2.6s ease-out infinite;
+
+/* ── Echo mascot ───────────────────────────────────────────────
+   Sentinel-chibi guardian. Armour = slate plates, eyes = signal-green
+   glow, core = plasma-violet fused with a signal-green rim/pulse.
+   `data-state` recolours the eyes + core for reactions. */
+.echo { display: block; overflow: visible; --echo-eye: var(--signal-h); }
+.echo-armor    { fill: var(--surface-2); stroke: var(--border-h); stroke-width: 1.2; }
+.echo-armor-lt { fill: var(--surface);   stroke: var(--border-h); stroke-width: 1; }
+.echo-fin      { fill: var(--border-h); }
+.echo-sensor   { fill: var(--signal); filter: drop-shadow(0 0 3px var(--signal)); }
+.echo-visor    { fill: #050a14; stroke: var(--border); stroke-width: 1; }
+.echo-eye      { fill: var(--echo-eye); filter: drop-shadow(0 0 3px var(--echo-eye)); }
+.echo-eye-arc  { fill: none; stroke: var(--echo-eye); stroke-width: 2.4; stroke-linecap: round; filter: drop-shadow(0 0 3px var(--echo-eye)); }
+.echo-core     { fill: var(--core); stroke: var(--signal); stroke-width: 1.4; filter: drop-shadow(0 0 5px var(--core)); }
+.echo-core-hot { fill: #f3e8ff; }
+.echo-spark    { fill: var(--core-h); filter: drop-shadow(0 0 3px var(--core-h)); }
+.echo-core-ring {
+  fill: none; stroke: var(--signal); stroke-width: 1.3; opacity: 0;
+  transform-box: fill-box; transform-origin: center;
+  animation: echo-pulse 2.6s ease-out infinite;
 }
-.brand-glyph .ping-2 { animation-delay: 1.3s; }
-@keyframes ping-ring {
-  0%   { transform: scale(.45); opacity: .9; }
-  70%, 100% { transform: scale(2); opacity: 0; }
+.echo-core-ring.ring-2 { animation-delay: 1.3s; }
+@keyframes echo-pulse { 0% { transform: scale(.55); opacity: .85; } 70%, 100% { transform: scale(1.5); opacity: 0; } }
+
+/* gentle idle float for the full character */
+.echo-full { animation: echo-bob 4s ease-in-out infinite; }
+@keyframes echo-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
+
+/* reaction states */
+.echo[data-state="happy"] .echo-core,
+.echo[data-state="celebrating"] .echo-core { filter: drop-shadow(0 0 9px var(--core-h)); }
+.echo[data-state="celebrating"] .echo-core-ring { animation-duration: 1.4s; stroke: var(--core-h); }
+.echo[data-state="thinking"]    { --echo-eye: var(--warning-h); }
+.echo[data-state="thinking"] .echo-core-ring { animation-duration: 4s; }
+.echo[data-state="sad"]         { --echo-eye: var(--down-h); }
+.echo[data-state="sad"] .echo-core   { fill: var(--down); stroke: var(--down-h); filter: none; }
+.echo[data-state="sad"] .echo-core-ring { animation: none; opacity: 0; }
+.echo[data-state="sad"] .echo-sensor { fill: var(--faint); filter: none; }
+.echo[data-state="sad"] .echo-full   { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .echo-full, .echo-core-ring, .echo-spark { animation: none !important; }
+  .echo-core-ring { opacity: .35; }
 }
+
+/* mascot placements */
+.hero-visual { position: relative; }
+.hero-mascot {
+  position: absolute; top: -34px; right: 4px; z-index: 2;
+  filter: drop-shadow(0 16px 30px rgba(168,85,247,.28));
+}
+.error-mascot { margin: 0 auto var(--s-3); }
+.provision-mascot { margin: 0 auto var(--s-2); }
+.grade-mascot { margin-bottom: var(--s-2); }
+@media (max-width: 720px) { .hero-mascot { display: none; } }
 .nav-links { display: flex; align-items: center; gap: var(--s-5); }
 .nav-links a:not(.btn) {
   display: inline-flex; align-items: center; gap: var(--s-2);

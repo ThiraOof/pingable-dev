@@ -146,6 +146,7 @@ app.use((req, res, next) => {
   const u = req.session.user || null;
   res.locals.user = u ? { ...u, emailVerified: u.emailVerified ?? true } : null;
   res.locals.mentorEnabled = !!process.env.ANTHROPIC_API_KEY; // AI mentor feature flag (§22)
+  res.locals.origin = `${req.protocol}://${req.get('host')}`; // absolute base for og:image etc.
   next();
 });
 

@@ -7,6 +7,7 @@
 
 /* Atomic */
 import './png-icon.js';
+import './png-mascot.js';
 import './png-button.js';
 import './png-badge.js';
 import './png-chip.js';

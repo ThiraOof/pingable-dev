@@ -286,6 +286,7 @@ define('png-lab', class extends PngEl {
       scoreFill.style.strokeDashoffset = SCORE_C;
       requestAnimationFrame(() => requestAnimationFrame(() => { scoreFill.style.strokeDashoffset = SCORE_C * (1 - pct / 100); }));
       $('scorePct').textContent = pct + '%';
+      $('gradeMascot')?.setAttribute('state', passed ? 'celebrating' : 'sad');
       const banner = $('gradeBanner');
       banner.innerHTML = (passed ? ICO_CHK_L + ' ผ่านแล้ว!' : ICO_X_L + ' ยังไม่ผ่าน — ลองอีกครั้ง');
       banner.className = 'grade-banner ' + (passed ? 'pass' : 'fail');

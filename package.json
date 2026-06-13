@@ -8,6 +8,7 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "build": "node scripts/build.js",
+    "gen:brand": "node scripts/gen-brand-assets.js",
     "seed": "node scripts/seed.js",
     "validate": "node scripts/validate-seed.js",
     "gns3:clean": "node scripts/gns3-clean.js",

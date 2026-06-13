@@ -38,5 +38,55 @@ export function svgIcon(name, size = 24, cls = '') {
 
 export const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+/* ── Echo — the Pingable mascot ───────────────────────────────────
+   A sentinel-chibi mechanoid guardian: ancient armored helmet, glowing
+   plasma energy core (the brand's "ping pulse"), no weapons. Themed via
+   CSS classes (see .echo* in styles.css) so reaction states recolour the
+   eyes + core. States: idle | happy | thinking | sad | celebrating.
+   Pure string builder — safe on both the Node renderer and the browser. */
+export const MASCOT_STATES = ['idle', 'happy', 'thinking', 'sad', 'celebrating'];
+
+function echoEyes(state) {
+  switch (state) {
+    case 'happy':
+    case 'celebrating': {
+      const arcs = '<path class="echo-eye-arc" d="M22.5 28 Q26.5 23 30.5 28"/><path class="echo-eye-arc" d="M33.5 28 Q37.5 23 41.5 28"/>';
+      const sparks = state === 'celebrating'
+        ? '<path class="echo-spark" d="M15 18 l1.1 2.5 2.5 1.1 -2.5 1.1 -1.1 2.5 -1.1 -2.5 -2.5 -1.1 2.5 -1.1z"/><path class="echo-spark" d="M48 15 l.9 2.1 2.1 .9 -2.1 .9 -.9 2.1 -.9 -2.1 -2.1 -.9 2.1 -.9z"/>'
+        : '';
+      return arcs + sparks;
+    }
+    case 'sad':
+      return '<path class="echo-eye-arc" d="M22.5 26 Q26.5 31 30.5 26"/><path class="echo-eye-arc" d="M33.5 26 Q37.5 31 41.5 26"/>';
+    case 'thinking':
+      return '<rect class="echo-eye" x="24.5" y="24" width="4" height="6" rx="2"/><rect class="echo-eye" x="34" y="26" width="6" height="2.4" rx="1.2"/>';
+    default: // idle — calm sentinel slits
+      return '<rect class="echo-eye" x="24.5" y="24" width="4" height="6" rx="2"/><rect class="echo-eye" x="35.5" y="24" width="4" height="6" rx="2"/>';
+  }
+}
+
+/** Full Echo character (head + chest core). Use for hero/empty/loading/reactions. */
+export function mascot(state = 'idle', size = 96, cls = '') {
+  const s = MASCOT_STATES.includes(state) ? state : 'idle';
+  return `<svg class="echo echo-full ${cls}" data-state="${s}" width="${size}" height="${size}" viewBox="0 0 64 64" fill="none" role="img" aria-hidden="true" focusable="false">`
+    + '<g class="echo-antennae"><polygon class="echo-fin" points="22,15 25,4 27.5,15"/><polygon class="echo-fin" points="42,15 39,4 36.5,15"/><circle class="echo-sensor" cx="32" cy="7.5" r="2"/></g>'
+    + '<g class="echo-body"><ellipse class="echo-armor-lt" cx="17.5" cy="42" rx="6" ry="5.2"/><ellipse class="echo-armor-lt" cx="46.5" cy="42" rx="6" ry="5.2"/><rect class="echo-armor" x="21" y="37" width="22" height="20" rx="8"/></g>'
+    + '<g class="echo-core-grp"><circle class="echo-core-ring" cx="32" cy="47" r="8"/><circle class="echo-core-ring ring-2" cx="32" cy="47" r="8"/><circle class="echo-core" cx="32" cy="47" r="5"/><circle class="echo-core-hot" cx="32" cy="47" r="2.1"/></g>'
+    + '<g class="echo-head"><rect class="echo-armor" x="15" y="13" width="34" height="27" rx="12"/><rect class="echo-armor-lt" x="18" y="15" width="28" height="6" rx="3"/><rect class="echo-visor" x="18" y="21.5" width="28" height="12" rx="6"/></g>'
+    + `<g class="echo-face">${echoEyes(s)}</g>`
+    + '</svg>';
+}
+
+/** Compact emblem (helmet + visor + core gem). Use for navbar/footer/favicon — reads at ~24px. */
+export function mascotMark(size = 26, cls = '') {
+  return `<svg class="echo echo-mark ${cls}" width="${size}" height="${size}" viewBox="0 0 32 32" fill="none" role="img" aria-hidden="true" focusable="false">`
+    + '<polygon class="echo-fin" points="10,8 12,2 14,8.5"/><polygon class="echo-fin" points="22,8 20,2 18,8.5"/>'
+    + '<rect class="echo-armor" x="5" y="5" width="22" height="17" rx="8"/>'
+    + '<rect class="echo-visor" x="8" y="9" width="16" height="7.5" rx="3.75"/>'
+    + '<rect class="echo-eye" x="11" y="10.6" width="2.4" height="4.6" rx="1.2"/><rect class="echo-eye" x="18.6" y="10.6" width="2.4" height="4.6" rx="1.2"/>'
+    + '<circle class="echo-core-ring" cx="16" cy="26" r="4.2"/><circle class="echo-core" cx="16" cy="26" r="2.8"/><circle class="echo-core-hot" cx="16" cy="26" r="1.1"/>'
+    + '</svg>';
+}
+
 export const TYPE_ICON = { reading: 'book-open', lab: 'flask', quiz: 'help' };
 export const TYPE_LABEL = { reading: 'บทเรียน', lab: 'แล็บ', quiz: 'แบบทดสอบ' };
