@@ -1,0 +1,47 @@
+{% extends "base.njk" %}
+{% block title %}สอบจำลอง — Pingable{% endblock %}
+
+{% block content %}
+<png-page-header title="ห้องสอบจำลอง ⏱️" subtitle="ทำ Lab ต่อเนื่องทีละข้อภายใต้เวลาจำกัด ไม่มีคำใบ้ — จำลองบรรยากาศสอบ lab จริงเพื่อวัดความพร้อมของคุณ"></png-page-header>
+
+<div class="exam-wrap">
+  {% if active %}
+  <div class="exam-resume-card">
+    <div>
+      <strong>คุณมีการสอบที่กำลังดำเนินอยู่</strong>
+      <p>{{ active.title }} — ข้อ {{ active.currentIdx + 1 }}/{{ active.labs.length }}</p>
+    </div>
+    <png-button variant="primary" href="/exam/run" icon-end="arrow-right">กลับเข้าห้องสอบ</png-button>
+  </div>
+  {% endif %}
+
+  <div class="exam-rules">
+    <h2>กติกาห้องสอบ</h2>
+    <ul>
+      <li>⏱️ จับเวลารวมทั้งชุด — หมดเวลาแล้วระบบปิดสอบทันที (เวลานับจากฝั่งเซิร์ฟเวอร์)</li>
+      <li>🚫 ไม่มีคำใบ้ ไม่มีคำอธิบายตอนตรวจ เห็นแค่ "ผ่าน/ไม่ผ่าน" รายข้อ</li>
+      <li>➡️ ทำต่อเนื่องทีละข้อ — ตรวจแล้วไปข้อถัดไปทันที (ข้ามข้อที่ติดได้ แต่ถือว่าไม่ผ่าน)</li>
+      <li>📊 ดูรายงานเต็มหลังจบ พร้อมแชร์ผลได้</li>
+    </ul>
+  </div>
+
+  <div class="exam-list">
+    {% for ex in exams %}
+    <div class="exam-card">
+      <div class="exam-card-body">
+        <h3>{{ ex.title }}</h3>
+        <p>{{ ex.desc }}</p>
+        <div class="exam-card-meta">
+          <span><png-icon name="flask" size="14"></png-icon> {{ ex.count }} ข้อ</span>
+          <span><png-icon name="clock" size="14"></png-icon> {{ ex.timeLimitMin }} นาที</span>
+        </div>
+      </div>
+      <form method="POST" action="/exam/start" onsubmit="return confirm('เริ่มสอบ {{ ex.title }}? เวลาจะเริ่มนับทันที')">
+        <input type="hidden" name="examId" value="{{ ex.id }}">
+        <button type="submit" class="btn btn-primary" {% if active %}disabled title="จบการสอบที่ค้างอยู่ก่อน"{% endif %}>เริ่มสอบ</button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

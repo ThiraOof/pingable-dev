@@ -33,3 +33,5 @@ import './png-modules.js';
 import './png-lesson-footer.js';
 import './png-quiz.js';
 import './png-lab.js';
+import './png-exam.js';
+import './png-duel.js';

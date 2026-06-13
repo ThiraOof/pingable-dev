@@ -1,6 +1,7 @@
 import LabSession from '../models/LabSession.js';
 import * as gns3 from './gns3Service.js';
 import { probeNode, runCommands } from './gradingService.js';
+import { rollVariables, interpolateSetup } from './labVariables.js';
 import logger from '../config/logger.js';
 
 // Labs are ephemeral: every running session costs GNS3 RAM/CPU, so anything
@@ -55,6 +56,11 @@ export function recordHint(userId, idx) {
   );
 }
 
+/** บันทึกว่าผู้ใช้ถามพี่เลี้ยง AI ใน run นี้ (มีผลต่อโบนัส no-hint) */
+export function markMentorUsed(userId) {
+  return LabSession.updateOne({ user: userId }, { $set: { mentorUsed: true, lastActivityAt: new Date() } });
+}
+
 /**
  * Claim the user's single lab slot and build the topology.
  *
@@ -81,6 +87,7 @@ export async function startSession(userId, courseId, m, l, lab) {
           nodes: {}, bootedNodes: [], lastActivityAt: new Date(),
           hintsUsed: [], startedAt: new Date(),
           setup: { state: 'idle', attempts: 0 },
+          vars: rollVariables(lab.variables), // mystery lab: สุ่มค่าต่อ attempt
         },
       },
       { upsert: true }, // default `new: false` → pre-update doc (null when inserted)
@@ -174,7 +181,9 @@ export async function ensureSetup(session, lab) {
   if (!claimed) return 'running'; // poll อื่นกำลังทำอยู่
 
   try {
-    for (const group of groups) {
+    // mystery lab: แทนค่าโทเคน {{NAME}} ในคำสั่ง setup ด้วยค่าที่สุ่มไว้ของ session
+    const staged = interpolateSetup(groups, session.vars || {});
+    for (const group of staged) {
       const info = session.nodes?.[group.node];
       if (!info?.consolePort) throw new Error(`setup node "${group.node}" not found in session`);
       await runCommands(info.consoleHost, info.consolePort, group.node, group.commands);

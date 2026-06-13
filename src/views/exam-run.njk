@@ -1,0 +1,11 @@
+{% extends "base.njk" %}
+{% block title %}สอบ: {{ attempt.title }} — ข้อ {{ number }}/{{ total }}{% endblock %}
+
+{% block content %}
+<png-exam
+  number="{{ number }}" total="{{ total }}"
+  seconds-left="{{ secondsLeft }}"
+  lab-title="{{ current.title }}"
+  gns3-url="{{ gns3Url or '' }}">
+</png-exam>
+{% endblock %}

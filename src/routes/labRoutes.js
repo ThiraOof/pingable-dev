@@ -9,6 +9,8 @@ import { markComplete } from '../models/Progress.js';
 import LabAttempt from '../models/LabAttempt.js';
 import * as labSessions from '../services/labSessionService.js';
 import { award } from '../services/achievementService.js';
+import { interpolate, interpolateExpect } from '../services/labVariables.js';
+import { askMentor, mentorEnabled } from '../services/mentorService.js';
 import { checkPrerequisites } from '../utils/prereqs.js';
 
 const router = express.Router();
@@ -120,7 +122,9 @@ router.get('/:courseId/:m/:l/status', requireAuth, async (req, res) => {
     setup = await labSessions.ensureSetup(session, lab);
   }
 
-  res.json({ ok: true, active: true, sameLab: true, status: 'ready', gns3Url: session.webUiUrl, ...boot, setup });
+  // ส่ง vars ของ mystery lab ให้หน้าเว็บแทนค่าโทเคนในเป้าหมาย/คำใบ้ที่แสดงอยู่
+  const vars = session.vars && Object.keys(session.vars).length ? session.vars : undefined;
+  res.json({ ok: true, active: true, sameLab: true, status: 'ready', gns3Url: session.webUiUrl, ...boot, setup, vars });
 });
 
 // POST /lab/:courseId/:m/:l/grade — run automated grading checks
@@ -150,10 +154,15 @@ router.post('/:courseId/:m/:l/grade', requireAuth, async (req, res) => {
     }
 
     await labSessions.touch(userId);
-    const { score, total, results } = await runChecks(session.nodes, lab.gradingChecks);
+    // mystery lab: แทนค่าโทเคนใน expect ด้วยค่าที่สุ่มไว้ (escape ก่อนแปะลง regex)
+    const checks = lab.variables?.length
+      ? lab.gradingChecks.map((c) => ({ ...c.toObject?.() ?? c, expect: interpolateExpect(c.expect, session.vars || {}) }))
+      : lab.gradingChecks;
+    const { score, total, results } = await runChecks(session.nodes, checks);
     const pct = total > 0 ? Math.round((score / total) * 100) : 0;
     const passed = pct >= (lab.passThreshold ?? 60);
-    const hintsUsed = session.hintsUsed?.length || 0;
+    // ถามพี่เลี้ยง AI นับเป็นการใช้คำใบ้รูปแบบหนึ่ง — สละโบนัส no-hint เช่นกัน
+    const hintsUsed = (session.hintsUsed?.length || 0) + (session.mentorUsed ? 1 : 0);
 
     // ประวัติ "ก่อน" บันทึก attempt รอบนี้ — ใช้ตัดสิน one-shot / comeback
     const where = { user: userId, course: courseId, moduleIdx: m, lessonIdx: l };
@@ -193,7 +202,7 @@ router.post('/:courseId/:m/:l/grade', requireAuth, async (req, res) => {
     // leaves the server (it is the answer — trivially satisfiable with echo).
     res.json({
       ok: true, score, total, gamify,
-      results: results.map((r, i) => (r.passed ? r : { ...r, failHint: lab.gradingChecks[i]?.failHint })),
+      results: results.map((r, i) => (r.passed ? r : { ...r, failHint: interpolate(lab.gradingChecks[i]?.failHint, session.vars || {}) })),
     });
   } catch (err) {
     req.log.error({ err }, 'grading failed');
@@ -222,7 +231,56 @@ router.post('/:courseId/:m/:l/hint/:idx', requireAuth, async (req, res) => {
   }
 
   await labSessions.recordHint(req.session.user.id, idx);
-  res.json({ ok: true, hint: lab.hints[idx] });
+  res.json({ ok: true, hint: interpolate(lab.hints[idx], session.vars || {}) }); // mystery: แทนค่าจริงของผู้เรียน
+});
+
+// POST /lab/:courseId/:m/:l/mentor — ขอคำแนะนำแบบโสเครติสจากพี่เลี้ยง AI (§22)
+// Feature-flag ด้วย ANTHROPIC_API_KEY; rate-limit 5 ครั้ง/lab/วัน ต่อ user (in-memory)
+// ส่ง context เฉพาะข้อที่ fail + output จริง — ไม่ส่ง expect regex (เฉลย) เด็ดขาด
+const MENTOR_DAILY_CAP = 5;
+const mentorUsage = new Map(); // `${userId}:${c}:${m}:${l}:${YYYY-MM-DD}` -> count
+router.post('/:courseId/:m/:l/mentor', requireAuth, async (req, res) => {
+  if (!mentorEnabled()) return res.status(503).json({ ok: false, error: 'ยังไม่ได้เปิดใช้พี่เลี้ยง AI' });
+  const userId = req.session.user.id;
+  const { courseId } = req.params;
+  const m = Number(req.params.m);
+  const l = Number(req.params.l);
+
+  const session = await labSessions.getSession(userId);
+  if (!matchesLab(session, courseId, m, l) || session.status !== 'ready') {
+    return res.status(409).json({ ok: false, error: 'เริ่ม Lab และกดตรวจก่อนจึงจะขอคำแนะนำได้' });
+  }
+
+  // rate-limit ต่อ lab ต่อวัน (เวลาไทย)
+  const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date());
+  const key = `${userId}:${courseId}:${m}:${l}:${day}`;
+  const used = mentorUsage.get(key) || 0;
+  if (used >= MENTOR_DAILY_CAP) {
+    return res.status(429).json({ ok: false, error: `วันนี้ขอคำแนะนำสำหรับแล็บนี้ครบ ${MENTOR_DAILY_CAP} ครั้งแล้ว — ลองคิดต่อเองดูนะ` });
+  }
+
+  // failed checks มาจาก client (ผล grade ล่าสุด) — เชื่อแค่ description+output เพื่อสร้าง context
+  const failed = Array.isArray(req.body?.failed) ? req.body.failed.slice(0, 8).map((f) => ({
+    description: String(f.description || '').slice(0, 200),
+    output: String(f.output || '').slice(0, 400),
+  })) : [];
+  if (!failed.length) return res.status(400).json({ ok: false, error: 'ไม่มีข้อที่ต้องช่วย' });
+
+  try {
+    const { lab } = await locateLab(courseId, m, l);
+    const hint = await askMentor({
+      labTitle: lab?.title || 'แล็บ',
+      objectives: (lab?.objectives || []).map((o) => interpolate(o, session.vars || {})),
+      failed,
+    });
+    mentorUsage.set(key, used + 1);
+    // นับเป็นการใช้คำใบ้ — สละโบนัส no-hint ตอน grade
+    await labSessions.markMentorUsed(userId).catch(() => {});
+    res.json({ ok: true, hint, remaining: MENTOR_DAILY_CAP - used - 1 });
+  } catch (err) {
+    req.log.error({ err }, 'mentor request failed');
+    res.status(502).json({ ok: false, error: 'พี่เลี้ยง AI ไม่ว่างชั่วคราว — ลองใหม่อีกครั้ง' });
+  }
 });
 
 // GET /lab/:courseId/:m/:l/history — last 20 grading attempts for this lab

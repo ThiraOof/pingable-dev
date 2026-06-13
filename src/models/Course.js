@@ -75,6 +75,15 @@ const lessonSchema = new mongoose.Schema({
     commands: { type: [String], required: true },
   }, { _id: false })],
   isBoss:        { type: Boolean, default: false }, // Boss Lab ท้ายคอร์ส (UI เน้นพิเศษ มัก passThreshold สูง)
+  // Mystery lab (§7): สุ่มค่าเป้าหมายต่อ attempt กันลอกคำตอบ — โทเคน {{NAME}}
+  // ใน objectives/hints/scenario/setupCommands/expect ถูกแทนค่าตอนรัน (ดู labVariables.js)
+  variables: [new mongoose.Schema({
+    name:    { type: String, required: true },
+    kind:    { type: String, enum: ['pick', 'int', 'ipv4Net'], default: 'pick' },
+    choices: [String],
+    min:     { type: Number },
+    max:     { type: Number },
+  }, { _id: false })],
   scenario:      scenarioSchema,
   objectives:    [String],
   hints:         [String],

@@ -240,6 +240,59 @@ export default {
               failHint: 'กฎ NAT ยังอ้างวงผิด — วงจริงของสาขาคือ 192.168.1.0/24' },
           ],
         },
+        {
+          type: 'lab',
+          title: '🎲 ซ่อมลิงก์ลึกลับ (สุ่มโจทย์เฉพาะคุณ)',
+          order: 4,
+          estMinutes: 20,
+          mode: 'troubleshoot',
+          // Mystery lab: วง IP ของลิงก์สุ่มต่างกันต่อผู้เรียน — ลอกคำตอบกันไม่ได้
+          // โทเคน {{NET}} ถูกแทนด้วยค่าจริง (เช่น 10.40.12) ใน objectives/hints/setup/expect
+          variables: [
+            { name: 'NET', kind: 'pick', choices: ['10.40.12', '172.20.12', '192.168.42', '10.99.7'] },
+          ],
+          description: 'โจทย์เดียวกับ #1 แต่วง IP สุ่มเฉพาะคุณ — เปิด console อ่านค่าจริงเอาเอง แล้วซ่อมให้ลิงก์กลับมา',
+          scenario: {
+            from: 'ระบบมอบหมายงานอัตโนมัติ',
+            priority: 'high',
+            body: 'คุณได้รับมอบหมายลิงก์สาขาแบบสุ่ม — วง IP ของคุณไม่เหมือนเพื่อนร่วมทีม ดูค่าจริงได้จาก `show interfaces` บนอุปกรณ์ ลิงก์ระหว่าง R1–R2 ใช้งานไม่ได้ ทั้งที่ตั้ง IP ครบ หาให้เจอว่าทำไม',
+          },
+          objectives: [
+            'อ่านวง IP ที่ระบบสุ่มให้คุณ ({{NET}}.0/24) จาก console',
+            'หาสาเหตุที่ลิงก์ R1–R2 ไม่สื่อสาร แล้วซ่อม interface ให้กลับมา u/u',
+            'พิสูจน์ด้วย R1 ping R2 ({{NET}}.2)',
+          ],
+          hints: [
+            'เริ่มที่ `show interfaces` บน R1 — วงของคุณคือ {{NET}}.0/24 สังเกตคอลัมน์สถานะ (u/u, A/D)',
+            'A/D = Administratively Down — มีคนสั่งปิดไว้ใน config: `show configuration commands | match disable`',
+            'ปลดล็อกด้วย `delete interfaces ethernet eth1 disable` แล้ว commit จากนั้น `ping {{NET}}.2`',
+          ],
+          topology: {
+            nodes: [ vyos('R1', -200, 0), vyos('R2', 200, 0) ],
+            links: [ { node1: 'R1', port1: 1, node2: 'R2', port2: 1 } ],
+          },
+          setupCommands: [
+            { node: 'R1', commands: [
+              'configure',
+              'set interfaces ethernet eth1 address {{NET}}.1/24',
+              'set interfaces ethernet eth1 disable',
+              'commit',
+              'exit',
+            ] },
+            { node: 'R2', commands: [
+              'configure',
+              'set interfaces ethernet eth1 address {{NET}}.2/24',
+              'commit',
+              'exit',
+            ] },
+          ],
+          gradingChecks: [
+            { description: 'eth1 ของ R1 กลับมา u/u', node: 'R1', command: 'show interfaces | match eth1', expect: 'eth1.+u/u', points: 4,
+              failHint: 'eth1 ของ R1 ยังไม่ u/u — ถ้าเป็น A/D แปลว่าโดนสั่งปิดใน config หาคำสั่งที่ปิดไว้แล้วลบทิ้ง' },
+            { description: 'R1 ping R2 ({{NET}}.2) ได้', node: 'R1', command: 'ping {{NET}}.2 count 3', expect: 'bytes from {{NET}}\\.2', points: 5,
+              failHint: 'ยัง ping ไม่ผ่าน — วงของคุณคือ {{NET}}.0/24 (ดู `show interfaces`) อย่าลืม commit หลังแก้ disable' },
+          ],
+        },
       ],
     },
     {

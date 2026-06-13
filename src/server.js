@@ -25,6 +25,8 @@ import leaderboardRoutes from './routes/leaderboardRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import noteRoutes from './routes/noteRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
+import examRoutes, { sharedRouter as examSharedRouter } from './routes/examRoutes.js';
+import duelRoutes from './routes/duelRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -142,6 +144,7 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   const u = req.session.user || null;
   res.locals.user = u ? { ...u, emailVerified: u.emailVerified ?? true } : null;
+  res.locals.mentorEnabled = !!process.env.ANTHROPIC_API_KEY; // AI mentor feature flag (§22)
   next();
 });
 
@@ -173,6 +176,9 @@ app.use('/leaderboard', leaderboardRoutes);
 app.use('/review', reviewRoutes);
 app.use('/notes', noteRoutes);
 app.use('/u', profileRoutes);
+app.use(examSharedRouter);          // /exam/shared/:token (public, before auth-gated /exam)
+app.use('/exam', examRoutes);
+app.use('/duel', duelRoutes);
 app.use('/admin', adminRoutes);
 
 app.get('/', (req, res) => res.render('index.njk'));

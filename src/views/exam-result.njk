@@ -1,0 +1,72 @@
+{% extends "base.njk" %}
+{% block title %}ผลสอบจำลอง — {{ attempt.title }}{% endblock %}
+
+{% block head %}
+<meta property="og:title" content="สอบจำลอง {{ attempt.title }} ได้ {{ attempt.finalPct }}% บน Pingable">
+<meta property="og:description" content="ทำ Lab จริงต่อเนื่อง {{ attempt.labs.length }} ข้อในเวลาจำกัด — ฝึกความพร้อมสอบ CCNA/CCNP">
+{% endblock %}
+
+{% block content %}
+<div class="shared-wrap exam-result">
+  {% set pass = attempt.finalPct >= 60 %}
+  <div class="shared-header {{ 'pass' if pass else 'fail' }}">
+    <div class="shared-verdict-row">
+      {% if pass %}<png-icon name="badge-check" size="28"></png-icon><span class="shared-verdict pass">ผ่านเกณฑ์!</span>
+      {% else %}<png-icon name="x-circle" size="28"></png-icon><span class="shared-verdict fail">ยังไม่ผ่าน</span>{% endif %}
+    </div>
+    <div class="shared-score {{ 'pass' if pass else 'fail' }}">{{ attempt.finalPct }}%</div>
+    <p class="shared-meta">
+      {{ attempt.title }}
+      {% if attempt.state == 'expired' %} · ⏱️ หมดเวลา{% endif %}
+      {% if attempt.durationSec %} · ใช้เวลา {{ (attempt.durationSec / 60) | round | int }} นาที{% endif %}
+    </p>
+  </div>
+
+  <div class="shared-results">
+    <h2>ผลรายข้อ</h2>
+    <ul class="shared-list">
+      {% for lab in attempt.labs %}
+      <li class="shared-item {{ 'pass' if lab.status == 'passed' else 'fail' }}">
+        <span class="shared-icon">
+          {%- if lab.status == 'passed' %}✓{% elif lab.status == 'skipped' %}–{% else %}✕{% endif -%}
+        </span>
+        <span class="shared-desc">ข้อ {{ loop.index }}: {{ lab.title }}</span>
+        <span class="shared-pts">
+          {%- if lab.status == 'passed' %}ผ่าน{% elif lab.status == 'skipped' %}ข้าม{% elif lab.status == 'pending' %}ไม่ได้ทำ{% else %}ไม่ผ่าน{% endif -%}
+          {% if lab.pct is not none %} ({{ lab.pct }}%){% endif %}
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="shared-footer">
+    {% if not shared %}
+    <button class="btn btn-secondary" id="btnShareExam" data-id="{{ attempt._id }}"><png-icon name="link" size="16"></png-icon> คัดลอกลิงก์แชร์ผล</button>
+    <png-button variant="primary" href="/exam">กลับห้องสอบ</png-button>
+    {% else %}
+    <p class="shared-footer-note">ผลสอบจำลองจาก Pingable — ฝึกทำ Network Lab บนอุปกรณ์จริง</p>
+    <png-button variant="primary" href="/auth/register" icon-end="arrow-right">เริ่มเรียนฟรี</png-button>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% if not shared %}
+{% block scripts %}
+<script type="module">
+  const btn = document.getElementById('btnShareExam');
+  btn?.addEventListener('click', async () => {
+    btn.disabled = true;
+    try {
+      const r = await fetch(`/exam/result/${btn.dataset.id}/share`, { method: 'POST' });
+      const d = await r.json();
+      if (!d.ok) throw new Error();
+      await navigator.clipboard.writeText(location.origin + d.url);
+      btn.textContent = 'คัดลอกลิงก์แล้ว ✓';
+    } catch { btn.textContent = 'คัดลอกไม่สำเร็จ'; }
+    finally { setTimeout(() => { btn.disabled = false; }, 2500); }
+  });
+</script>
+{% endblock %}
+{% endif %}

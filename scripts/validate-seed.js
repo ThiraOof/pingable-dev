@@ -8,6 +8,7 @@
 
 import { pathToFileURL } from 'node:url';
 import './load-env.js';
+import { sampleVars, interpolateExpect } from '../src/services/labVariables.js';
 
 const LESSON_TYPES = new Set(['reading', 'lab', 'quiz']);
 const LEVELS = new Set(['beginner', 'intermediate', 'advanced', 'expert']);
@@ -77,10 +78,24 @@ export function validateCourses(courses) {
               err(`${where} scenario priority "${lesson.scenario.priority}" not in low/medium/high`);
             }
           }
+          // mystery lab: ตรวจ variables และ compile expect ด้วยค่าตัวอย่าง
+          // (template token จะ fail regex ถ้าไม่แทนค่าก่อน)
+          const KINDS = new Set(['pick', 'int', 'ipv4Net']);
+          for (const v of lesson.variables || []) {
+            if (!v.name) err(`${where} variable missing name`);
+            if (!KINDS.has(v.kind || 'pick')) err(`${where} variable "${v.name}" unknown kind "${v.kind}"`);
+            if ((v.kind === 'pick' || v.kind === 'ipv4Net') && !(v.choices || []).length) {
+              err(`${where} variable "${v.name}" (${v.kind}) needs choices`);
+            }
+            if (v.kind === 'int' && !(Number.isFinite(v.min) && Number.isFinite(v.max) && v.min <= v.max)) {
+              err(`${where} variable "${v.name}" (int) needs min <= max`);
+            }
+          }
+          const sample = sampleVars(lesson.variables);
           (lesson.gradingChecks || []).forEach((ck, i) => {
             if (!names.has(ck.node)) err(`${where} check #${i} ("${ck.description}") targets unknown node "${ck.node}"`);
             if (!ck.command) err(`${where} check #${i} missing command`);
-            try { new RegExp(ck.expect, 'i'); }
+            try { new RegExp(interpolateExpect(ck.expect, sample), 'i'); }
             catch (e) { err(`${where} check #${i} expect is not valid regex: ${e.message}`); }
           });
           if (!(lesson.gradingChecks || []).length) warn(`${where} lab has no grading checks`);

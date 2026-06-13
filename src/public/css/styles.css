@@ -762,6 +762,14 @@ main { flex: 1; }
 .gamify-chip.level { background: rgba(245,181,19,.12); border-color: rgba(245,181,19,.4); color: var(--warning-h); }
 .gamify-chip.streak { background: rgba(244,63,94,.1); border-color: rgba(244,63,94,.3); color: var(--danger-h); }
 
+/* AI mentor box in the grade modal */
+.mentor-box { padding: var(--s-4) var(--s-5); border-top: 1px solid var(--border); }
+.mentor-reply {
+  margin-top: var(--s-3); padding: var(--s-3) var(--s-4);
+  background: var(--signal-soft); border: 1px solid var(--signal-dim); border-radius: var(--r-md);
+  color: var(--text); font-size: .9rem; line-height: 1.6; white-space: pre-wrap;
+}
+
 /* ── Footer ──────────────────────────────────────────────────────── */
 .footer {
   padding: var(--s-6); color: var(--faint); font-size: .85rem;
@@ -1114,6 +1122,96 @@ main { flex: 1; }
 .quiz-choice.is-correct .ico { color: var(--success-h); margin-left: auto; }
 .quiz-choice.is-wrong { border-color: var(--danger); background: rgba(244,63,94,.08); }
 .quiz-q.reviewed .quiz-choice { cursor: default; }
+
+/* ── Exam Simulator ──────────────────────────────────────────────── */
+.exam-wrap { max-width: 760px; margin-inline: auto; padding: 0 var(--s-4) var(--s-8); }
+.exam-resume-card, .exam-card {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s-4);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: var(--s-4) var(--s-5);
+}
+.exam-resume-card { border-color: var(--signal-dim); margin-bottom: var(--s-5); }
+.exam-resume-card p { color: var(--muted); font-size: .88rem; }
+.exam-rules { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: var(--s-5); margin-bottom: var(--s-5); }
+.exam-rules h2 { font-size: 1.05rem; margin-bottom: var(--s-3); }
+.exam-rules ul { list-style: none; display: flex; flex-direction: column; gap: var(--s-2); }
+.exam-rules li { color: var(--muted); font-size: .9rem; }
+.exam-list { display: flex; flex-direction: column; gap: var(--s-3); }
+.exam-card-body h3 { font-size: 1.1rem; margin-bottom: var(--s-1); }
+.exam-card-body p { color: var(--muted); font-size: .88rem; margin-bottom: var(--s-2); }
+.exam-card-meta { display: flex; gap: var(--s-4); font-size: .82rem; color: var(--faint); }
+.exam-card-meta span { display: inline-flex; align-items: center; gap: var(--s-1); }
+
+/* Exam runner (png-exam) */
+.exam-layout { display: flex; flex-direction: column; height: 100%; }
+.exam-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--s-2) var(--s-5); background: var(--surface); border-bottom: 1px solid var(--border); min-height: 52px;
+}
+.exam-progress { display: flex; align-items: center; gap: var(--s-3); }
+.exam-count { font-family: var(--font-display); font-weight: 700; }
+.exam-dots { display: inline-flex; gap: var(--s-1); }
+.exam-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--border-h); }
+.exam-dot.done { background: var(--signal); }
+.exam-dot.current { background: var(--warning-h); box-shadow: 0 0 0 3px rgba(245,181,19,.2); }
+.exam-timer {
+  font-family: var(--font-mono); font-size: 1.4rem; font-weight: 700; color: var(--text);
+  padding: var(--s-1) var(--s-3); border-radius: var(--r-sm); background: var(--bg); border: 1px solid var(--border);
+}
+.exam-timer.urgent { color: var(--danger-h); border-color: var(--danger); animation: examPulse 1s infinite; }
+@keyframes examPulse { 50% { background: rgba(244,63,94,.12); } }
+.exam-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.exam-lab-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); padding: var(--s-2) var(--s-5); background: var(--surface-2); border-bottom: 1px solid var(--border); }
+.exam-lab-title { display: inline-flex; align-items: center; gap: var(--s-2); font-weight: 600; }
+.exam-lab-title .ico { color: var(--signal-h); }
+.exam-status { font-size: .82rem; color: var(--faint); }
+.exam-controls { display: flex; gap: var(--s-3); justify-content: flex-end; padding: var(--s-3) var(--s-5); background: var(--bg-elev); border-top: 1px solid var(--border); }
+.exam-controls .btn-primary { min-width: 200px; }
+.exam-result .shared-meta { font-size: .92rem; }
+
+/* ── Lab Duel ────────────────────────────────────────────────────── */
+.duel-wrap { max-width: 680px; margin-inline: auto; padding: 0 var(--s-4) var(--s-8); }
+.duel-resume-card, .duel-cta-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
+  padding: var(--s-5); margin-bottom: var(--s-5);
+}
+.duel-resume-card { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-color: var(--signal-dim); }
+.duel-resume-card p { color: var(--muted); font-size: .88rem; }
+.duel-cta-card { text-align: center; }
+.duel-cta-card h2 { margin-bottom: var(--s-2); }
+.duel-cta-card p { color: var(--muted); margin-bottom: var(--s-4); }
+.duel-rules { list-style: none; display: flex; flex-direction: column; gap: var(--s-2); color: var(--muted); font-size: .88rem; }
+.duel-rules li::before { content: '⚔️ '; }
+.duel-closed { text-align: center; padding: var(--s-7) var(--s-4); }
+.duel-closed-icon, .duel-vs-emoji { font-size: 2.5rem; margin-bottom: var(--s-3); }
+.duel-closed h2 { margin-bottom: var(--s-2); }
+.duel-closed p { color: var(--muted); margin-bottom: var(--s-5); }
+.duel-join-card { padding: var(--s-7) var(--s-5); }
+.duel-join-note { font-size: .85rem; }
+.duel-invite { max-width: 520px; margin: var(--s-5) auto; text-align: center; }
+.duel-invite-row { display: flex; gap: var(--s-2); margin: var(--s-2) 0; }
+.duel-invite-input { flex: 1; padding: var(--s-2) var(--s-3); background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-sm); color: var(--text); font-family: var(--font-mono); font-size: .82rem; }
+.duel-waiting { color: var(--warning-h); font-size: .9rem; }
+
+/* Duel room */
+.duel-layout { display: flex; flex-direction: column; height: calc(100dvh - var(--nav-h)); }
+.duel-board { display: flex; align-items: center; justify-content: center; gap: var(--s-5); padding: var(--s-4); background: var(--surface); border-bottom: 1px solid var(--border); }
+.duel-side { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 130px; }
+.duel-name { font-size: .82rem; color: var(--muted); }
+.duel-pct { font-family: var(--font-display); font-size: 1.8rem; font-weight: 700; }
+.duel-side.you .duel-pct { color: var(--signal-h); }
+.duel-side.foe .duel-pct { color: var(--danger-h); }
+.duel-vs { font-family: var(--font-display); font-weight: 700; color: var(--faint); }
+.duel-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.duel-lab-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); padding: var(--s-2) var(--s-5); background: var(--surface-2); border-bottom: 1px solid var(--border); }
+.duel-lab-title { display: inline-flex; align-items: center; gap: var(--s-2); font-weight: 600; }
+.duel-lab-title .ico { color: var(--signal-h); }
+.duel-status { font-size: .82rem; color: var(--faint); }
+.duel-controls { display: flex; gap: var(--s-3); justify-content: flex-end; padding: var(--s-3) var(--s-5); background: var(--bg-elev); border-top: 1px solid var(--border); }
+.duel-controls .btn-primary { min-width: 180px; }
+.duel-result-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: grid; place-items: center; z-index: 50; }
+.duel-result-card { background: var(--surface); border: 1px solid var(--border-h); border-radius: var(--r-lg); padding: var(--s-7); text-align: center; max-width: 360px; }
+.duel-result-emoji { font-size: 3rem; margin-bottom: var(--s-3); }
+.duel-result-card h2 { margin-bottom: var(--s-5); }
 
 /* ── Leaderboard ─────────────────────────────────────────────────── */
 .lb-wrap { max-width: 620px; margin-inline: auto; padding: 0 var(--s-4) var(--s-8); }

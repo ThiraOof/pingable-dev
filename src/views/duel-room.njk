@@ -1,0 +1,15 @@
+{% extends "base.njk" %}
+{% block title %}ดวล: {{ duel.labTitle }} — Pingable{% endblock %}
+
+{% block content %}
+<png-duel
+  duel-id="{{ duel._id }}"
+  role="{{ role }}"
+  state="{{ duel.state }}"
+  you-name="{{ you.username }}"
+  foe-name="{{ foe.username if foe else 'รอคู่แข่ง...' }}"
+  lab-title="{{ duel.labTitle }}"
+  invite-url="/duel/{{ duel._id }}"
+  gns3-url="{{ gns3Url or '' }}">
+</png-duel>
+{% endblock %}

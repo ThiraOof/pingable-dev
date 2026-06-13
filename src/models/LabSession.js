@@ -23,6 +23,11 @@ const labSessionSchema = new mongoose.Schema({
   // no-hint XP bonus/badge can't be gamed from the client (one doc per user,
   // reset on every startSession)
   hintsUsed: { type: [Number], default: [] },
+  // mystery-lab randomized values for this attempt ({name: value}); the source
+  // of truth for interpolating expect/setup/hints/objectives — never trust the client
+  vars: { type: mongoose.Schema.Types.Mixed, default: {} },
+  // asked the AI mentor this run — counts as a hint (forfeits the no-hint bonus)
+  mentorUsed: { type: Boolean, default: false },
   // when this run's build was claimed — basis for the speedrunner badge
   // (createdAt is useless here: the one-doc-per-user upsert keeps it forever)
   startedAt: { type: Date },

@@ -1,0 +1,37 @@
+{% extends "base.njk" %}
+{% block title %}Lab Duel ⚔️ — Pingable{% endblock %}
+
+{% block content %}
+<png-page-header title="Lab Duel ⚔️" subtitle="ดวลซ่อมระบบกับเพื่อน — ได้โจทย์พังเหมือนกัน ใครซ่อมผ่าน 100% ก่อนชนะ!"></png-page-header>
+
+<div class="duel-wrap">
+  {% if active %}
+  <div class="duel-resume-card">
+    <div><strong>คุณมีห้องดวลค้างอยู่</strong><p>{{ active.labTitle }} — สถานะ: {{ active.state }}</p></div>
+    <png-button variant="primary" href="/duel/{{ active._id }}" icon-end="arrow-right">กลับเข้าห้อง</png-button>
+  </div>
+  {% endif %}
+
+  {% if enabled %}
+  <div class="duel-cta-card">
+    <h2>เปิดห้องดวลใหม่</h2>
+    <p>กดสร้างห้องแล้วส่งลิงก์ให้เพื่อน — เริ่มแข่งทันทีที่เพื่อนเข้าร่วม</p>
+    <form method="POST" action="/duel/create">
+      <button type="submit" class="btn btn-primary" {% if active %}disabled title="จบห้องที่ค้างอยู่ก่อน"{% endif %}>⚔️ สร้างห้องดวล</button>
+    </form>
+  </div>
+  <ul class="duel-rules">
+    <li>โจทย์เป็นโหมดซ่อม (troubleshoot) — ระบบพังเหมือนกันทั้งสองฝั่ง</li>
+    <li>กดตรวจได้เรื่อย ๆ — คนแรกที่ผ่าน 100% คือผู้ชนะ</li>
+    <li>แต่ละห้องใช้ทรัพยากร 2 ชุด จึงเปิดเฉพาะช่วงอีเวนต์</li>
+  </ul>
+  {% else %}
+  <div class="duel-closed">
+    <div class="duel-closed-icon">⚔️</div>
+    <h2>โหมดดวลเปิดเฉพาะช่วงอีเวนต์</h2>
+    <p>การดวลใช้ทรัพยากร Lab สองชุดต่อหนึ่งคู่ จึงเปิดเป็นรอบ ๆ — รอประกาศ "ศึกวันเสาร์" ได้เลย!</p>
+    <png-button variant="secondary" href="/courses">ไปฝึกซ้อมก่อน</png-button>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

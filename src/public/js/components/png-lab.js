@@ -9,6 +9,7 @@ define('png-lab', class extends PngEl {
     const cid = this.attr('course-id'), M = this.attr('m'), L = this.attr('l');
     const gradeCount = +this.attr('grade-count', '0');
     const passThreshold = +this.attr('pass-threshold', '60');
+    const mentorOn = this.has('mentor-enabled');
     const ICO_CHK = svgIcon('check', 14), ICO_X = svgIcon('x', 14), ICO_CHK_L = svgIcon('check', 22), ICO_X_L = svgIcon('x', 22);
 
     document.querySelector('png-footer')?.setAttribute('hidden', '');  // full-height page
@@ -43,6 +44,23 @@ define('png-lab', class extends PngEl {
     let pollTimer = null;
     const stopTimers = () => { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } };
 
+    // Mystery lab: แทนค่าโทเคน {{NAME}} ในเป้าหมาย/ใบแจ้งปัญหาที่แสดงอยู่ ด้วย
+    // ค่าที่ server สุ่มให้ผู้เรียนคนนี้ (มาจาก /status) — idempotent: ทำซ้ำไม่เสีย
+    let varsApplied = false;
+    function applyVars(vars) {
+      if (varsApplied || !vars) return;
+      varsApplied = true;
+      const sub = (t) => t.replace(/\{\{(\w+)\}\}/g, (m, k) => (k in vars ? vars[k] : m));
+      sr.querySelectorAll('.objective-list li, .ticket-body').forEach((el) => {
+        if (el.textContent.includes('{{')) {
+          // แทนเฉพาะ text node ท้าย (เลี่ยงทับ markup ของ checkmark)
+          for (const node of el.childNodes) {
+            if (node.nodeType === 3 && node.textContent.includes('{{')) node.textContent = sub(node.textContent);
+          }
+        }
+      });
+    }
+
     function setReady() {
       labStatus.textContent = 'Lab พร้อมใช้งาน'; labStatus.className = 'lab-status status-ready';
       if (btnGrade) btnGrade.disabled = false;
@@ -67,6 +85,7 @@ define('png-lab', class extends PngEl {
           if (!st.ok) return;
           if (!st.active || !st.sameLab) return labGone();
           if (st.status !== 'ready') return;
+          applyVars(st.vars);
           if (st.allBooted) {
             if (st.setup === 'failed') {
               labStatus.textContent = 'จัดฉากโจทย์ไม่สำเร็จ — กดเริ่ม Lab ใหม่';
@@ -292,6 +311,36 @@ define('png-lab', class extends PngEl {
         resultList.appendChild(li);
       }
       updateObjectives(results);
+      setupMentor(results.filter((r) => !r.passed));
+    }
+
+    // ปุ่มขอคำแนะนำพี่เลี้ยง AI — โชว์เมื่อเปิดฟีเจอร์และมีข้อที่ยังไม่ผ่าน
+    const mentorBox = $('mentorBox'), btnMentor = $('btnMentor'), mentorReply = $('mentorReply');
+    function setupMentor(failed) {
+      if (!mentorBox) return;
+      if (!mentorOn || !failed.length) { mentorBox.hidden = true; return; }
+      mentorBox.hidden = false;
+      mentorReply.hidden = true; mentorReply.textContent = '';
+      btnMentor.disabled = false;
+      btnMentor.innerHTML = `${svgIcon('sparkles', 16)} ขอคำแนะนำจากพี่เลี้ยง AI`;
+      btnMentor.onclick = async () => {
+        btnMentor.disabled = true; btnMentor.textContent = 'กำลังถามพี่เลี้ยง…';
+        try {
+          const r = await fetch(`/lab/${cid}/${M}/${L}/mentor`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ failed: failed.map((f) => ({ description: f.description, output: f.output })) }),
+          });
+          const d = await r.json();
+          if (!d.ok) throw new Error(d.error || 'ขอคำแนะนำไม่สำเร็จ');
+          mentorReply.textContent = d.hint; mentorReply.hidden = false;
+          btnMentor.innerHTML = d.remaining > 0 ? `${svgIcon('sparkles', 16)} ขออีกครั้ง (เหลือ ${d.remaining})` : 'ครบโควต้าวันนี้แล้ว';
+          btnMentor.disabled = d.remaining <= 0;
+        } catch (err) {
+          mentorReply.textContent = err.message; mentorReply.hidden = false;
+          btnMentor.disabled = false; btnMentor.innerHTML = `${svgIcon('sparkles', 16)} ลองใหม่`;
+        }
+      };
     }
     // แถบ XP/streak/badge ใต้สรุปคะแนน — โชว์เฉพาะตอนมีอะไรให้อวด
     function renderGamify(g) {
@@ -333,6 +382,7 @@ define('png-lab', class extends PngEl {
         const st = await (await fetch(statusUrl)).json();
         if (st.ok && st.active && st.sameLab && st.status === 'ready' && st.gns3Url) {
           gns3Frame.src = st.gns3Url; labLoading.hidden = true;
+          applyVars(st.vars);
           if (st.allBooted && (st.setup === 'none' || st.setup === 'done')) { setReady(); heartbeat(); }
           else bootWatch();
           return;
