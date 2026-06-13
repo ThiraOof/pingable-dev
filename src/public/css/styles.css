@@ -321,6 +321,11 @@ main { flex: 1; }
 .feature-card h3 { font-size: 1.06rem; margin-bottom: var(--s-2); }
 .feature-card p { color: var(--muted); font-size: .9rem; }
 
+/* ── Home section heading (intro above a features grid) ──────────── */
+.home-section-head { text-align: center; max-width: 640px; margin: var(--s-8) auto 0; padding-inline: var(--s-6); }
+.home-section-head h2 { font-size: clamp(1.7rem, 3.4vw, 2.3rem); font-weight: 800; margin: var(--s-3) 0; }
+.home-section-head p { color: var(--muted); font-size: 1.02rem; }
+
 /* ── CTA band ────────────────────────────────────────────────────── */
 .cta-band { padding: var(--s-8) var(--s-6); }
 .cta-inner {

@@ -1,18 +1,19 @@
 {% extends "base.njk" %}
-{% block title %}Pingable — เรียน Network ผ่าน Lab จริง{% endblock %}
+{% block title %}Pingable — เรียน Network ผ่าน Lab จริงในเบราว์เซอร์{% endblock %}
 
 {% block content %}
 <png-hero>
   <div class="hero-content">
     <png-eyebrow live>Lab พร้อมใช้งานแบบเรียลไทม์</png-eyebrow>
     <h1>เรียน Network<br><span class="highlight">ผ่าน Lab จริงในเบราว์เซอร์</span></h1>
-    <p>ฝึกทำ Lab บน Router/Switch จำลองผ่าน GNS3 พร้อมระบบตรวจคำตอบอัตโนมัติ โดยไม่ต้องติดตั้งอะไรเพิ่ม</p>
+    <p>ฝึกทำ Lab บน Router/Switch จริงผ่าน GNS3 ในเบราว์เซอร์ ระบบตรวจคำตอบจากคอนโซลจริงอัตโนมัติ พร้อมเก็บ XP ไต่เลเวล และพี่เลี้ยง AI คอยช่วย — ไม่ต้องติดตั้งอะไรเลย</p>
     <div class="hero-actions">
       {% if user %}
         <png-button variant="primary" size="lg" href="/courses" icon="layers">ดูคอร์สเรียน</png-button>
+        <png-button variant="outline" size="lg" href="/dashboard" icon="gauge">แดชบอร์ดของฉัน</png-button>
       {% else %}
         <png-button variant="primary" size="lg" href="/auth/register" icon="play">เริ่มเรียนฟรี</png-button>
-        <png-button variant="outline" size="lg" href="/auth/login">เข้าสู่ระบบ</png-button>
+        <png-button variant="outline" size="lg" href="/courses">ดูคอร์สเรียน</png-button>
       {% endif %}
     </div>
     <div class="hero-stats">
@@ -35,20 +36,37 @@
 </png-hero>
 
 <png-signal-band>
-  <png-stat kind="signal" icon="route" value="20+" label="Hands-on Lab"></png-stat>
+  <png-stat kind="signal" icon="route" value="37" label="Hands-on Lab"></png-stat>
+  <png-stat kind="signal" icon="layers" value="7" label="คอร์ส beginner→expert"></png-stat>
   <png-stat kind="signal" icon="gauge" value="< 30s" label="Provision Topology"></png-stat>
-  <png-stat kind="signal" icon="badge-check" value="Auto" label="ตรวจจากคอนโซลจริง"></png-stat>
   <png-stat kind="signal" icon="wifi" value="100%" label="รันบนเบราว์เซอร์"></png-stat>
 </png-signal-band>
 
 <png-features>
-  <png-feature icon="zap" heading="เริ่มได้ทันที">กด Start Lab แล้วระบบ provision Topology อัตโนมัติภายในไม่กี่วินาที</png-feature>
-  <png-feature icon="server" heading="อุปกรณ์จริง">โต้ตอบกับ Router/Switch ผ่าน GNS3 Web-UI ในเบราว์เซอร์ ไม่ต้องลง SSH/Telnet</png-feature>
-  <png-feature icon="badge-check" heading="ตรวจอัตโนมัติ">ระบบ grade ผลลัพธ์จากคอนโซลจริง พร้อมคะแนนรายข้อและ output ที่ตรวจสอบได้</png-feature>
-  <png-feature icon="wallet" heading="ประหยัด">เซิร์ฟเวอร์เปิด-ปิดตามการใช้งาน คืนทรัพยากรเมื่อจบ จ่ายเฉพาะที่ใช้จริง</png-feature>
+  <png-feature icon="zap" heading="เริ่มได้ทันที">กด Start Lab แล้วระบบ provision Topology บน GNS3 ให้อัตโนมัติภายในไม่กี่วินาที</png-feature>
+  <png-feature icon="server" heading="อุปกรณ์จริง">โต้ตอบกับ Router/Switch ผ่าน GNS3 Web-UI ในเบราว์เซอร์โดยตรง ไม่ต้องลง SSH/Telnet</png-feature>
+  <png-feature icon="badge-check" heading="ตรวจอัตโนมัติ">ระบบ grade ผลลัพธ์จากคอนโซลจริง ให้คะแนนรายข้อพร้อม output ที่ตรวจสอบได้</png-feature>
+  <png-feature icon="wallet" heading="ประหยัด">เซิร์ฟเวอร์เปิด-ปิดตามการใช้งาน คืนทรัพยากรเมื่อจบ ใช้ Lab ได้แบบไม่ต้องลงทุนฮาร์ดแวร์</png-feature>
 </png-features>
 
-<png-cta heading="พร้อมลงมือทำ Lab แรกหรือยัง?" text="สมัครฟรี แล้วเริ่มฝึก Network จาก Topology จริงได้ทันที">
+<div class="home-section-head">
+  <png-eyebrow>มากกว่าแค่ Lab</png-eyebrow>
+  <h2>เครื่องมือที่ทำให้คุณ<span class="highlight">เรียนจบจริง</span></h2>
+  <p>ระบบเกมมิฟิเคชัน การทบทวนอัตโนมัติ และฟีเจอร์ฝึกเชิงลึก ที่ออกแบบมาให้คุณกลับมาทุกวันจนเก่งขึ้นจริง</p>
+</div>
+
+<png-features>
+  <png-feature icon="gauge" heading="XP เลเวล & สตรีค">สะสม XP ทุกครั้งที่ทำ Lab จบ ไต่เลเวลสายอาชีพ พร้อมป้ายรางวัล (badge) และรักษาสตรีคการเรียนรายวัน</png-feature>
+  <png-feature icon="activity" heading="อันดับรายสัปดาห์">เก็บแต้มขึ้นกระดานผู้นำที่รีเซ็ตทุกวันจันทร์ (เวลาไทย) วัดผลกับผู้เรียนคนอื่นแบบสดๆ</png-feature>
+  <png-feature icon="clock" heading="สอบจำลองจับเวลา">ชุดข้อสอบหลาย Lab ต่อเนื่องแบบจับเวลาจริง สรุปผลผ่าน/ไม่ผ่านพร้อมรายงานที่แชร์ได้</png-feature>
+  <png-feature icon="sparkles" heading="พี่เลี้ยง AI">ติดตรงไหนถามได้ทันที AI ช่วยใบ้แนวคิดแบบโสกราตีสเป็นภาษาไทย โดยไม่บอกคำตอบตรงๆ</png-feature>
+  <png-feature icon="server" heading="โหมดซ่อม & Boss Lab">ระบบถูกตั้งให้พังมาแล้ว ภารกิจคือไล่หาจุดเสียและแก้ให้กลับมาใช้งานได้ ปิดท้ายคอร์สด้วยด่านบอส</png-feature>
+  <png-feature icon="lightbulb" heading="ทบทวนอัตโนมัติ">ข้อที่ตอบผิดถูกจัดคิวไว้ทวนซ้ำแบบ spaced repetition จนจำแม่น ไม่หลุดสิ่งที่เคยพลาด</png-feature>
+  <png-feature icon="badge-check" heading="ใบรับรองตรวจสอบได้">เรียนจบคอร์สรับใบรับรองออนไลน์ที่ใครก็ยืนยันความถูกต้องได้ผ่านลิงก์</png-feature>
+  <png-feature icon="route" heading="Mystery Lab">ค่าตัวแปรและช่วง IP สุ่มต่อผู้เรียนแต่ละคน ลอกคำตอบกันไม่ได้ ต้องเข้าใจจริงถึงจะผ่าน</png-feature>
+</png-features>
+
+<png-cta heading="พร้อมลงมือทำ Lab แรกหรือยัง?" text="สมัครฟรี แล้วเริ่มฝึก Network จาก Topology จริงพร้อมเก็บ XP ได้ทันที">
   {% if user %}
     <png-button variant="primary" size="lg" href="/courses" icon="arrow-right">เลือกคอร์ส</png-button>
   {% else %}
