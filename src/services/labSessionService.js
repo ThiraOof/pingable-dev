@@ -22,6 +22,16 @@ const maxConcurrent = () => Number(process.env.LAB_MAX_CONCURRENT || 10);
 
 async function teardown(projectId) {
   if (!projectId) return;
+  // Stop nodes before deleting: a bare DELETE on a project the controller no
+  // longer holds in memory (closed lab tab dropped the notification socket, or
+  // the server bounced) removes the project dir but orphans the spawned
+  // ubridge/vpcs/qemu processes — they keep their NIO UDP ports, so the next
+  // build's VPCS hits "Address already in use" and frames stop flowing.
+  // Re-open so the controller re-attaches to the nodes, stop them (kills the
+  // processes), then delete. Each step is best-effort: a project that is
+  // already gone/closed just makes these 404 and we still try the delete.
+  try { await gns3.openProject(projectId); }  catch {}
+  try { await gns3.stopAllNodes(projectId); } catch {}
   try { await gns3.deleteProject(projectId); }
   catch (err) { logger.error({ err, projectId }, 'GNS3 deleteProject failed'); }
 }
@@ -213,17 +223,24 @@ export async function sweepIdle() {
   }
 }
 
+// Fetch the GNS3 project list once; callers share it so a sweep cycle hits the
+// server only once. Returns null (not []) when GNS3 is unreachable so callers
+// can tell "no projects" from "couldn't ask" and skip destructive reconcile.
+async function listProjects() {
+  try { return await gns3.getProjects(); }
+  catch (err) { logger.warn({ err }, 'lab-sweeper: GNS3 unreachable'); return null; }
+}
+
 // Reap pingable_* projects on the GNS3 server that no session references
 // (crashed builds, projects from before sessions were persisted). Project
 // names embed their creation time (pingable_<ms>_<title>), so fresh projects
 // whose session doc may not carry a projectId yet are left alone.
-export async function sweepOrphans() {
-  let projects;
-  try { projects = await gns3.getProjects(); }
-  catch (err) { logger.warn({ err }, 'lab-sweeper: GNS3 unreachable'); return; }
+export async function sweepOrphans(projects) {
+  if (projects === undefined) projects = await listProjects();
+  if (!projects) return;
 
   const known = new Set((await LabSession.find().select('projectId')).map((d) => d.projectId));
-  for (const p of projects || []) {
+  for (const p of projects) {
     const stamp = /^pingable_(\d+)_/.exec(p.name || '')?.[1];
     if (!stamp || known.has(p.project_id)) continue;
     if (Date.now() - Number(stamp) < ORPHAN_MIN_AGE_MS) continue;
@@ -232,10 +249,39 @@ export async function sweepOrphans() {
   }
 }
 
+// Drop sessions whose GNS3 project has vanished (deleted out-of-band, or the
+// GNS3 server came back with a fresh data dir / a stale process from a previous
+// instance was killed). The lab page would otherwise resume a phantom project
+// forever — /status telnets consoles that no longer exist, so it never reaches
+// allBooted and the grade button stays locked. Dropping the doc lets the next
+// start rebuild cleanly. Only 'ready' sessions with a projectId are checked: a
+// 'building' doc owns the start lock and has no projectId yet.
+export async function sweepStaleSessions(projects) {
+  if (projects === undefined) projects = await listProjects();
+  if (!projects) return;
+
+  const live = new Set(projects.map((p) => p.project_id));
+  const sessions = await LabSession.find({ status: 'ready', projectId: { $ne: null } });
+  for (const doc of sessions) {
+    if (live.has(doc.projectId)) continue;
+    logger.info({ projectId: doc.projectId, user: String(doc.user) },
+      'lab-sweeper: GNS3 project vanished, dropping stale session');
+    await LabSession.deleteOne({ _id: doc._id });
+  }
+}
+
 /** Start the periodic sweep (also runs once at startup to reconcile after a restart). */
 export function startSweeper() {
-  const run = () =>
-    sweepIdle().then(sweepOrphans).catch((err) => logger.error({ err }, 'lab-sweeper failed'));
+  const run = async () => {
+    try {
+      await sweepIdle();
+      const projects = await listProjects(); // one fetch shared by both reconciles
+      await sweepStaleSessions(projects);
+      await sweepOrphans(projects);
+    } catch (err) {
+      logger.error({ err }, 'lab-sweeper failed');
+    }
+  };
   run();
   setInterval(run, SWEEP_INTERVAL_MS).unref();
 }

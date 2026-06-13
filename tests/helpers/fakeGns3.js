@@ -9,16 +9,18 @@ import { randomUUID } from 'crypto';
  * Options:
  *   failOn - Set of route keys that should return HTTP 500. Keys:
  *            'create-project', 'open', 'create-node', 'template', 'rename',
- *            'start-nodes', 'link', 'delete', 'list-projects'
+ *            'start-nodes', 'stop-nodes', 'link', 'delete', 'list-projects'
  *
  * Returned handle:
- *   port, projects (Map id -> {name}), deleted (project ids), calls
- *   ({method, path, body} log), seedProject(id, name), close()
+ *   port, projects (Map id -> {name}), deleted (project ids), stopped (project
+ *   ids that had nodes/stop called), calls ({method, path, body} log),
+ *   seedProject(id, name), close()
  */
 export function startFakeGns3({ failOn = new Set() } = {}) {
   const projects = new Map(); // project_id -> { name }
   const nodes = new Map();    // node_id -> node
   const deleted = [];
+  const stopped = [];         // project ids that had nodes/stop called
   const calls = [];
   let nextConsole = 5000;
 
@@ -90,6 +92,11 @@ export function startFakeGns3({ failOn = new Set() } = {}) {
         if (fail('start-nodes')) return;
         return reply(204, null);
       }
+      if ((m = path.match(/^\/v2\/projects\/([^/]+)\/nodes\/stop$/)) && req.method === 'POST') {
+        if (fail('stop-nodes')) return;
+        stopped.push(m[1]);
+        return reply(204, null);
+      }
       if (/^\/v2\/projects\/[^/]+\/links$/.test(path) && req.method === 'POST') {
         if (fail('link')) return;
         return reply(201, { link_id: randomUUID(), nodes: body.nodes });
@@ -104,6 +111,7 @@ export function startFakeGns3({ failOn = new Set() } = {}) {
         port: server.address().port,
         projects,
         deleted,
+        stopped,
         calls,
         failOn, // mutable: add/delete keys between tests to inject failures
         seedProject: (id, name) => projects.set(id, { name }),

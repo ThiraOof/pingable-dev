@@ -45,6 +45,7 @@ beforeEach(async () => {
   if (!dbUp) return;
   await LabSession.deleteMany({});
   fake.deleted.length = 0;
+  fake.stopped.length = 0;
   fake.calls.length = 0;
   fake.projects.clear();
   fake.failOn.clear();
@@ -295,4 +296,53 @@ test('sweepOrphans reaps old unreferenced pingable_* projects only', opts, async
 
   await svc.sweepOrphans();
   assert.deepEqual(fake.deleted, ['proj-orphan']);
+});
+
+test('teardown stops nodes before deleting the project (no orphaned processes)', opts, async () => {
+  await LabSession.create({
+    user: oid(), course: oid(), moduleIdx: 0, lessonIdx: 0,
+    status: 'ready', projectId: 'proj-x',
+    lastActivityAt: new Date(Date.now() - (Number(process.env.LAB_IDLE_MINUTES || 45) + 1) * 60 * 1000),
+  });
+  await svc.sweepIdle();
+  // A bare DELETE on a project the controller no longer holds orphans the
+  // node processes — they keep their NIO ports. Stopping first prevents that.
+  assert.ok(fake.stopped.includes('proj-x'), 'nodes/stop should be called');
+  assert.ok(fake.deleted.includes('proj-x'), 'project should be deleted');
+});
+
+test('sweepStaleSessions drops ready sessions whose GNS3 project vanished, keeps live ones', opts, async () => {
+  fake.seedProject('proj-live', `pingable_${Date.now()}_live`);
+  await LabSession.create({
+    user: oid(), course: oid(), moduleIdx: 0, lessonIdx: 0,
+    status: 'ready', projectId: 'proj-live', lastActivityAt: new Date(),
+  });
+  await LabSession.create({ // points at a project GNS3 no longer knows about
+    user: oid(), course: oid(), moduleIdx: 0, lessonIdx: 0,
+    status: 'ready', projectId: 'proj-gone', lastActivityAt: new Date(),
+  });
+
+  await svc.sweepStaleSessions();
+  const left = await LabSession.find().select('projectId');
+  assert.deepEqual(left.map((d) => d.projectId).sort(), ['proj-live']);
+});
+
+test('sweepStaleSessions leaves building sessions (no projectId) untouched', opts, async () => {
+  await LabSession.create({
+    user: oid(), course: oid(), moduleIdx: 0, lessonIdx: 0,
+    status: 'building', projectId: null, lastActivityAt: new Date(),
+  });
+  await svc.sweepStaleSessions();
+  assert.equal(await LabSession.countDocuments(), 1);
+});
+
+test('reconcile sweeps are skipped (non-destructive) when GNS3 is unreachable', opts, async () => {
+  fake.failOn.add('list-projects');
+  await LabSession.create({
+    user: oid(), course: oid(), moduleIdx: 0, lessonIdx: 0,
+    status: 'ready', projectId: 'proj-gone', lastActivityAt: new Date(),
+  });
+  await svc.sweepStaleSessions(); // GNS3 down → must NOT delete the session
+  await svc.sweepOrphans();
+  assert.equal(await LabSession.countDocuments(), 1);
 });
