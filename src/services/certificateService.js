@@ -23,14 +23,16 @@ function bossLab(course) {
 }
 
 /**
- * Eligible = course is 100% complete AND has a Boss Lab that's been passed.
- * A lab lands in `completed` only when it cleared its passThreshold, so the
- * Boss key being present means it was passed.
+ * Eligible = course is 100% complete. If the course has a Boss Lab it must also
+ * have been passed (a lab lands in `completed` only when it cleared its
+ * passThreshold, so the Boss key being present means it was passed). Courses
+ * without a Boss Lab earn the certificate on 100% completion alone — this
+ * matches the "ดูใบเกียรติบัตร" button, which only checks `percent == 100`.
  */
 export function eligible(course, progress) {
   if (coursePercent(course, progress) !== 100) return false;
   const boss = bossLab(course);
-  if (!boss) return false;
+  if (!boss) return true;
   return completedSet(progress).has(`${boss.m}-${boss.l}`);
 }
 

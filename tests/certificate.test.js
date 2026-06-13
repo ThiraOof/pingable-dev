@@ -1,7 +1,8 @@
 process.env.LOG_LEVEL = 'silent';
 
-// Verifiable certificates (§5): the issuance rules (100% complete AND a passed
-// Boss Lab), serial generation/uniqueness, the public verify page, and the
+// Verifiable certificates (§5): the issuance rules (100% complete, plus a
+// passed Boss Lab when the course has one), serial generation/uniqueness, the
+// public verify page, and the
 // owner-only display-name edit. DB-backed (skips without local MongoDB). GNS3
 // is the in-process fake purely so courseRoutes' service imports load cleanly.
 
@@ -87,14 +88,15 @@ test('not eligible until the course is 100% complete', opts, async () => {
   assert.equal(await Certificate.countDocuments(), 0);
 });
 
-test('a bossless course never earns a certificate even at 100%', opts, async () => {
+test('a bossless course earns a certificate at 100% (matches the UI button)', opts, async () => {
   const user = await makeUser();
   const course = await makeCourse({ bossless: true });
   await completeAll(user._id, course);
 
   const fresh = await Course.findById(course._id);
   const cert = await certService.maybeIssue(user._id, fresh, await getProgress(user._id, course._id));
-  assert.equal(cert, null);
+  assert.ok(cert);
+  assert.match(cert.serial, /^PNG-\d{4}-\d{6}$/);
 });
 
 test('100% + passed Boss Lab issues one cert with a PNG-YYYY-NNNNNN serial', opts, async () => {
