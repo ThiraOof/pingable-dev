@@ -1,4 +1,5 @@
 import { PngEl, svgIcon, define } from './core.js';
+import { showLevelUp } from './levelup.js';
 
 /* <png-quiz course-id m l threshold>
    Questions server-rendered (DSD); hydrate + wire submit/grading. */
@@ -56,6 +57,7 @@ define('png-quiz', class extends PngEl {
       sr.getElementById('quizScoreText').textContent = `ได้ ${d.score} จาก ${d.total} คะแนน (ต้องได้ ${d.threshold}%)`;
       result.hidden = false;
       result.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (d.gamify?.levelUp) setTimeout(() => showLevelUp(d.gamify.levelUp), 450);
     }
   }
 });

@@ -1069,10 +1069,16 @@ main { flex: 1; }
 .dash-stat span { color: var(--muted); font-size: .82rem; }
 /* Gamification row: ตำแหน่ง (level) / streak / badges */
 .dash-gamify {
-  display: grid; grid-template-columns: 1.2fr .8fr 1.6fr;
-  gap: var(--s-3); margin: 0 0 var(--s-5);
+  display: grid; gap: var(--s-3); margin: 0 0 var(--s-5);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr);
+  grid-template-areas: "level level" "streak badges";
 }
-@media (max-width: 760px) { .dash-gamify { grid-template-columns: 1fr; } }
+.dash-level  { grid-area: level; }
+.dash-streak { grid-area: streak; }
+.dash-badges { grid-area: badges; }
+@media (max-width: 760px) {
+  .dash-gamify { grid-template-columns: 1fr; grid-template-areas: "level" "streak" "badges"; }
+}
 .dash-gamify-card {
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg);
   padding: var(--s-4);
@@ -1081,24 +1087,57 @@ main { flex: 1; }
   font-family: var(--font-display); font-size: .72rem; text-transform: uppercase;
   letter-spacing: .06em; color: var(--faint); margin-bottom: var(--s-2);
 }
-.dash-level { display: flex; align-items: center; gap: var(--s-3); }
-.dash-level-echo { flex: 0 0 auto; }
+
+/* ── Career banner: current rank + locked next-rank preview ── */
+.dash-level {
+  display: flex; align-items: center; gap: var(--s-4);
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--signal) 9%, transparent), transparent 55%),
+    radial-gradient(120% 140% at 100% 100%, color-mix(in srgb, var(--core) 11%, transparent), transparent 55%),
+    var(--surface);
+}
+.dash-rank { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 0 0 auto; }
+.dash-rank-cap {
+  font-size: .68rem; text-transform: uppercase; letter-spacing: .05em;
+  font-weight: 600; color: var(--faint); text-align: center; max-width: 130px;
+}
+.dash-rank.next .dash-rank-cap { color: var(--muted); }
+.dash-rank-echo-wrap { position: relative; display: inline-flex; }
+/* locked next rank — visible but dimmed so the learner sees what's coming */
+.dash-rank.locked png-mascot {
+  filter: grayscale(.9) brightness(.5); opacity: .5;
+  transition: filter .35s ease, opacity .35s ease;
+}
+.dash-rank.locked:hover png-mascot,
+.dash-rank.locked:focus-within png-mascot { filter: grayscale(.2) brightness(.92); opacity: .95; }
+.dash-rank-lock {
+  position: absolute; right: -2px; bottom: 12px;
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--surface-2); border: 1px solid var(--border-h); color: var(--muted);
+  display: grid; place-items: center;
+}
 .dash-level-info { min-width: 0; flex: 1; }
-.dash-level-name { font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; color: var(--signal-h); }
+.dash-level-name { font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; color: var(--signal-h); }
 .dash-level-tease {
-  margin-top: var(--s-2); font-size: .76rem; color: var(--core-h);
+  display: inline-flex; align-items: center; gap: 5px; margin-top: var(--s-2);
+  font-size: .76rem; color: var(--core-h);
   background: color-mix(in srgb, var(--core) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--core) 35%, transparent);
-  border-radius: var(--r-sm); padding: 4px 8px;
+  border-radius: var(--r-sm); padding: 4px 9px;
 }
 @media (max-width: 760px) { .dash-level { flex-direction: column; text-align: center; } }
 .dash-level-bar {
-  height: 6px; background: var(--bg); border-radius: 999px; overflow: hidden;
+  height: 7px; background: var(--bg); border-radius: 999px; overflow: hidden;
   margin: var(--s-3) 0 var(--s-2); border: 1px solid var(--border);
 }
-.dash-level-bar span { display: block; height: 100%; background: var(--gradient, var(--signal)); border-radius: 999px; }
+.dash-level-bar span {
+  display: block; height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--signal), var(--core-h));
+}
 .dash-gamify-sub { color: var(--muted); font-size: .82rem; }
-.dash-gamify-xp { color: var(--faint); font-size: .78rem; margin-top: var(--s-2); font-family: var(--font-mono); }
+.dash-gamify-sub strong { color: var(--text); font-weight: 600; }
+.dash-gamify-sub .num { font-variant-numeric: tabular-nums; color: var(--signal-h); }
+.dash-gamify-xp { color: var(--faint); font-size: .78rem; margin-top: var(--s-2); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 .dash-streak { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 2px; }
 .dash-streak-fire { font-size: 1.7rem; line-height: 1; }
 .dash-streak strong { font-family: var(--font-display); font-size: 1.25rem; }
@@ -1110,6 +1149,50 @@ main { flex: 1; }
 }
 .badge-item .badge-icon { font-size: 1.15rem; line-height: 1; }
 .badge-item small { font-size: .6rem; color: var(--muted); text-align: center; line-height: 1.2; }
+
+/* ── Level-up celebration overlay (levelup.js) ───────────────────── */
+.levelup-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  display: grid; place-items: center; padding: var(--s-4);
+  background: rgba(4, 8, 15, .72);
+  opacity: 0; transition: opacity .2s ease;
+}
+.levelup-overlay.show { opacity: 1; }
+.levelup-card {
+  position: relative; overflow: hidden; width: min(92vw, 420px); text-align: center;
+  background:
+    radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--core) 16%, transparent), transparent 60%),
+    var(--surface);
+  border: 1px solid var(--border-h); border-radius: var(--r-xl);
+  padding: var(--s-6) var(--s-5) var(--s-5);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .5);
+  transform: scale(.9) translateY(8px); opacity: 0;
+  transition: transform .26s cubic-bezier(.2, .9, .3, 1.2), opacity .26s ease;
+}
+.levelup-overlay.show .levelup-card { transform: scale(1) translateY(0); opacity: 1; }
+.levelup-eyebrow {
+  font-family: var(--font-display); font-weight: 700; letter-spacing: .04em;
+  color: var(--core-h); font-size: .9rem; margin-bottom: var(--s-2);
+}
+.levelup-echo { display: grid; place-items: center; margin: var(--s-2) 0; }
+.levelup-rank-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--faint); }
+.levelup-rank { font-family: var(--font-display); font-size: 1.7rem; font-weight: 700; color: var(--signal-h); margin: 2px 0 var(--s-3); }
+.levelup-gear { font-size: .85rem; color: var(--muted); margin-bottom: var(--s-4); }
+.levelup-gear strong { color: var(--text); }
+.levelup-close { min-width: 160px; }
+.levelup-confetti { position: absolute; inset: 0 0 auto 0; height: 0; pointer-events: none; }
+.levelup-confetti i {
+  position: absolute; top: -12px; width: 8px; height: 12px; border-radius: 2px;
+  opacity: 0; animation: levelup-fall 1.5s ease-in forwards;
+}
+@keyframes levelup-fall {
+  0% { transform: translateY(-10px) rotate(0); opacity: 1; }
+  100% { transform: translateY(440px) rotate(540deg); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .levelup-overlay, .levelup-card { transition: none; }
+  .levelup-card { transform: none; opacity: 1; }
+}
 .badge-item.locked { opacity: .35; filter: grayscale(1); }
 .badge-item.earned { border-color: var(--signal-dim); }
 

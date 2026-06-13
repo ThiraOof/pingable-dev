@@ -25,19 +25,33 @@
   {% if gamify %}
   <div class="dash-gamify">
     <div class="dash-gamify-card dash-level">
-      <png-mascot class="dash-level-echo" state="happy" size="92" tier="{{ gamify.level.level }}"></png-mascot>
+      <div class="dash-rank current">
+        <png-mascot state="happy" size="104" tier="{{ gamify.level.level }}"></png-mascot>
+        <span class="dash-rank-cap">ตอนนี้</span>
+      </div>
+
       <div class="dash-level-info">
         <div class="dash-gamify-label">ตำแหน่งปัจจุบัน</div>
         <div class="dash-level-name">{{ gamify.level.title }}</div>
         {% if gamify.level.next %}
-        <div class="dash-level-bar"><span style="width: {{ gamify.level.progressPct }}%"></span></div>
-        <p class="dash-gamify-sub">อีก {{ gamify.level.next.xpNeeded }} XP เลื่อนตำแหน่งเป็น {{ gamify.level.next.title }}</p>
-        {% if gamify.nextGear %}<p class="dash-level-tease">🔓 เลื่อนขั้นแล้ว Echo จะได้ {{ gamify.nextGear }}</p>{% endif %}
+        <div class="dash-level-bar" role="progressbar" aria-valuenow="{{ gamify.level.progressPct }}" aria-valuemin="0" aria-valuemax="100" aria-label="ความคืบหน้าสู่ {{ gamify.level.next.title }}"><span style="width: {{ gamify.level.progressPct }}%"></span></div>
+        <p class="dash-gamify-sub">อีก <strong class="num">{{ gamify.level.next.xpNeeded }}</strong> XP เลื่อนเป็น <strong>{{ gamify.level.next.title }}</strong></p>
+        {% if gamify.nextGear %}<p class="dash-level-tease"><png-icon name="lock" size="13"></png-icon> เลื่อนขั้นแล้ว Echo จะได้ {{ gamify.nextGear }}</p>{% endif %}
         {% else %}
-        <p class="dash-gamify-sub">ตำแหน่งสูงสุดแล้ว — Echo เต็มยศ 🎖️</p>
+        <p class="dash-gamify-sub">ถึงตำแหน่งสูงสุดแล้ว — Echo เต็มยศ 🎖️</p>
         {% endif %}
         <p class="dash-gamify-xp">{{ gamify.xp }} XP สะสม</p>
       </div>
+
+      {% if gamify.level.next %}
+      <div class="dash-rank next locked" title="ปลดล็อกเมื่อเลื่อนเป็น {{ gamify.level.next.title }}">
+        <div class="dash-rank-echo-wrap">
+          <png-mascot state="happy" size="104" tier="{{ gamify.level.level + 1 }}"></png-mascot>
+          <span class="dash-rank-lock"><png-icon name="lock" size="16"></png-icon></span>
+        </div>
+        <span class="dash-rank-cap">ถัดไป · {{ gamify.level.next.title }}</span>
+      </div>
+      {% endif %}
     </div>
     <div class="dash-gamify-card dash-streak">
       <div class="dash-streak-fire">🔥</div>

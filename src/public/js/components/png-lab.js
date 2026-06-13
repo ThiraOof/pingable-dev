@@ -1,4 +1,5 @@
 import { PngEl, svgIcon, esc, define } from './core.js';
+import { showLevelUp } from './levelup.js';
 
 /* <png-lab course-id m l course-title title desc grade-count>
    Workspace shell server-rendered (DSD); hydrate + wire provisioning,
@@ -349,14 +350,16 @@ define('png-lab', class extends PngEl {
       if (!g) return;
       const chips = [];
       if (g.xpGained > 0) chips.push(`<span class="gamify-chip xp">+${g.xpGained} XP</span>`);
-      if (g.levelUp) chips.push(`<span class="gamify-chip level">🎉 เลื่อนตำแหน่งเป็น ${esc(g.levelUp.title)}!</span>`);
       for (const b of g.newBadges || []) chips.push(`<span class="gamify-chip badge" title="${esc(b.desc)}">${b.icon} ${esc(b.title)}</span>`);
       if (g.streak?.daily && g.streak.current > 1) chips.push(`<span class="gamify-chip streak">🔥 ${g.streak.current} วันติด</span>`);
-      if (!chips.length) return;
-      const div = document.createElement('div');
-      div.className = 'grade-gamify'; div.id = 'gradeGamify';
-      div.innerHTML = chips.join('');
-      sr.querySelector('.grade-score-meta')?.appendChild(div);
+      if (chips.length) {
+        const div = document.createElement('div');
+        div.className = 'grade-gamify'; div.id = 'gradeGamify';
+        div.innerHTML = chips.join('');
+        sr.querySelector('.grade-score-meta')?.appendChild(div);
+      }
+      // เลื่อนขั้น = โมเมนต์ใหญ่ → เด้งฉลองเต็มจอ (รอให้สรุปคะแนนเด้งก่อนเล็กน้อย)
+      if (g.levelUp) setTimeout(() => showLevelUp(g.levelUp), 450);
     }
 
     function updateObjectives(results) {
