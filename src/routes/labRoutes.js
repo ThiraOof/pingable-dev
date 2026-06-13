@@ -5,7 +5,8 @@ import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
 import Course from '../models/Course.js';
 import requireAuth from '../middleware/requireAuth.js';
 import { runChecks } from '../services/gradingService.js';
-import { markComplete } from '../models/Progress.js';
+import { markComplete, getProgress } from '../models/Progress.js';
+import { maybeIssue } from '../services/certificateService.js';
 import LabAttempt from '../models/LabAttempt.js';
 import * as labSessions from '../services/labSessionService.js';
 import { award } from '../services/achievementService.js';
@@ -143,7 +144,7 @@ router.post('/:courseId/:m/:l/grade', requireAuth, async (req, res) => {
   }
 
   try {
-    const { lab } = await locateLab(courseId, m, l);
+    const { course, lab } = await locateLab(courseId, m, l);
     if (!lab) return res.status(404).json({ ok: false, error: 'Lab not found.' });
     if (!lab.gradingChecks?.length) {
       return res.json({ ok: true, score: 0, total: 0, results: [], message: 'No grading checks defined for this lab.' });
@@ -175,6 +176,10 @@ router.post('/:courseId/:m/:l/grade', requireAuth, async (req, res) => {
     if (passed) {
       firstCompletion = (await markComplete(userId, courseId, m, l, 'lab', pct)
         .catch((e) => { req.log.error({ err: e }, 'progress save failed'); return null; }))?.inserted ?? false;
+      // Passing a lab can complete the course (esp. the Boss Lab) → issue cert.
+      const progress = await getProgress(userId, courseId);
+      await maybeIssue(userId, course, progress)
+        .catch((e) => req.log.error({ err: e }, 'certificate issue failed'));
     }
     await LabAttempt.create({
       user: userId, course: courseId, moduleIdx: m, lessonIdx: l,

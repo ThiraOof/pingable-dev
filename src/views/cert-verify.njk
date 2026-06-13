@@ -1,0 +1,35 @@
+{% extends "base.njk" %}
+{% block title %}ตรวจสอบใบรับรอง {{ cert.serial }} — Pingable{% endblock %}
+
+{% block content %}
+<div class="cert-verify-wrap">
+  <div class="cert-verify-card">
+    <div class="cert-verify-check">
+      <png-icon name="badge-check" size="32"></png-icon>
+    </div>
+    <p class="cert-verify-status">ใบรับรองนี้เป็นของจริง</p>
+    <p class="cert-given">ออกโดย PINGABLE · Network Learning Platform</p>
+
+    <h1 class="cert-verify-name">{{ cert.displayName }}</h1>
+    <p class="cert-body">ได้เรียนจบหลักสูตรและผ่านการประเมินครบถ้วน</p>
+    <p class="cert-verify-course">
+      {{ cert.courseTitle }}
+      {% if cert.courseLevel %}<span class="course-level level-{{ cert.courseLevel }}">{{ cert.courseLevel }}</span>{% endif %}
+    </p>
+
+    <div class="cert-verify-meta">
+      <dl>
+        <dt>เลขที่ใบรับรอง</dt><dd>{{ cert.serial }}</dd>
+        <dt>วันที่ออก</dt><dd>{{ cert.issuedAt | thaidate }}</dd>
+        {% if cert.lessonTotal %}<dt>จำนวนบทเรียน</dt><dd>{{ cert.lessonTotal }} บทเรียน</dd>{% endif %}
+      </dl>
+    </div>
+
+    {% if profileUrl %}
+    <a class="btn btn-secondary" href="{{ profileUrl }}">
+      <png-icon name="user" size="16"></png-icon> ดูโปรไฟล์ผู้เรียน
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

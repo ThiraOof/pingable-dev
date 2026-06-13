@@ -25,6 +25,7 @@ import leaderboardRoutes from './routes/leaderboardRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import noteRoutes from './routes/noteRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
+import certRoutes from './routes/certRoutes.js';
 import examRoutes, { sharedRouter as examSharedRouter } from './routes/examRoutes.js';
 import duelRoutes from './routes/duelRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
@@ -176,6 +177,7 @@ app.use('/leaderboard', leaderboardRoutes);
 app.use('/review', reviewRoutes);
 app.use('/notes', noteRoutes);
 app.use('/u', profileRoutes);
+app.use('/cert', certRoutes);
 app.use(examSharedRouter);          // /exam/shared/:token (public, before auth-gated /exam)
 app.use('/exam', examRoutes);
 app.use('/duel', duelRoutes);

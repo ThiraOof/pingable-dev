@@ -54,6 +54,22 @@
   <p class="profile-empty">ยังไม่มีคอร์สที่จบครบ 100% — กำลังเก็บเลเวลอยู่ 💪</p>
   {% endif %}
 
+  {% if profile.certificates.length %}
+  <section class="profile-section">
+    <h2>ใบรับรอง ({{ profile.certificates.length }})</h2>
+    <ul class="profile-courses">
+      {% for cert in profile.certificates %}
+      <li>
+        <png-icon name="award" size="16"></png-icon>
+        <a href="/cert/{{ cert.serial }}">{{ cert.courseTitle }}</a>
+        {% if cert.courseLevel %}<span class="course-level level-{{ cert.courseLevel }}">{{ cert.courseLevel }}</span>{% endif %}
+        <span class="profile-cert-serial">{{ cert.serial }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
   <div class="profile-cta">
     <p>โปรไฟล์นี้สร้างจากการทำ Lab บนอุปกรณ์เครือข่ายจริงบน Pingable</p>
     <png-button variant="primary" href="/auth/register" icon-end="arrow-right">สร้างโปรไฟล์ของคุณ</png-button>

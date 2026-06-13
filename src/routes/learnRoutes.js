@@ -5,9 +5,21 @@ import requireAuth from '../middleware/requireAuth.js';
 import { markComplete, getProgress, completedSet } from '../models/Progress.js';
 import ReviewItem, { dueAfterDays, BOX_DAYS } from '../models/ReviewItem.js';
 import { award } from '../services/achievementService.js';
+import { maybeIssue } from '../services/certificateService.js';
 import { checkPrerequisites } from '../utils/prereqs.js';
 
 const router = express.Router();
+
+// Issue the course certificate if this completion just made it eligible.
+// Awaited but never allowed to fail the request (like award()).
+async function tryIssueCert(req, course, courseId) {
+  try {
+    const progress = await getProgress(req.session.user.id, courseId);
+    await maybeIssue(req.session.user.id, course, progress);
+  } catch (e) {
+    req.log.error({ err: e }, 'certificate issue failed');
+  }
+}
 
 // Build a flat, ordered list of every lesson in the course so we can compute
 // the previous / next lesson links for the in-lesson navigation.
@@ -75,6 +87,7 @@ router.post('/:courseId/:m/:l/complete', requireAuth, async (req, res) => {
   const gamify = await award(req.session.user.id, 'reading', {
     courseId, moduleIdx: m, lessonIdx: l, firstCompletion: inserted,
   }).catch((e) => { req.log.error({ err: e }, 'achievement award failed'); return null; });
+  if (inserted) await tryIssueCert(req, course, courseId);
   res.json({ ok: true, gamify });
 });
 
@@ -83,7 +96,7 @@ router.post('/:courseId/:m/:l/quiz', requireAuth, async (req, res) => {
   const courseId = req.params.courseId;
   const m = Number(req.params.m);
   const l = Number(req.params.l);
-  const { lesson } = await locate(courseId, m, l);
+  const { course, lesson } = await locate(courseId, m, l);
   if (!lesson || lesson.type !== 'quiz') {
     return res.status(404).json({ ok: false, error: 'Quiz not found.' });
   }
@@ -123,6 +136,7 @@ router.post('/:courseId/:m/:l/quiz', requireAuth, async (req, res) => {
   const gamify = await award(req.session.user.id, 'quiz', {
     courseId, moduleIdx: m, lessonIdx: l, pct, passed, firstCompletion,
   }).catch((e) => { req.log.error({ err: e }, 'achievement award failed'); return null; });
+  if (firstCompletion) await tryIssueCert(req, course, courseId);
 
   res.json({ ok: true, score, total, pct, passed, threshold: lesson.passThreshold ?? 60, results, gamify });
 });

@@ -6,6 +6,7 @@ import express from 'express';
 import User from '../models/User.js';
 import Course from '../models/Course.js';
 import Progress, { coursePercent, totalLessons } from '../models/Progress.js';
+import Certificate from '../models/Certificate.js';
 import { getStats } from '../services/achievementService.js';
 import { levelFor } from '../config/xp.js';
 import { BADGES, badgeById } from '../config/badges.js';
@@ -23,10 +24,11 @@ router.get('/:username', async (req, res) => {
     return res.status(404).render('error.njk', { code: 404, message: 'ไม่พบโปรไฟล์นี้ หรือเจ้าของตั้งเป็นส่วนตัว' });
   }
 
-  const [stats, progresses, courses] = await Promise.all([
+  const [stats, progresses, courses, certs] = await Promise.all([
     getStats(user._id),
     Progress.find({ user: user._id }).lean(),
     Course.find({ published: true }).select('title level modules').lean(),
+    Certificate.find({ user: user._id }).select('serial courseTitle courseLevel issuedAt').sort({ issuedAt: 1 }).lean(),
   ]);
   const courseById = new Map(courses.map((c) => [String(c._id), c]));
 
@@ -61,6 +63,7 @@ router.get('/:username', async (req, res) => {
       completedCourses,
       bestLab,
       totalLabsPassed,
+      certificates: certs.map((c) => ({ serial: c.serial, courseTitle: c.courseTitle, courseLevel: c.courseLevel })),
     },
   });
 });

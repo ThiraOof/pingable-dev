@@ -1,9 +1,11 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import Course from '../models/Course.js';
+import Certificate from '../models/Certificate.js';
 import Progress, { getProgress, completedSet, coursePercent, totalLessons, lessonCounts } from '../models/Progress.js';
 import { checkPrerequisites } from '../utils/prereqs.js';
 import { countActiveLabs } from '../services/labSessionService.js';
+import { eligible, maybeIssue } from '../services/certificateService.js';
 import requireAuth from '../middleware/requireAuth.js';
 
 const router = express.Router();
@@ -101,29 +103,44 @@ router.get('/:courseId', async (req, res) => {
   });
 });
 
-// GET /courses/:courseId/certificate — printable completion certificate
+// GET /courses/:courseId/certificate — the owner's printable certificate.
+// Only courses that are 100% complete AND have a passed Boss Lab earn one
+// (eligible()); the certificate is persisted (issued on the spot if the user
+// reached eligibility before this feature existed) so it carries a verifiable
+// serial and an editable display name.
 router.get('/:courseId/certificate', requireAuth, async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.courseId)) return res.redirect('/courses');
   const course = await Course.findById(req.params.courseId).select('title description level track estimatedHours modules');
   if (!course) return res.redirect('/courses');
 
-  const total = totalLessons(course);
-  if (!total) return res.redirect(`/courses/${req.params.courseId}`);
+  const userId = req.session.user.id;
+  const progress = await getProgress(userId, course._id);
+  if (!eligible(course, progress)) return res.redirect(`/courses/${req.params.courseId}`);
 
-  const progress = await getProgress(req.session.user.id, course._id);
-  const done = progress?.completed.length ?? 0;
-  if (done < total) return res.redirect(`/courses/${req.params.courseId}`);
+  const cert = await maybeIssue(userId, course, progress);
+  if (!cert) return res.redirect(`/courses/${req.params.courseId}`);
 
-  const completedAt = progress.completed.reduce((latest, c) => {
-    const d = new Date(c.at);
-    return d > latest ? d : latest;
-  }, new Date(0));
-
+  const verifyUrl = `${req.protocol}://${req.get('host')}/cert/${cert.serial}`;
   res.render('certificate.njk', {
     course,
-    completedAt,
-    lessonTotal: total,
+    cert,
+    verifyUrl,
+    lessonTotal: totalLessons(course),
   });
+});
+
+// POST /courses/:courseId/certificate/name — let the owner set the name printed
+// on their certificate (username is rarely a real name). CSRF-guarded globally.
+router.post('/:courseId/certificate/name', requireAuth, async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.courseId)) return res.redirect('/courses');
+  const displayName = String(req.body?.displayName ?? '').trim().slice(0, 60);
+  if (displayName) {
+    await Certificate.updateOne(
+      { user: req.session.user.id, course: req.params.courseId },
+      { $set: { displayName } },
+    );
+  }
+  res.redirect(`/courses/${req.params.courseId}/certificate`);
 });
 
 export default router;

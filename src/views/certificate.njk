@@ -4,7 +4,7 @@
 {% block head %}
 <style>
   @media print {
-    png-navbar, png-footer, .cert-actions, .cert-back { display: none !important; }
+    png-navbar, png-footer, .cert-actions, .cert-back, .cert-edit { display: none !important; }
     body, main { background: #fff !important; }
     main { padding: 0 !important; }
     .cert-page { box-shadow: none !important; margin: 0 !important; max-width: 100% !important; }
@@ -36,7 +36,7 @@
         <p class="cert-sub">Certificate of Completion</p>
 
         <p class="cert-given">มอบให้แก่</p>
-        <div class="cert-name">{{ user.username }}</div>
+        <div class="cert-name">{{ cert.displayName }}</div>
 
         <p class="cert-body">
           ได้เรียนจบหลักสูตรและผ่านการประเมินครบถ้วน
@@ -61,14 +61,29 @@
             </svg>
           </div>
           <div class="cert-date-block">
-            <span class="cert-date-label">วันที่เรียนสำเร็จ</span>
-            <span class="cert-date">{{ completedAt | thaidate }}</span>
+            <span class="cert-date-label">วันที่ออกใบรับรอง</span>
+            <span class="cert-date">{{ cert.issuedAt | thaidate }}</span>
           </div>
+        </div>
+
+        <div class="cert-serial-row">
+          <span class="cert-serial">เลขที่ใบรับรอง: <strong>{{ cert.serial }}</strong></span>
+          <span class="cert-verify-url">ตรวจสอบความถูกต้องได้ที่ {{ verifyUrl }}</span>
         </div>
 
       </div>
     </div>
   </div>
+
+  <form class="cert-edit" method="post" action="/courses/{{ course._id }}/certificate/name">
+    <label for="cert-name-input">ชื่อที่แสดงบนใบรับรอง</label>
+    <div class="cert-edit-row">
+      <input id="cert-name-input" name="displayName" type="text" maxlength="60"
+             value="{{ cert.displayName }}" placeholder="ชื่อ-นามสกุล" required>
+      <button class="btn btn-secondary" type="submit">บันทึกชื่อ</button>
+    </div>
+    <p class="cert-edit-hint">ชื่อนี้จะปรากฏบนใบรับรองและหน้าตรวจสอบสาธารณะ</p>
+  </form>
 
   <div class="cert-actions">
     <button class="btn btn-primary btn-print">
