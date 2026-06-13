@@ -602,8 +602,8 @@ main { flex: 1; }
 }
 
 /* Progress ring (objectives) */
-.progress-ring { position: relative; width: 44px; height: 44px; flex-shrink: 0; }
-.progress-ring svg { transform: rotate(-90deg); }
+.progress-ring { position: relative; display: inline-grid; flex-shrink: 0; }
+.progress-ring svg { display: block; transform: rotate(-90deg); }
 .progress-ring .track { fill: none; stroke: var(--border); stroke-width: 4; }
 .progress-ring .fill {
   fill: none; stroke: var(--signal); stroke-width: 4; stroke-linecap: round;
@@ -872,7 +872,6 @@ main { flex: 1; }
 .prereq-box li { padding: 2px 0; }
 
 .course-progress-bar { max-width: var(--maxw); margin: 0 auto var(--s-6); padding: var(--s-4) var(--s-5); display: flex; align-items: center; gap: var(--s-5); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); }
-.progress-ring.lg { width: 64px; height: 64px; }
 .progress-ring.lg .label { font-size: .95rem; }
 .cpb-meta { flex: 1; }
 .cpb-meta strong { font-family: var(--font-display); }
