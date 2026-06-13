@@ -13,6 +13,7 @@ import { award } from '../services/achievementService.js';
 import { interpolate, interpolateExpect } from '../services/labVariables.js';
 import { askMentor, mentorEnabled } from '../services/mentorService.js';
 import { checkPrerequisites } from '../utils/prereqs.js';
+import { buildShareCard, renderCardPng } from '../services/shareCardService.js';
 
 const router = express.Router();
 
@@ -51,7 +52,37 @@ router.get('/shared/:token', async (req, res) => {
   if (!attempt) return res.status(404).render('error.njk', { code: 404, message: 'ไม่พบผลการตรวจ หรือลิงก์นี้ถูกยกเลิกแล้ว' });
   const course = await Course.findById(attempt.course).select('title modules').lean();
   const labTitle = course?.modules?.[attempt.moduleIdx]?.lessons?.[attempt.lessonIdx]?.title || '';
-  res.render('lab-shared.njk', { attempt, course, labTitle });
+  const origin = `${req.protocol}://${req.get('host')}`;
+  res.render('lab-shared.njk', { attempt, course, labTitle, origin });
+});
+
+// Load a shared attempt + its lab/course title for the card routes (§13).
+async function loadSharedCard(token) {
+  const attempt = await LabAttempt.findOne({ shareToken: token })
+    .select('passed pct score total course moduleIdx lessonIdx').lean();
+  if (!attempt) return null;
+  const course = await Course.findById(attempt.course).select('title modules').lean();
+  const labTitle = course?.modules?.[attempt.moduleIdx]?.lessons?.[attempt.lessonIdx]?.title || '';
+  return { attempt, course, labTitle };
+}
+
+// GET /lab/shared/:token/card.svg — dynamic brag-card image for the shared attempt
+router.get('/shared/:token/card.svg', async (req, res) => {
+  const data = await loadSharedCard(req.params.token);
+  if (!data) return res.status(404).type('text/plain').send('not found');
+  res.type('image/svg+xml');
+  res.set('Cache-Control', 'public, max-age=86400');
+  res.send(buildShareCard(data.attempt, data.course, data.labTitle));
+});
+
+// GET /lab/shared/:token/card.png — same card rasterized (LINE/FB og:image)
+router.get('/shared/:token/card.png', async (req, res) => {
+  const data = await loadSharedCard(req.params.token);
+  if (!data) return res.status(404).type('text/plain').send('not found');
+  const png = renderCardPng(buildShareCard(data.attempt, data.course, data.labTitle));
+  res.type('image/png');
+  res.set('Cache-Control', 'public, max-age=86400');
+  res.send(png);
 });
 
 // GET /lab/:courseId/:m/:l — render the lab page

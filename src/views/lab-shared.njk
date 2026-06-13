@@ -7,9 +7,14 @@
 <meta property="og:site_name" content="Pingable">
 <meta property="og:title" content="{% if attempt.passed %}ผ่าน{% else %}ลุย{% endif %}{% if labTitle %} {{ labTitle }}{% else %} Lab{% endif %} ได้ {{ attempt.pct }}% บน Pingable">
 <meta property="og:description" content="{{ attempt.score }}/{{ attempt.total }} คะแนน{% if course %} · {{ course.title }}{% endif %} — ฝึกทำ Network Lab บนอุปกรณ์จริงผ่านเบราว์เซอร์ ฟรี">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="{{ origin }}/lab/shared/{{ attempt.shareToken }}/card.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="ทำ Lab ได้ {{ attempt.pct }}% บน Pingable">
 <meta name="twitter:description" content="{{ attempt.score }}/{{ attempt.total }} คะแนน{% if labTitle %} · {{ labTitle }}{% endif %} — ฝึก Network Lab บนอุปกรณ์จริง ฟรี">
+<meta name="twitter:image" content="{{ origin }}/lab/shared/{{ attempt.shareToken }}/card.png">
 {% endblock %}
 
 {% block content %}
