@@ -1,0 +1,13 @@
+# Reverse proxy + automatic HTTPS (Let's Encrypt) for the dev server.
+# SITE_ADDRESS is the public hostname Caddy issues a cert for. With no real
+# domain, use a free wildcard-DNS host that maps to the VM's public IP, e.g.
+#   SITE_ADDRESS=34-101-22-7.nip.io   (← VM external IP, dashes for dots)
+# Caddy then gets a real Let's Encrypt cert via the HTTP-01 challenge.
+{$SITE_ADDRESS} {
+	encode gzip zstd
+	reverse_proxy app:3000 {
+		# the app sets `secure` cookies in prod and trusts the proxy; Caddy
+		# forwards X-Forwarded-Proto=https by default, so sessions work.
+		health_uri /health
+	}
+}
