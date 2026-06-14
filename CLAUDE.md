@@ -19,7 +19,7 @@ The app talks to two external services; both must be running or the relevant fea
 - **MongoDB** at `mongodb://localhost:27017/pingable-dev` (override with `MONGODB_URI`). The process calls `process.exit(1)` if it cannot connect on startup.
 - **GNS3 server** at `http://localhost:3080` (override with `GNS3_HOST` / `GNS3_PORT`). Required only when starting/grading a lab, not for browsing courses.
 
-Config is read from `.env` (gitignored; copy `.env.example` to start). Variables used in code: `PORT`, `NODE_ENV`, `SESSION_SECRET`, `MONGODB_URI`, `GNS3_HOST`, `GNS3_PORT`, `GNS3_USER`, `GNS3_PASS`, `GNS3_VYOS_TEMPLATE`, `GNS3_NODE_USER`, `GNS3_NODE_PASS`, `GNS3_PUBLIC_URL` (browser-facing GNS3 origin for the lab iframe when it differs from `GNS3_HOST`, e.g. in production; also used for CSP `frame-src`), `LAB_IDLE_MINUTES`, `LAB_MAX_CONCURRENT`, `LOGIN_LOCK_AFTER`, `LOG_LEVEL`.
+Config is read from `.env` (gitignored; copy `.env.example` to start). Variables used in code: `PORT`, `NODE_ENV`, `SESSION_SECRET`, `MONGODB_URI`, `GNS3_HOST`, `GNS3_PORT`, `GNS3_USER`, `GNS3_PASS`, `GNS3_VYOS_TEMPLATE`, `GNS3_NODE_USER`, `GNS3_NODE_PASS`, `GNS3_PUBLIC_URL` (browser-facing GNS3 origin for the lab iframe when it differs from `GNS3_HOST`, e.g. in production; also used for CSP `frame-src`), `LAB_IDLE_MINUTES`, `LAB_MAX_CONCURRENT`, `LAB_SETUP_MAX_ATTEMPTS` (troubleshoot/duel setup-injection retry budget before latching `failed`, default 8), `LOGIN_LOCK_AFTER`, `LOG_LEVEL`.
 
 ### VyOS appliance for configuration labs
 

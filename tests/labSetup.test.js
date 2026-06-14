@@ -1,4 +1,5 @@
 process.env.LOG_LEVEL = 'silent';
+process.env.LAB_SETUP_MAX_ATTEMPTS = '3'; // small budget keeps the retry test fast; read at import time
 
 // ensureSetup — ตัวฉีด config โจทย์ troubleshoot: รันคำสั่งผ่าน fake console
 // และเดิน state machine idle → running → done / failed ถูกต้อง
@@ -58,19 +59,25 @@ test('runs each node group over telnet and lands on "done"', opts, async () => {
   await r1.close(); await r2.close();
 });
 
-test('failure retries via idle, then "failed" after 3 attempts', opts, async () => {
+test('failure retries via idle, then "failed" after the attempt budget', opts, async () => {
   const dead = await closedPort();
   const session = await makeSession({ R1: { consoleHost: '127.0.0.1', consolePort: dead } });
   const lab = { setupCommands: [{ node: 'R1', commands: ['configure'] }] };
 
-  // ครั้งที่ 1-2 → กลับเป็น idle (จะถูกลองใหม่), ครั้งที่ 3 → failed ถาวร
-  assert.equal(await ensureSetup(await LabSession.findById(session._id), lab), 'idle');
-  assert.equal(await ensureSetup(await LabSession.findById(session._id), lab), 'idle');
+  // Mirrors labSessionService SETUP_MAX_ATTEMPTS (overridable via env). A small
+  // budget here keeps the test fast while exercising the same idle→failed latch
+  // that gives VyOS time to finish booting before giving up for good.
+  const budget = Number(process.env.LAB_SETUP_MAX_ATTEMPTS);
+
+  // ทุกครั้งก่อนถึงโควตา → กลับเป็น idle (จะถูกลองใหม่), ครั้งสุดท้าย → failed ถาวร
+  for (let i = 1; i < budget; i++) {
+    assert.equal(await ensureSetup(await LabSession.findById(session._id), lab), 'idle');
+  }
   assert.equal(await ensureSetup(await LabSession.findById(session._id), lab), 'failed');
   assert.equal(await ensureSetup(await LabSession.findById(session._id), lab), 'failed');
 
   const doc = await LabSession.findById(session._id);
-  assert.equal(doc.setup.attempts, 3);
+  assert.equal(doc.setup.attempts, budget);
 });
 
 test('unknown setup node fails without crashing', opts, async () => {

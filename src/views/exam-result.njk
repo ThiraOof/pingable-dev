@@ -53,20 +53,5 @@
 {% endblock %}
 
 {% if not shared %}
-{% block scripts %}
-<script type="module">
-  const btn = document.getElementById('btnShareExam');
-  btn?.addEventListener('click', async () => {
-    btn.disabled = true;
-    try {
-      const r = await fetch(`/exam/result/${btn.dataset.id}/share`, { method: 'POST' });
-      const d = await r.json();
-      if (!d.ok) throw new Error();
-      await navigator.clipboard.writeText(location.origin + d.url);
-      btn.textContent = 'คัดลอกลิงก์แล้ว ✓';
-    } catch { btn.textContent = 'คัดลอกไม่สำเร็จ'; }
-    finally { setTimeout(() => { btn.disabled = false; }, 2500); }
-  });
-</script>
-{% endblock %}
+{% block scripts %}<script type="module" src="/js/exam-share.js"></script>{% endblock %}
 {% endif %}

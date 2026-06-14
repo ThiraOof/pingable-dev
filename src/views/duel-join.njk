@@ -15,17 +15,4 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
-<script type="module">
-  document.getElementById('joinForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = e.target.querySelector('button'); btn.disabled = true; btn.textContent = 'กำลังเข้าร่วม…';
-    try {
-      const r = await fetch(e.target.action, { method: 'POST' });
-      const d = await r.json();
-      if (!d.ok) throw new Error(d.error || 'เข้าร่วมไม่สำเร็จ');
-      location.href = '/duel/{{ duel._id }}';
-    } catch (err) { btn.disabled = false; btn.textContent = 'ลองใหม่'; alert(err.message); }
-  });
-</script>
-{% endblock %}
+{% block scripts %}<script type="module" src="/js/duel-join.js"></script>{% endblock %}

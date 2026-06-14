@@ -32,7 +32,7 @@ const labSessionSchema = new mongoose.Schema({
   // (createdAt is useless here: the one-doc-per-user upsert keeps it forever)
   startedAt: { type: Date },
   // troubleshoot-lab setup injection state machine (see labSessionService.ensureSetup):
-  // idle → running → done | (fail → idle, retry; 3 fails → failed)
+  // idle → running → done | (fail → idle, retry; SETUP_MAX_ATTEMPTS fails → failed)
   setup: {
     state:    { type: String, enum: ['idle', 'running', 'done', 'failed'], default: 'idle' },
     attempts: { type: Number, default: 0 },

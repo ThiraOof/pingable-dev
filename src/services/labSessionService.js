@@ -11,6 +11,15 @@ const SWEEP_INTERVAL_MS = 5 * 60 * 1000;
 const BUILD_STALE_MS    = 5 * 60 * 1000;  // a 'building' doc older than this = crashed build, reclaimable
 const ORPHAN_MIN_AGE_MS = 10 * 60 * 1000; // never reap GNS3 projects younger than this (build may be in flight)
 
+// How many setup-injection attempts may fail before the lab latches 'failed'
+// permanently (see ensureSetup). The boot probe only confirms a console/login
+// prompt, but VyOS's config daemon (configure/commit) lags well behind it — and
+// a duel boots 4 routers at once, so that lag is worst exactly there. A small
+// budget latched 'failed' on a transient early-boot commit timeout and bricked
+// the lab (a duel has no restart). Give it enough strikes to outlast the boot.
+// Read per call (like maxConcurrent) so tests pick up an env override.
+const setupMaxAttempts = () => Number(process.env.LAB_SETUP_MAX_ATTEMPTS || 8);
+
 export class LabBusyError extends Error {}
 export class LabCapacityError extends Error {}
 
@@ -173,7 +182,9 @@ export async function probeBoot(session) {
 /**
  * จัดฉากโจทย์ troubleshoot: ฉีด setupCommands ลงอุปกรณ์หลังบูตครบ
  * (เรียกจาก status route เมื่อ allBooted) — claim แบบ atomic กันสอง poll
- * รันซ้อนกัน, ล้มได้ retry สูงสุด 3 ครั้งแล้วค่อยถือว่า failed
+ * รันซ้อนกัน, ล้มได้ retry สูงสุด setupMaxAttempts() ครั้งแล้วค่อยถือว่า failed
+ * (เผื่อ config daemon ของ VyOS ยังไม่พร้อมตอนเพิ่งบูต โดยเฉพาะใน duel ที่บูต
+ * อุปกรณ์พร้อมกันหลายตัว)
  *
  * @returns {'none'|'idle'|'running'|'done'|'failed'} สถานะปัจจุบันของ setup
  */
@@ -201,7 +212,7 @@ export async function ensureSetup(session, lab) {
     await LabSession.updateOne({ _id: session._id }, { $set: { 'setup.state': 'done' } });
     return 'done';
   } catch (err) {
-    const failedForGood = (claimed.setup?.attempts || 1) >= 3;
+    const failedForGood = (claimed.setup?.attempts || 1) >= setupMaxAttempts();
     logger.error({ err, attempts: claimed.setup?.attempts }, 'lab setup injection failed');
     await LabSession.updateOne(
       { _id: session._id },

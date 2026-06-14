@@ -1416,6 +1416,7 @@ main { flex: 1; }
 .duel-controls { display: flex; gap: var(--s-3); justify-content: flex-end; padding: var(--s-3) var(--s-5); background: var(--bg-elev); border-top: 1px solid var(--border); }
 .duel-controls .btn-primary { min-width: 180px; }
 .duel-result-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: grid; place-items: center; z-index: 50; }
+.duel-result-overlay[hidden] { display: none; } /* author display:grid ทับ UA [hidden] — ต้องประกาศ none เอง ไม่งั้น overlay โผล่ทุกสถานะ */
 .duel-result-card { background: var(--surface); border: 1px solid var(--border-h); border-radius: var(--r-lg); padding: var(--s-7); text-align: center; max-width: 360px; }
 .duel-result-emoji { font-size: 3rem; margin-bottom: var(--s-3); }
 .duel-result-card h2 { margin-bottom: var(--s-5); }

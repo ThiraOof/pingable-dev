@@ -147,7 +147,10 @@ const T = {
       : '';
     const board = `<div class="duel-board"><div class="duel-side you"><span class="duel-name">${esc(a['you-name'])} (คุณ)</span><span class="duel-pct" id="youPct">0%</span></div><div class="duel-vs">VS</div><div class="duel-side foe"><span class="duel-name" id="foeName">${esc(a['foe-name'])}</span><span class="duel-pct" id="foePct">0%</span></div></div>`;
     const arena = waiting ? '' : `<div class="duel-main"><div class="duel-lab-head"><span class="duel-lab-title">${svgIcon('flask', 16)} ${esc(a['lab-title'])}</span><span class="duel-status" id="duelStatus">กำลังเตรียม Lab…</span></div><div class="gns3-wrapper"><div id="duelLoading" class="lab-loading"><div class="provision"><div class="provision-title">กำลังเตรียมสนามดวล</div><div class="provision-sub">โหลด topology…</div></div></div><iframe id="duelFrame" class="gns3-frame"${a['gns3-url'] ? ` src="${esc(a['gns3-url'])}"` : ''} allowfullscreen></iframe></div></div><footer class="duel-controls"><button id="btnDuelForfeit" class="btn btn-danger">ยอมแพ้</button><button id="btnDuelGrade" class="btn btn-primary" disabled>ตรวจคำตอบ</button></footer>`;
-    const overlay = `<div class="duel-result-overlay" id="duelResult" hidden><div class="duel-result-card"><div class="duel-result-emoji" id="duelResultEmoji">🏆</div><h2 id="duelResultText"></h2><png-button variant="primary" href="/duel">กลับห้องดวล</png-button></div></div>`;
+    // ปุ่มกลับใช้ <a> ธรรมดา ไม่ใช่ <png-button>: คอมโพเนนต์ที่ซ้อนในสตริง shadow
+    // ของอีกตัวจะไม่ถูก injectDSD ฉีด template ให้ (regex สแกนรอบเดียว) → จะ hydrate
+    // เป็น shadow ว่าง มองไม่เห็น/กดไม่ได้ ทำให้ผู้ใช้ติดอยู่หลัง overlay
+    const overlay = `<div class="duel-result-overlay" id="duelResult" hidden><div class="duel-result-card"><div class="duel-result-emoji" id="duelResultEmoji">🏆</div><h2 id="duelResultText"></h2><a class="btn btn-primary" href="/duel">กลับห้องดวล</a></div></div>`;
     const html = `<div class="duel-layout">${board}${invite}${arena}${overlay}</div>`;
     return { host: ':host{display:block;min-height:calc(100dvh - var(--nav-h))}', html };
   },
