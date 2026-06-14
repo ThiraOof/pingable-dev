@@ -107,7 +107,10 @@ docker compose -f docker-compose.prod.yml exec app npm run seed
 เช็คสุขภาพ:
 
 ```bash
-curl -s http://localhost:3000/health        # {"status":"ok","db":true}
+# พอร์ต 3000 ของ app ไม่ได้ publish ออก host (expose only — Caddy fronts it),
+# เลย curl localhost:3000 ไม่ติด. เช็คผ่าน Caddy แทน (ใส่ domain ของคุณ):
+curl -s https://34-101-22-7.nip.io/health    # {"status":"ok","db":true}
+# (หรือเช็คในคอนเทนเนอร์ตรง ๆ: docker compose -f docker-compose.prod.yml exec app wget -qO- http://localhost:3000/health)
 docker compose -f docker-compose.prod.yml logs -f caddy   # ดู cert ออกสำเร็จ
 ```
 
