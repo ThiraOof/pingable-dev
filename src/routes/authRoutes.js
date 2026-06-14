@@ -7,6 +7,7 @@ import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email
 import { issueResetToken, findUserByResetToken, resetPassword } from '../services/passwordResetService.js';
 import { isEnabled as oauthEnabled } from '../config/oauth.js';
 import { buildAuthUrl, exchangeCode, fetchProfile, findOrCreateUser, linkIdentity } from '../services/oauthService.js';
+import { deleteAccount } from '../services/accountService.js';
 import { GOALS, GOAL_KEYS } from '../config/goals.js';
 
 const router = express.Router();
@@ -375,6 +376,33 @@ router.post('/settings/password', requireAuth, authLimiter, async (req, res) => 
   await user.save();
   req.log.info({ user: String(user._id) }, 'password changed via settings');
   respond(null, 'เปลี่ยนรหัสผ่านสำเร็จ');
+});
+
+// POST /auth/settings/delete — permanently delete the account + all its data.
+// Confirmation: password accounts must re-enter their password; OAuth-only
+// accounts (no password) must type their username instead.
+router.post('/settings/delete', requireAuth, authLimiter, async (req, res) => {
+  const user = await User.findById(req.session.user.id);
+  if (!user) return res.redirect('/auth/login');
+
+  const respond = async (error) => {
+    const account = await loadAccount(req.session.user.id);
+    res.render('settings.njk', { account, goals: GOALS, error, info: null });
+  };
+
+  const hasPassword = !!user.password;
+  if (hasPassword) {
+    const confirmPassword = typeof req.body.password === 'string' ? req.body.password : '';
+    if (!(await user.comparePassword(confirmPassword))) {
+      return respond('รหัสผ่านไม่ถูกต้อง — ยืนยันการลบบัญชีไม่สำเร็จ');
+    }
+  } else if (str(req.body.confirmUsername) !== user.username) {
+    return respond('พิมพ์ชื่อผู้ใช้ให้ตรงเพื่อยืนยันการลบบัญชี');
+  }
+
+  await deleteAccount(user._id);
+  req.log.info({ user: String(user._id) }, 'account deleted via settings');
+  req.session.destroy(() => res.redirect('/?deleted=1'));
 });
 
 router.post('/logout', (req, res) => {

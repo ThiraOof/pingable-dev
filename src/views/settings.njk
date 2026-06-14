@@ -122,6 +122,25 @@
     </form>
     {% endif %}
   </div>
+
+  <div class="auth-card danger-zone">
+    <h2>ลบบัญชี</h2>
+    <p class="auth-sub">ลบบัญชีและข้อมูลทั้งหมดของคุณอย่างถาวร — ความคืบหน้า, สถิติ, โน้ต, ใบรับรอง และอื่น ๆ จะหายทั้งหมด <strong>การกระทำนี้ย้อนกลับไม่ได้</strong></p>
+    <form method="POST" action="/auth/settings/delete">
+      {% if account.hasPassword %}
+      <div class="form-group">
+        <label for="deletePassword">ยืนยันด้วยรหัสผ่านของคุณ</label>
+        <input type="password" id="deletePassword" name="password" required placeholder="••••••••" autocomplete="current-password">
+      </div>
+      {% else %}
+      <div class="form-group">
+        <label for="confirmUsername">พิมพ์ชื่อผู้ใช้ <strong>{{ account.username }}</strong> เพื่อยืนยัน</label>
+        <input type="text" id="confirmUsername" name="confirmUsername" required placeholder="{{ account.username }}" autocomplete="off">
+      </div>
+      {% endif %}
+      <button type="submit" class="btn btn-danger btn-block">ลบบัญชีถาวร</button>
+    </form>
+  </div>
 </div>
 {% endblock %}
 

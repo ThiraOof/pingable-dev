@@ -16,12 +16,14 @@ Please include:
 
 We will process your request within **30 days** and send you a confirmation email once your data has been deleted.
 
-### Option 2: In-App Deletion
+### Option 2: In-App Deletion (instant)
 
 1. Log in to your Pingable account.
-2. Go to **Settings** → **Account**.
-3. Click **"Delete My Account"**.
-4. Confirm the deletion.
+2. Go to **Account Settings** (`/auth/settings`).
+3. Scroll to the **"ลบบัญชี" (Delete Account)** section.
+4. Confirm with your password (or your username for social-login accounts) and click **"ลบบัญชีถาวร"**.
+
+Your account and all associated data are deleted immediately.
 
 ## What Data Is Deleted
 

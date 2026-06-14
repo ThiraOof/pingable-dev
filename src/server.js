@@ -30,6 +30,7 @@ import examRoutes, { sharedRouter as examSharedRouter } from './routes/examRoute
 import duelRoutes from './routes/duelRoutes.js';
 import eventRoutes from './routes/eventRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import legalRoutes from './routes/legalRoutes.js';
 import { anyEventActive } from './config/events.js';
 import { enabledProviders } from './config/oauth.js';
 
@@ -189,6 +190,7 @@ app.use('/exam', examRoutes);
 app.use('/duel', duelRoutes);
 app.use('/events', eventRoutes);
 app.use('/admin', adminRoutes);
+app.use(legalRoutes);               // /privacy, /terms, /data-deletion (public)
 
 app.get('/', (req, res) => res.render('index.njk'));
 

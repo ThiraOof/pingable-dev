@@ -1,0 +1,15 @@
+{% extends "base.njk" %}
+{% block title %}{{ pageTitle }} — Pingable{% endblock %}
+
+{% block content %}
+<div class="learn-layout">
+  <article class="reading">
+    <div class="reading-head">
+      <a href="/" class="back-link"><png-icon name="arrow-left" size="16"></png-icon> กลับหน้าแรก</a>
+    </div>
+    <section class="reading-section">
+      <div class="prose">{{ body | markdown | safe }}</div>
+    </section>
+  </article>
+</div>
+{% endblock %}

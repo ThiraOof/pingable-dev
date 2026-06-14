@@ -34,7 +34,7 @@ We retain your personal data only for as long as necessary to provide our servic
 
 ## Data Deletion
 
-You can request deletion of your data by visiting our [Data Deletion Page](./DATA_DELETION.md) or contacting us at pingabledev@gmail.com.
+You can request deletion of your data by visiting our [Data Deletion Page](/data-deletion) or contacting us at pingabledev@gmail.com.
 
 ## Contact Us
 
