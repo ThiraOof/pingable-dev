@@ -4,7 +4,17 @@ import bcrypt from 'bcryptjs';
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true, trim: true },
   email:    { type: String, required: true, unique: true, lowercase: true },
-  password: { type: String, required: true },
+  // Optional: OAuth-only accounts (Google/Facebook/Apple) never set a local
+  // password. Still required for accounts created the classic email+password
+  // way — the conditional keeps both paths honest.
+  password: { type: String, required: function () { return !(this.identities && this.identities.length); } },
+  // Linked external sign-in identities. `sub` is the provider's stable user id
+  // (never reused, unlike email). One user can link several providers.
+  identities: [{
+    _id: false,
+    provider: { type: String, enum: ['google', 'facebook', 'apple'] },
+    sub:      { type: String },
+  }],
   role:          { type: String, enum: ['student', 'admin'], default: 'student' },
   // เป้าหมายการเรียน (src/config/goals.js) — ใช้จัดลำดับคอร์สแนะนำบน dashboard
   goal:          { type: String, enum: ['exam-ccna', 'job-noc', 'job-neteng', 'career-switch', 'hobby'] },
@@ -25,13 +35,17 @@ const userSchema = new mongoose.Schema({
   enrolledCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
 }, { timestamps: true });
 
+// Look up a linked external identity by (provider, sub).
+userSchema.index({ 'identities.provider': 1, 'identities.sub': 1 });
+
 userSchema.pre('save', async function () {
-  if (this.isModified('password')) {
+  if (this.isModified('password') && this.password) {
     this.password = await bcrypt.hash(this.password, 10);
   }
 });
 
 userSchema.methods.comparePassword = function (plain) {
+  if (!this.password) return Promise.resolve(false); // OAuth-only account — no local password
   return bcrypt.compare(plain, this.password);
 };
 

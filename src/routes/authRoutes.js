@@ -5,6 +5,8 @@ import User from '../models/User.js';
 import requireAuth from '../middleware/requireAuth.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../services/emailService.js';
 import { issueResetToken, findUserByResetToken, resetPassword } from '../services/passwordResetService.js';
+import { isEnabled as oauthEnabled } from '../config/oauth.js';
+import { buildAuthUrl, exchangeCode, fetchProfile, findOrCreateUser, linkIdentity } from '../services/oauthService.js';
 import { GOALS, GOAL_KEYS } from '../config/goals.js';
 
 const router = express.Router();
@@ -101,13 +103,81 @@ router.post('/login', authLimiter, async (req, res) => {
     if (user.failedLogins || user.lockUntil) {
       await User.updateOne({ _id: user._id }, { $set: { failedLogins: 0 }, $unset: { lockUntil: 1 } });
     }
-    req.session.user = {
-      id: user._id, username: user.username, role: user.role,
-      email: user.email, emailVerified: user.emailVerified ?? true,
-    };
+    startSession(req, user);
     res.redirect(consumeReturnTo(req));
   } catch {
     res.render('login.njk', { error: 'เกิดข้อผิดพลาด กรุณาลองใหม่', info: null });
+  }
+});
+
+// ── OAuth (Continue with Google / Facebook / …) ───────────────────────────────
+// Authorization-Code flow. `oauthState` defeats CSRF on the handshake; the
+// returnTo set when the user landed on /login is consumed at the callback, so
+// social login lands them back where they started just like password login.
+
+function startSession(req, user) {
+  req.session.user = {
+    id: user._id, username: user.username, role: user.role,
+    email: user.email, emailVerified: user.emailVerified ?? true,
+  };
+}
+
+router.get('/oauth/:provider', (req, res) => {
+  const { provider } = req.params;
+  if (!oauthEnabled(provider)) {
+    return res.status(404).render('error.njk', { code: 404, message: 'ช่องทางเข้าสู่ระบบนี้ยังไม่เปิดใช้งาน' });
+  }
+  const state = randomBytes(16).toString('hex');
+  req.session.oauthState = state;
+  req.session.oauthProvider = provider;
+  // Logged-in users coming from settings are *linking* an identity, not signing in.
+  req.session.oauthLink = !!req.session.user;
+  res.redirect(buildAuthUrl(provider, state));
+});
+
+router.get('/oauth/:provider/callback', async (req, res) => {
+  const { provider } = req.params;
+  const { code, state, error: providerError } = req.query;
+  const expectedState = req.session.oauthState;
+  const expectedProvider = req.session.oauthProvider;
+  const linkMode = !!req.session.oauthLink && !!req.session.user;
+  delete req.session.oauthState;
+  delete req.session.oauthProvider;
+  delete req.session.oauthLink;
+
+  // Linking failures go back to settings; login failures back to the login page.
+  const failLink = async (msg) => {
+    const account = await loadAccount(req.session.user.id);
+    if (!account) return res.redirect('/auth/login');
+    res.render('settings.njk', { account, goals: GOALS, error: msg, info: null });
+  };
+  const fail = (msg) => (linkMode ? failLink(msg) : res.render('login.njk', { error: msg, info: null }));
+
+  if (providerError) return fail(linkMode ? 'การเชื่อมต่อถูกยกเลิก' : 'การเข้าสู่ระบบถูกยกเลิก');
+  if (!oauthEnabled(provider)) return fail('ช่องทางเข้าสู่ระบบนี้ยังไม่เปิดใช้งาน');
+  // state must match the one we issued AND belong to the provider we started with
+  if (!code || !state || state !== expectedState || provider !== expectedProvider) {
+    return fail('เซสชันหมดอายุหรือไม่ถูกต้อง — กรุณาลองใหม่');
+  }
+
+  try {
+    const tokens = await exchangeCode(provider, code);
+    const profile = await fetchProfile(provider, tokens);
+
+    if (linkMode) {
+      await linkIdentity(req.session.user.id, provider, profile);
+      req.log.info({ user: req.session.user.id, provider }, 'oauth identity linked');
+      return res.redirect('/auth/settings');
+    }
+
+    const user = await findOrCreateUser(provider, profile);
+    startSession(req, user);
+    req.log.info({ user: String(user._id), provider }, 'oauth login');
+    res.redirect(consumeReturnTo(req));
+  } catch (err) {
+    req.log.error({ err, provider }, linkMode ? 'oauth link failed' : 'oauth login failed');
+    if (err.code === 'IDENTITY_TAKEN') return fail('บัญชีโซเชียลนี้ถูกเชื่อมกับผู้ใช้รายอื่นแล้ว');
+    fail(linkMode ? 'เชื่อมต่อบัญชีไม่สำเร็จ กรุณาลองใหม่' : 'เข้าสู่ระบบด้วยบัญชีภายนอกไม่สำเร็จ กรุณาลองใหม่');
   }
 });
 
@@ -137,10 +207,7 @@ router.post('/register', authLimiter, async (req, res) => {
       emailTokenExp: new Date(Date.now() + 24 * 60 * 60 * 1000),
     });
     await user.save();
-    req.session.user = {
-      id: user._id, username: user.username, role: user.role,
-      email: user.email, emailVerified: false,
-    };
+    startSession(req, user); // emailVerified resolves to false (schema default) until they confirm
     // Fire-and-forget: don't block registration if SMTP is misconfigured.
     sendVerificationEmail(user.email, token).catch((e) =>
       req.log.error({ err: e }, 'failed to send verification email'),
@@ -246,10 +313,21 @@ router.post('/reset-password', authLimiter, async (req, res) => {
 
 // ── Account settings ─────────────────────────────────────────────────────────
 
-const ACCOUNT_FIELDS = 'username email emailVerified createdAt goal hideFromLeaderboard profilePublic';
+const ACCOUNT_FIELDS = 'username email emailVerified createdAt goal hideFromLeaderboard profilePublic identities';
+
+// Load the settings-page view of an account: profile fields, linked OAuth
+// identities, and whether a local password exists (OAuth-only accounts have
+// none, so the "change password" card becomes a "set a password" prompt).
+async function loadAccount(id) {
+  const account = await User.findById(id).select(`${ACCOUNT_FIELDS} password`).lean();
+  if (!account) return null;
+  account.hasPassword = !!account.password;
+  delete account.password; // never hand the hash to a template
+  return account;
+}
 
 router.get('/settings', requireAuth, async (req, res) => {
-  const account = await User.findById(req.session.user.id).select(ACCOUNT_FIELDS).lean();
+  const account = await loadAccount(req.session.user.id);
   if (!account) return res.redirect('/auth/login');
   res.render('settings.njk', { account, goals: GOALS, error: null, info: null });
 });
@@ -260,7 +338,7 @@ router.post('/settings/privacy', requireAuth, async (req, res) => {
     hideFromLeaderboard: req.body.hideFromLeaderboard === 'on',
     profilePublic: req.body.profilePublic === 'on',
   } });
-  const account = await User.findById(req.session.user.id).select(ACCOUNT_FIELDS).lean();
+  const account = await loadAccount(req.session.user.id);
   res.render('settings.njk', { account, goals: GOALS, error: null, info: 'บันทึกการตั้งค่าความเป็นส่วนตัวแล้ว' });
 });
 
@@ -269,28 +347,33 @@ router.post('/settings/goal', requireAuth, async (req, res) => {
   const goal = str(req.body.goal);
   const update = GOAL_KEYS.includes(goal) ? { $set: { goal } } : { $unset: { goal: 1 } };
   await User.updateOne({ _id: req.session.user.id }, update);
-  const account = await User.findById(req.session.user.id).select(ACCOUNT_FIELDS).lean();
+  const account = await loadAccount(req.session.user.id);
   res.render('settings.njk', { account, goals: GOALS, error: null, info: 'บันทึกเป้าหมายการเรียนแล้ว' });
 });
 
 router.post('/settings/password', requireAuth, authLimiter, async (req, res) => {
-  const account = await User.findById(req.session.user.id);
-  if (!account) return res.redirect('/auth/login');
+  const user = await User.findById(req.session.user.id);
+  if (!user) return res.redirect('/auth/login');
 
   const current = typeof req.body.currentPassword === 'string' ? req.body.currentPassword : '';
   const password = typeof req.body.password === 'string' ? req.body.password : '';
   const confirmPassword = typeof req.body.confirmPassword === 'string' ? req.body.confirmPassword : '';
-  const respond = (error, info) => res.render('settings.njk', { account, error, info });
+  const respond = async (error, info) => {
+    const account = await loadAccount(req.session.user.id);
+    res.render('settings.njk', { account, goals: GOALS, error, info });
+  };
 
-  if (!(await account.comparePassword(current))) {
+  // OAuth-only accounts have no local password to compare against — they set one
+  // via the password-reset email flow, not this form.
+  if (!(await user.comparePassword(current))) {
     return respond('รหัสผ่านปัจจุบันไม่ถูกต้อง', null);
   }
   const error = passwordError(password, confirmPassword);
   if (error) return respond(error, null);
 
-  account.password = password; // hashed by the pre-save hook
-  await account.save();
-  req.log.info({ user: String(account._id) }, 'password changed via settings');
+  user.password = password; // hashed by the pre-save hook
+  await user.save();
+  req.log.info({ user: String(user._id) }, 'password changed via settings');
   respond(null, 'เปลี่ยนรหัสผ่านสำเร็จ');
 });
 

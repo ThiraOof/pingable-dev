@@ -31,6 +31,7 @@ import duelRoutes from './routes/duelRoutes.js';
 import eventRoutes from './routes/eventRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import { anyEventActive } from './config/events.js';
+import { enabledProviders } from './config/oauth.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -149,6 +150,7 @@ app.use((req, res, next) => {
   res.locals.user = u ? { ...u, emailVerified: u.emailVerified ?? true } : null;
   res.locals.mentorEnabled = !!process.env.ANTHROPIC_API_KEY; // AI mentor feature flag (§22)
   res.locals.eventsActive = !!u && anyEventActive(); // show Events nav link only when an event is live
+  res.locals.oauthProviders = enabledProviders(); // social-login buttons on login/register
   res.locals.origin = `${req.protocol}://${req.get('host')}`; // absolute base for og:image etc.
   next();
 });

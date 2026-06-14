@@ -23,6 +23,27 @@
     </div>
   </div>
 
+  {% if oauthProviders and oauthProviders.length %}
+  <div class="auth-card">
+    <h2>บัญชีที่เชื่อมต่อ</h2>
+    <p class="auth-sub">เข้าสู่ระบบได้เร็วขึ้นด้วยบัญชีโซเชียล</p>
+    {% set linked = [] %}
+    {% for id in account.identities %}{% set _ = linked.push(id.provider) %}{% endfor %}
+    <ul class="linked-accounts">
+      {% for p in oauthProviders %}
+      <li>
+        <span class="la-name">{{ p.label }}</span>
+        {% if p.key in linked %}
+          <span class="field-note ok">✓ เชื่อมต่อแล้ว</span>
+        {% else %}
+          <a class="btn btn-secondary btn-sm" href="/auth/oauth/{{ p.key }}" rel="nofollow">เชื่อมต่อ</a>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
   <div class="auth-card">
     <h2>เป้าหมายการเรียน</h2>
     <p class="auth-sub">ใช้จัดลำดับ "คอร์สถัดไปที่น่าสนใจ" บนแดชบอร์ดให้ตรงกับเส้นทางของคุณ</p>
@@ -65,6 +86,10 @@
     {% if error %}
       <div class="alert alert-error">{{ error }}</div>
     {% endif %}
+    {% if not account.hasPassword %}
+    <p class="field-note">บัญชีนี้เข้าสู่ระบบด้วยบัญชีโซเชียล จึงยังไม่มีรหัสผ่าน — ตั้งรหัสผ่านได้โดยใช้ลิงก์ "ลืมรหัสผ่าน" เพื่อรับอีเมลตั้งรหัสผ่านใหม่</p>
+    <a href="/auth/forgot-password" class="btn btn-secondary btn-block">ตั้งรหัสผ่านผ่านอีเมล</a>
+    {% else %}
     <form method="POST" action="/auth/settings/password">
       <div class="form-group">
         <label for="currentPassword">รหัสผ่านปัจจุบัน</label>
@@ -95,6 +120,7 @@
       </div>
       <button type="submit" class="btn btn-primary btn-block" data-submit>บันทึกรหัสผ่านใหม่</button>
     </form>
+    {% endif %}
   </div>
 </div>
 {% endblock %}
