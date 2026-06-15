@@ -14,6 +14,7 @@ import ccnpCore from './seed-data/ccnp-core.js';
 import ccnpAdvancedRouting from './seed-data/ccnp-advanced-routing.js';
 import networkTroubleshooting from './seed-data/network-troubleshooting.js';
 import networkSecurity from './seed-data/network-security.js';
+import ospfHandsOn from './seed-data/ospf-hands-on.js';
 import playground from './seed-data/playground.js';
 
 const courses = [
@@ -24,6 +25,7 @@ const courses = [
   ccnpAdvancedRouting,
   networkTroubleshooting,
   networkSecurity,
+  ospfHandsOn,
   playground,
 ];
 
