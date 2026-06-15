@@ -151,6 +151,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     import('./seed-data/ccnp-core.js'),
     import('./seed-data/ccnp-advanced-routing.js'),
     import('./seed-data/network-troubleshooting.js'),
+    import('./seed-data/network-security.js'),
     import('./seed-data/playground.js'),
   ]);
   const ok = reportValidation(validateCourses(mods.map((m) => m.default)));

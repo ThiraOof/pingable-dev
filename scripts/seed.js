@@ -13,6 +13,7 @@ import ccnaIntro from './seed-data/ccna-intro.js';
 import ccnpCore from './seed-data/ccnp-core.js';
 import ccnpAdvancedRouting from './seed-data/ccnp-advanced-routing.js';
 import networkTroubleshooting from './seed-data/network-troubleshooting.js';
+import networkSecurity from './seed-data/network-security.js';
 import playground from './seed-data/playground.js';
 
 const courses = [
@@ -22,6 +23,7 @@ const courses = [
   ccnpCore,
   ccnpAdvancedRouting,
   networkTroubleshooting,
+  networkSecurity,
   playground,
 ];
 
