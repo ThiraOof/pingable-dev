@@ -358,7 +358,7 @@ main { flex: 1; }
 }
 .dot { width: 12px; height: 12px; border-radius: 50%; }
 .dot.red { background: #ff5f57; } .dot.yellow { background: #febc2e; } .dot.green { background: #28c840; }
-.terminal-title { margin-left: auto; color: var(--faint); font-size: .8rem; }
+.terminal-title { margin: 0 auto; color: var(--faint); font-size: .8rem; }
 .terminal-body { padding: var(--s-5); line-height: 1.85; color: var(--text); overflow-x: auto; }
 .terminal-body p { white-space: pre; }
 .terminal-body .out { color: var(--muted); }
