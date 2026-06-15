@@ -153,6 +153,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     import('./seed-data/network-troubleshooting.js'),
     import('./seed-data/network-security.js'),
     import('./seed-data/ospf-hands-on.js'),
+    import('./seed-data/ip-services.js'),
+    import('./seed-data/ipv6-deep-dive.js'),
+    import('./seed-data/wireless-networking.js'),
+    import('./seed-data/network-automation.js'),
     import('./seed-data/playground.js'),
   ]);
   const ok = reportValidation(validateCourses(mods.map((m) => m.default)));

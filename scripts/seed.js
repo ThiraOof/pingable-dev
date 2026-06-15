@@ -15,6 +15,10 @@ import ccnpAdvancedRouting from './seed-data/ccnp-advanced-routing.js';
 import networkTroubleshooting from './seed-data/network-troubleshooting.js';
 import networkSecurity from './seed-data/network-security.js';
 import ospfHandsOn from './seed-data/ospf-hands-on.js';
+import ipServices from './seed-data/ip-services.js';
+import ipv6DeepDive from './seed-data/ipv6-deep-dive.js';
+import wirelessNetworking from './seed-data/wireless-networking.js';
+import networkAutomation from './seed-data/network-automation.js';
 import playground from './seed-data/playground.js';
 
 const courses = [
@@ -26,6 +30,10 @@ const courses = [
   networkTroubleshooting,
   networkSecurity,
   ospfHandsOn,
+  ipServices,
+  ipv6DeepDive,
+  wirelessNetworking,
+  networkAutomation,
   playground,
 ];
 
