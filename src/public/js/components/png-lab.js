@@ -65,6 +65,10 @@ define('png-lab', class extends PngEl {
     function setReady() {
       labStatus.textContent = 'Lab พร้อมใช้งาน'; labStatus.className = 'lab-status status-ready';
       if (btnGrade) btnGrade.disabled = false;
+      // ปิด overlay ก็ต่อเมื่อพร้อมจริง — กันผู้เรียนคลิก GNS3 UI ระหว่างอุปกรณ์ยังบูตไม่เสร็จ
+      paintSteps(STEPS.length, { allDone: true });
+      provisionSub.textContent = 'พร้อมแล้ว ✓';
+      setTimeout(() => { labLoading.hidden = true; }, 400);
     }
     function labGone() { // ถูกปิดฝั่ง server (idle timeout) หรือหยุดจากแท็บอื่น
       stopTimers(); gns3Frame.src = '';
@@ -89,15 +93,24 @@ define('png-lab', class extends PngEl {
           applyVars(st.vars);
           if (st.allBooted) {
             if (st.setup === 'failed') {
-              labStatus.textContent = 'จัดฉากโจทย์ไม่สำเร็จ — กดเริ่ม Lab ใหม่';
+              // จัดฉากไม่สำเร็จ — โชว์การ์ดให้เริ่มใหม่ (อย่าเปิด GNS3 ที่ยังพังให้ใช้)
+              stopTimers();
+              provision.hidden = true; stoppedCard.hidden = false; labLoading.hidden = false;
+              $('stoppedText').textContent = 'จัดฉากโจทย์ไม่สำเร็จ — กดเริ่ม Lab ใหม่';
+              labStatus.textContent = 'จัดฉากโจทย์ไม่สำเร็จ';
               labStatus.className = 'lab-status status-error';
               return;
             }
             if (st.setup === 'none' || st.setup === 'done') { setReady(); heartbeat(); }
-            else { labStatus.textContent = 'อุปกรณ์พร้อม — กำลังจัดฉากโจทย์… 🎬'; }
+            else {
+              paintSteps(STEPS.length, { allDone: true });
+              provisionSub.textContent = 'อุปกรณ์พร้อม — กำลังจัดฉากโจทย์… 🎬';
+              labStatus.textContent = 'อุปกรณ์พร้อม — กำลังจัดฉากโจทย์… 🎬';
+            }
           } else if (++polls > 36 && !st.setup) {
             setReady(); heartbeat(); // ~3 นาทีแล้วปล่อยให้ลองตรวจเอง (เฉพาะ lab ปกติ)
           } else {
+            provisionSub.textContent = `กำลังบูตอุปกรณ์… ${st.bootedCount}/${st.nodeCount} · VyOS ใช้เวลา 1–2 นาที`;
             labStatus.textContent = `กำลังบูตอุปกรณ์… ${st.bootedCount}/${st.nodeCount}`;
           }
         } catch { /* network สะดุด — รอบหน้าค่อยว่ากัน */ }
@@ -129,9 +142,10 @@ define('png-lab', class extends PngEl {
           e.status = res.status;
           throw e;
         }
-        clearInterval(timer); paintSteps(STEPS.length, { allDone: true });
-        provisionSub.textContent = 'topology ready ✓'; gns3Frame.src = d.gns3Url;
-        setTimeout(() => { labLoading.hidden = true; }, 500);
+        // Topology เสร็จ แต่ยังไม่ปิด overlay — ขั้น "บูตอุปกรณ์" ยังทำงาน
+        // โหลด iframe ไว้เบื้องหลัง overlay เพื่อกันผู้เรียนแตะ GNS3 ก่อนพร้อม
+        clearInterval(timer); paintSteps(STEPS.length - 1);
+        provisionSub.textContent = 'topology ready ✓ — กำลังบูตอุปกรณ์…'; gns3Frame.src = d.gns3Url;
         bootWatch();
       } catch (err) {
         clearInterval(timer);
@@ -385,10 +399,17 @@ define('png-lab', class extends PngEl {
       try {
         const st = await (await fetch(statusUrl)).json();
         if (st.ok && st.active && st.sameLab && st.status === 'ready' && st.gns3Url) {
-          gns3Frame.src = st.gns3Url; labLoading.hidden = true;
+          gns3Frame.src = st.gns3Url;
           applyVars(st.vars);
-          if (st.allBooted && (st.setup === 'none' || st.setup === 'done')) { setReady(); heartbeat(); }
-          else bootWatch();
+          if (st.allBooted && (st.setup === 'none' || st.setup === 'done')) {
+            labLoading.hidden = true; setReady(); heartbeat();
+          } else {
+            // รีเฟรชหน้ามาเจอ session ที่ยังบูต/จัดฉากไม่เสร็จ — บัง overlay ไว้จนกว่าจะพร้อม
+            stoppedCard.hidden = true; provision.hidden = false; labLoading.hidden = false;
+            paintSteps(STEPS.length - 1);
+            provisionSub.textContent = 'กำลังกลับเข้าสู่ Lab…';
+            bootWatch();
+          }
           return;
         }
       } catch {}

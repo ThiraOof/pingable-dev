@@ -780,6 +780,7 @@ main { flex: 1; }
 
 /* Stopped state */
 .lab-stopped { text-align: center; color: var(--muted); display: grid; gap: var(--s-3); justify-items: center; }
+.lab-stopped[hidden] { display: none; } /* display:grid above overrides the UA [hidden] rule — restore it */
 .lab-stopped .ico { color: var(--faint); }
 
 /* ── Grading modal ───────────────────────────────────────────────── */
