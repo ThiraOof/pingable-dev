@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true, trim: true },
   email:    { type: String, required: true, unique: true, lowercase: true },
-  // Optional: OAuth-only accounts (Google/Facebook/Apple) never set a local
+  // Optional: OAuth-only accounts (Google/Apple) never set a local
   // password. Still required for accounts created the classic email+password
   // way — the conditional keeps both paths honest.
   password: { type: String, required: function () { return !(this.identities && this.identities.length); } },
@@ -12,7 +12,7 @@ const userSchema = new mongoose.Schema({
   // (never reused, unlike email). One user can link several providers.
   identities: [{
     _id: false,
-    provider: { type: String, enum: ['google', 'facebook', 'apple'] },
+    provider: { type: String, enum: ['google', 'apple'] },
     sub:      { type: String },
   }],
   role:          { type: String, enum: ['student', 'admin'], default: 'student' },

@@ -39,25 +39,6 @@ export const PROVIDERS = {
       name: info.name || info.given_name || '',
     }),
   },
-
-  facebook: {
-    label: 'Facebook',
-    authUrl: 'https://www.facebook.com/v19.0/dialog/oauth',
-    tokenUrl: 'https://graph.facebook.com/v19.0/oauth/access_token',
-    userInfoUrl: 'https://graph.facebook.com/me?fields=id,name,email',
-    scope: 'email public_profile',
-    authParams: {},
-    clientId: () => process.env.FACEBOOK_CLIENT_ID,
-    clientSecret: () => process.env.FACEBOOK_CLIENT_SECRET,
-    parseProfile: (info) => ({
-      sub: info.id,
-      email: (info.email || '').toLowerCase(),
-      // Facebook only hands back an email once the user has confirmed it, so
-      // its presence implies verification. It may be absent (phone-only signup).
-      emailVerified: !!info.email,
-      name: info.name || '',
-    }),
-  },
 };
 
 // A provider is usable only once both halves of its credential pair are set.

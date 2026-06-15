@@ -507,7 +507,6 @@ main { flex: 1; }
 .btn-oauth:hover { background: var(--surface); }
 .btn-oauth svg { flex: none; }
 .btn-oauth-google:hover { border-color: #4285F4; }
-.btn-oauth-facebook:hover { border-color: #1877F2; }
 .linked-accounts { list-style: none; display: flex; flex-direction: column; gap: var(--s-3); }
 .linked-accounts li { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
 .linked-accounts .la-name { font-weight: 600; }

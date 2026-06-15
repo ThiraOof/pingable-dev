@@ -111,7 +111,7 @@ router.post('/login', authLimiter, async (req, res) => {
   }
 });
 
-// ── OAuth (Continue with Google / Facebook / …) ───────────────────────────────
+// ── OAuth (Continue with Google / …) ───────────────────────────────
 // Authorization-Code flow. `oauthState` defeats CSRF on the handshake; the
 // returnTo set when the user landed on /login is consumed at the callback, so
 // social login lands them back where they started just like password login.

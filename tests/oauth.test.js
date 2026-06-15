@@ -1,5 +1,5 @@
 process.env.LOG_LEVEL = 'silent';
-// Provider creds so google/facebook count as "enabled" for the route guards.
+// Provider creds so google counts as "enabled" for the route guards.
 process.env.GOOGLE_CLIENT_ID = 'test-google-id';
 process.env.GOOGLE_CLIENT_SECRET = 'test-google-secret';
 process.env.APP_URL = 'http://localhost:3000';
@@ -50,7 +50,6 @@ const profile = (over = {}) => ({
 
 test('a provider is enabled only when both id and secret are set', () => {
   assert.equal(isEnabled('google'), true);   // creds set at top
-  assert.equal(isEnabled('facebook'), false); // no facebook creds
   assert.equal(isEnabled('nope'), false);
   assert.deepEqual(enabledProviders().map((p) => p.key), ['google']);
 });
@@ -134,7 +133,7 @@ test('GET /auth/oauth/google redirects to the provider authorize URL', async () 
 });
 
 test('GET /auth/oauth/<unconfigured> is a 404', async () => {
-  const res = await fetch(`${BASE}/auth/oauth/facebook`, { redirect: 'manual' });
+  const res = await fetch(`${BASE}/auth/oauth/nope`, { redirect: 'manual' });
   assert.equal(res.status, 404);
 });
 

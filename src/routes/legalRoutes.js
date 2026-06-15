@@ -1,6 +1,5 @@
-// Public legal pages (/privacy, /terms, /data-deletion) — required by the
-// OAuth providers (Facebook needs a reachable Privacy Policy + Data Deletion
-// URL before an app can go Live). Content lives in src/content/legal/*.md so
+// Public legal pages (/privacy, /terms, /data-deletion) — required by
+// OAuth providers. Content lives in src/content/legal/*.md so
 // it ships inside the Docker image (COPY src ./src) and renders via the shared
 // `markdown` Nunjucks filter.
 import { Router } from 'express';

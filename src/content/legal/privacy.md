@@ -10,7 +10,7 @@ Pingable ("we", "our", or "us") is committed to protecting your privacy. This Pr
 
 When you use Pingable, we may collect the following information:
 
-- **Account Information**: Name, email address, and profile picture provided through third-party login services (Google, Facebook).
+- **Account Information**: Name, email address, and profile picture provided through third-party login services (Google).
 - **Usage Data**: Information about how you interact with our application.
 
 ## How We Use Your Information
@@ -23,10 +23,9 @@ We use the information we collect to:
 
 ## Third-Party Services
 
-We use third-party authentication providers (Google OAuth, Facebook Login) to allow you to sign in. These services may collect information as described in their own privacy policies:
+We use third-party authentication providers (Google OAuth) to allow you to sign in. These services may collect information as described in their own privacy policies:
 
 - [Google Privacy Policy](https://policies.google.com/privacy)
-- [Facebook Privacy Policy](https://www.facebook.com/privacy/policy/)
 
 ## Data Retention
 
