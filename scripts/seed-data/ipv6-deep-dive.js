@@ -241,8 +241,8 @@ export default {
                 '',
                 '```',
                 'set protocols ospfv3 parameters router-id 1.1.1.1',
-                'set protocols ospfv3 area 0.0.0.0 interface eth1',
-                'set protocols ospfv3 area 0.0.0.0 interface dum0',
+                'set protocols ospfv3 interface eth1 area 0',
+                'set protocols ospfv3 interface dum0 area 0',
                 '```',
                 '',
                 '> บางรุ่นใช้รูปแบบ `set protocols ospfv3 interface eth1 area 0` — ถ้ารูปแบบหนึ่ง commit ไม่ผ่าน ให้ลองอีกแบบ การให้คะแนนวัดที่ผลลัพธ์ (เรียนรู้เส้นทาง + ping6) ไม่ผูกกับสตริงคำสั่ง',
@@ -268,7 +268,7 @@ export default {
           ],
           hints: [
             'โครงสร้าง: R1(eth1=2001:db8:12::1/64, dum0=2001:db8:1::1/64) — R2(eth1=2001:db8:12::2/64, dum0=2001:db8:2::1/64) — ตั้งที่อยู่ IPv6 ให้ครบก่อน',
-            'R1: `set protocols ospfv3 parameters router-id 1.1.1.1` · `set protocols ospfv3 area 0.0.0.0 interface eth1` · `set protocols ospfv3 area 0.0.0.0 interface dum0`',
+            'R1: `set protocols ospfv3 parameters router-id 1.1.1.1` · `set protocols ospfv3 interface eth1 area 0` · `set protocols ospfv3 interface dum0 area 0`',
             'R2 ทำเหมือนกัน (router-id 2.2.2.2) — เปิด OSPFv3 ที่ interface ที่ต้องการให้เรียนรู้/โฆษณา',
             'ห้ามตั้ง static route6 ของวง LAN ปลายทาง — ปล่อยให้ OSPFv3 เรียนรู้เอง แล้วตรวจ `show ipv6 route` ว่ามี 2001:db8:2::/64 และ `ping 2001:db8:2::1`',
           ],
@@ -278,7 +278,7 @@ export default {
           },
           gradingChecks: [
             { description: 'R1 ตั้งค่า OSPFv3', node: 'R1', command: 'show configuration commands | match ospfv3', expect: 'ospfv3', points: 3,
-              failHint: 'ยังไม่มี OSPFv3 — เปิดที่ interface: `set protocols ospfv3 area 0.0.0.0 interface eth1` และตั้ง router-id ด้วย (OSPFv3 ต้องมี router-id เสมอ)' },
+              failHint: 'ยังไม่มี OSPFv3 — เปิดที่ interface: `set protocols ospfv3 interface eth1 area 0` และตั้ง router-id ด้วย (OSPFv3 ต้องมี router-id เสมอ)' },
             { description: 'R1 เรียนรู้วง LAN ของ R2 ผ่าน OSPFv3 (2001:db8:2::/64)', node: 'R1', command: 'show ipv6 route | match 2001:db8:2', expect: '2001:db8:2::', points: 4,
               failHint: 'R1 ยังไม่เรียนรู้เส้นทาง — เช็คว่าทั้งสองฝั่งเปิด OSPFv3 บนลิงก์ eth1 ใน area เดียวกัน, ตั้ง router-id แล้ว และ R2 เปิด OSPFv3 บน dum0 เพื่อโฆษณาวง LAN ของตัวเอง' },
             { description: 'R1 ping6 ถึงวง LAN ของ R2 (2001:db8:2::1)', node: 'R1', command: 'ping 2001:db8:2::1 count 3', expect: 'bytes from 2001:db8:2::1', points: 3,

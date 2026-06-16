@@ -210,7 +210,7 @@ export default {
           ],
           hints: [
             'R1 eth1 = 192.168.10.1/24',
-            'VyOS: `set service dhcp-server shared-network-name LAN subnet 192.168.10.0/24 range R1 start 192.168.10.100 stop 192.168.10.200`',
+            'VyOS 1.5: `set service dhcp-server shared-network-name LAN subnet 192.168.10.0/24 subnet-id 1` · `... range R1 start 192.168.10.100` · `... range R1 stop 192.168.10.200` (start/stop แยกบรรทัด ไม่รวมกัน)',
             '`set service dhcp-server shared-network-name LAN subnet 192.168.10.0/24 option default-router 192.168.10.1`',
             'บน PC1 (VPCS) สั่ง `dhcp` เพื่อขอที่อยู่ แล้ว `show ip` ดูผล',
           ],
@@ -220,7 +220,7 @@ export default {
           },
           gradingChecks: [
             { description: 'R1 ตั้งค่า DHCP server', node: 'R1', command: 'show configuration commands | match "dhcp-server"', expect: 'dhcp-server', points: 3,
-              failHint: 'ยังไม่มี dhcp-server ใน config — เริ่มจาก `set service dhcp-server shared-network-name LAN subnet 192.168.10.0/24 range R1 start 192.168.10.100 stop 192.168.10.200` (อย่าลืมตั้ง eth1 = 192.168.10.1/24 ก่อน)' },
+              failHint: 'ยังไม่มี dhcp-server ใน config — VyOS 1.5 ต้องมี `subnet-id` และแยก `range R1 start …`/`range R1 stop …` คนละบรรทัด (อย่าลืมตั้ง eth1 = 192.168.10.1/24 ก่อน)' },
             { description: 'PC1 ได้รับ IP จาก DHCP ในช่วง .100–.200', node: 'PC1', command: 'dhcp', expect: '192\\.168\\.10\\.[12]\\d\\d', points: 4,
               failHint: 'PC1 ขอ IP ไม่ได้ — บน VPCS ต้องสั่ง `dhcp` เอง ถ้ายังเงียบ เช็คว่า subnet ใน pool ตรงกับวงของ eth1 และ commit แล้ว' },
             { description: 'PC1 ได้ default gateway 192.168.10.1', node: 'PC1', command: 'show ip', expect: '192\\.168\\.10\\.1', points: 2,
@@ -247,7 +247,7 @@ export default {
           hints: [
             'โครงสร้าง: PC1 — R1(eth1=192.168.50.1/24) — R1(eth2=10.0.12.1/30) — R2(eth1=10.0.12.2/30)',
             'R1 (relay): `set service dhcp-relay server 10.0.12.2` · `set service dhcp-relay interface eth1` · `set service dhcp-relay interface eth2`',
-            'R2 (server): สร้าง pool ของ 192.168.50.0/24 (range .100–.200, default-router 192.168.50.1) และเพิ่มเส้นทางกลับ `set protocols static route 192.168.50.0/24 next-hop 10.0.12.1`',
+            'R2 (server): VyOS 1.5 ต้องมี `set service dhcp-server listen-address 10.0.12.2` (เพราะ R2 ไม่มี interface ในวง 192.168.50) + subnet 192.168.50.0/24 พร้อม `subnet-id 1`, `range R1 start 192.168.50.100`/`range R1 stop 192.168.50.200` (แยกบรรทัด), `option default-router 192.168.50.1` และเส้นทางกลับ `set protocols static route 192.168.50.0/24 next-hop 10.0.12.1`',
             'PC1 สั่ง `dhcp` — ควรได้ที่อยู่ 192.168.50.x จาก pool ฝั่ง R2',
           ],
           topology: {
@@ -299,7 +299,7 @@ export default {
               failHint: 'PC1 ออกไม่ได้ — ไล่ทีละชั้น: PC1 มี gateway 192.168.1.1 หรือยัง → R1 ping 10.0.12.2 ได้ไหม → R2 มี route กลับช่วง 203.0.113.0/24 หรือยัง (ไม่มี route กลับ = echo reply หาย)' },
             { description: 'NAT table ของ R1 ใช้ที่อยู่ static 203.0.113.10', node: 'R1', command: 'show nat source translations', expect: '203\\.0\\.113\\.10', points: 3,
               failHint: 'translation table ว่างหรือไม่ใช่ 203.0.113.10 — table จะมีรายการเฉพาะตอนมีทราฟฟิกวิ่ง ลอง ping จาก PC1 ก่อนแล้วค่อยดู และเช็คว่า rule ระบุ source address 192.168.1.10 ถูกตัว' },
-            { description: 'R1 มีกฎ static NAT translation', node: 'R1', command: 'show configuration commands | match "translation address 203"', expect: '203\\.0\\.113\\.10', points: 2,
+            { description: 'R1 มีกฎ static NAT translation', node: 'R1', command: 'show configuration commands | match "translation address"', expect: '203\\.0\\.113\\.10', points: 2,
               failHint: 'ยังไม่มีกฎ — ครบสามคำสั่ง: source address 192.168.1.10, outbound-interface name eth2, translation address 203.0.113.10 แล้ว commit' },
           ],
         },
@@ -419,7 +419,7 @@ export default {
           hints: [
             'ลิงก์ peering: R1 eth1 = 10.0.12.1/24, R2 eth1 = 10.0.12.2/24',
             'สร้าง loopback ที่จะโฆษณา: R1 `set interfaces dummy dum0 address 192.168.1.1/24` (R2 ใช้ 192.168.2.1/24)',
-            'R1: `set protocols bgp system-as 65001` · `set protocols bgp neighbor 10.0.12.2 remote-as 65002` · `set protocols bgp address-family ipv4-unicast network 192.168.1.0/24`',
+            'R1: `set protocols bgp system-as 65001` · `set protocols bgp neighbor 10.0.12.2 remote-as 65002` · `set protocols bgp neighbor 10.0.12.2 address-family ipv4-unicast` (จำเป็นบน VyOS 1.5 เพื่อ activate การแลก route) · `set protocols bgp address-family ipv4-unicast network 192.168.1.0/24`',
             'ตรวจ: `show ip bgp summary` (สถานะ Established) และ `show ip route bgp`',
           ],
           topology: {
@@ -455,7 +455,7 @@ export default {
           hints: [
             'ทุกตัวอยู่ subnet เดียวกัน: RR=10.0.0.1/24, C1=10.0.0.2/24, C2=10.0.0.3/24 (ผ่าน SW1)',
             'RR: `set protocols bgp system-as 65010` · `set protocols bgp neighbor 10.0.0.2 remote-as 65010` · `set protocols bgp neighbor 10.0.0.2 address-family ipv4-unicast route-reflector-client` (ทำซ้ำกับ 10.0.0.3)',
-            'C1: peer แค่ `neighbor 10.0.0.1 remote-as 65010` และโฆษณา dum0 192.168.1.0/24 — C2 โฆษณา 192.168.2.0/24',
+            'C1: peer แค่ `neighbor 10.0.0.1 remote-as 65010` + `neighbor 10.0.0.1 address-family ipv4-unicast` (activate AF บน VyOS 1.5) และโฆษณา dum0 192.168.1.0/24 — C2 โฆษณา 192.168.2.0/24',
             'C1 และ C2 ไม่ต้อง peer กันเอง — ตรวจที่ C1 ด้วย `show ip route bgp` ว่ามี 192.168.2.0',
           ],
           topology: {

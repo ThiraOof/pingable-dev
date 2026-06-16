@@ -291,7 +291,7 @@ export default {
             'ยืนยันว่า bond0 ขึ้นสถานะ up และ ping ข้ามได้',
           ],
           hints: [
-            'R1: `set interfaces bonding bond0 mode 802.3ad` · `set interfaces ethernet eth1 bond-group bond0` · `set interfaces ethernet eth2 bond-group bond0`',
+            'R1: `set interfaces bonding bond0 mode 802.3ad` · `set interfaces bonding bond0 member interface eth1` · `set interfaces bonding bond0 member interface eth2`',
             'R1: `set interfaces bonding bond0 address 10.0.12.1/24` (R2 ใช้ .2)',
             'ตรวจสถานะ: `show interfaces` ควรเห็น bond0 เป็น u/u — และ `ping 10.0.12.2 count 3`',
             'หมายเหตุ: ต้องลบ address ที่เผลอตั้งบน eth1/eth2 ออกก่อนเพิ่มเข้า bond-group',
@@ -307,7 +307,7 @@ export default {
             { description: 'R1 ตั้ง bond0 โหมด 802.3ad', node: 'R1', command: 'show configuration commands | match "bonding bond0 mode"', expect: '802\\.3ad', points: 3,
               failHint: 'ยังไม่เห็น bond0 โหมด 802.3ad — `set interfaces bonding bond0 mode 802.3ad` แล้ว commit (โหมดอื่นเช่น active-backup ไม่ใช่ LACP)' },
             { description: 'bond0 ขึ้นสถานะ up บน R1', node: 'R1', command: 'show interfaces | match bond0', expect: 'bond0.*u/u', points: 3,
-              failHint: 'bond0 ยังไม่ u/u — สมาชิกต้องถูกเพิ่มด้วย `set interfaces ethernet eth1 bond-group bond0` (และ eth2) และต้องลบ address บน eth1/eth2 ออกก่อน ไม่งั้น commit จะไม่ผ่าน' },
+              failHint: 'bond0 ยังไม่ u/u — สมาชิกต้องถูกเพิ่มด้วย `set interfaces bonding bond0 member interface eth1` (และ eth2) และต้องลบ address บน eth1/eth2 ออกก่อน ไม่งั้น commit จะไม่ผ่าน' },
             { description: 'R1 ping R2 ผ่าน bond0 ได้', node: 'R1', command: 'ping 10.0.12.2 count 3', expect: 'bytes from 10\\.0\\.12\\.2', points: 3,
               failHint: 'ping ข้าม bond ไม่ผ่าน — ทั้งสองฝั่งต้องเป็น 802.3ad เหมือนกัน (LACP ต้อง negotiate สองทาง) และ address ต้องอยู่บน bond0 ไม่ใช่บน eth1/eth2' },
           ],
@@ -330,7 +330,7 @@ export default {
             'พิสูจน์ว่า host สองเครื่องที่ต่อกับ bridge สื่อสารกันได้',
           ],
           hints: [
-            'R1: `set interfaces bridge br0 stp true` · `set interfaces bridge br0 member interface eth1` · `... eth2`',
+            'R1: `set interfaces bridge br0 stp` · `set interfaces bridge br0 member interface eth1` · `... eth2`',
             'PortFast ของ Cisco = พอร์ตที่ต่อ host (edge) ให้ขึ้น forwarding ทันที — บน VyOS ตั้ง bridge member ของพอร์ต host ได้เช่นกัน',
             'PC1: `ip 10.0.0.11 255.255.255.0` · PC2: `ip 10.0.0.12 255.255.255.0` แล้ว `ping 10.0.0.12`',
           ],
@@ -343,7 +343,7 @@ export default {
           },
           gradingChecks: [
             { description: 'R1 สร้าง bridge br0 และเปิด STP', node: 'R1', command: 'show configuration commands | match "bridge br0 stp"', expect: 'stp', points: 3,
-              failHint: 'ยังไม่เห็น `bridge br0 stp` ใน config — `set interfaces bridge br0 stp true` แล้ว commit' },
+              failHint: 'ยังไม่เห็น `bridge br0 stp` ใน config — `set interfaces bridge br0 stp` แล้ว commit' },
             { description: 'R1 เพิ่ม eth1 เป็นสมาชิก bridge', node: 'R1', command: 'show configuration commands | match "br0 member interface eth1"', expect: 'eth1', points: 2,
               failHint: 'eth1 ยังไม่เป็นสมาชิก br0 — `set interfaces bridge br0 member interface eth1` (และทำ eth2 ด้วยเพื่อให้สอง PC ถึงกัน)' },
             { description: 'PC1 ping PC2 ผ่าน bridge ได้', node: 'PC1', command: 'ping 10.0.0.12', expect: 'bytes from 10\\.0\\.0\\.12', points: 4,
@@ -570,7 +570,7 @@ export default {
             'ยืนยันการตั้งค่า remote syslog',
           ],
           hints: [
-            'VyOS: `set system syslog host 10.0.0.50 facility all level info`',
+            'VyOS: `set system syslog remote 10.0.0.50 facility all level info`',
             'R1 eth1 = 10.0.0.1/24 · syslog server (PC1) = 10.0.0.50',
             'ดู log ภายในเครื่องด้วย `show log` เพื่อยืนยันว่ามีเหตุการณ์ถูกบันทึก',
           ],
@@ -579,9 +579,9 @@ export default {
             links: [ { node1: 'PC1', port1: 0, node2: 'R1', port2: 1 } ],
           },
           gradingChecks: [
-            { description: 'R1 ส่ง syslog ไปยัง 10.0.0.50', node: 'R1', command: 'show configuration commands | match "syslog host"', expect: '10\\.0\\.0\\.50', points: 5,
-              failHint: 'ยังไม่มี syslog host 10.0.0.50 — `set system syslog host 10.0.0.50 facility all level info` แล้ว commit' },
-            { description: 'R1 กำหนด facility/level ของ syslog', node: 'R1', command: 'show configuration commands | match "syslog host"', expect: '(facility|level)', points: 3,
+            { description: 'R1 ส่ง syslog ไปยัง 10.0.0.50', node: 'R1', command: 'show configuration commands | match "syslog remote"', expect: '10\\.0\\.0\\.50', points: 5,
+              failHint: 'ยังไม่มี syslog remote 10.0.0.50 — `set system syslog remote 10.0.0.50 facility all level info` แล้ว commit' },
+            { description: 'R1 กำหนด facility/level ของ syslog', node: 'R1', command: 'show configuration commands | match "syslog remote"', expect: '(facility|level)', points: 3,
               failHint: 'มี host แล้วแต่ยังไม่กำหนดว่าเก็บอะไร — เพิ่ม facility กับ level ต่อท้าย เช่น `facility all level info` ไม่งั้นไม่รู้ว่า log ระดับไหนจะถูกส่ง' },
           ],
         },
