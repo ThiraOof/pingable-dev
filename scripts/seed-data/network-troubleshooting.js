@@ -146,6 +146,7 @@ export default {
             'เริ่มจาก `show ip bgp summary` บน R1 — สถานะอะไร และ "AS ของเพื่อนบ้าน" ที่ตั้งไว้คือเลขอะไร',
             'BGP จะจับมือกันได้ก็ต่อเมื่อ remote-as ที่เราตั้ง ตรงกับ system-as ของอีกฝั่ง "จริง ๆ" — เทียบเลขสองฝั่งดี ๆ',
             'แก้ค่าได้ด้วย `set protocols bgp neighbor 10.0.12.2 remote-as <เลขที่ถูก>` (set ทับค่าเดิมได้เลย) แล้ว commit — session ใช้เวลาขึ้นไม่กี่วินาที',
+            'แก้ + commit แล้วแต่สถานะยังค้าง Active/Idle? "เขย่า" session ด้วย `reset bgp 10.0.12.2` (op mode) เพื่อบังคับ peering เจรจาใหม่ทันที ไม่ต้องรอ timer ของ BGP',
           ],
           topology: {
             nodes: [ vyos('R1', -180, 0), vyos('R2', 180, 0) ],
@@ -377,6 +378,7 @@ export default {
             'เช็ค underlay ก่อน: `ping 10.0.12.2` จาก R1 ผ่านไหม — ถ้าผ่าน ปัญหาอยู่ที่ IPsec ไม่ใช่ลิงก์',
             'ดูสถานะอุโมงค์: `show vpn ipsec sa` — ถ้าไม่ขึ้น up แสดงว่า IKE เจรจาไม่ผ่าน อาการคลาสสิกคือ pre-shared key สองฝั่งไม่ตรงกัน',
             'pre-shared key ต้อง "เหมือนกันเป๊ะ" ทั้งสองฝั่ง — ฝั่งที่ก๊อปมามักลืมแก้ให้ตรง ตั้งใหม่ให้ตรงกัน: `set vpn ipsec authentication psk PR secret <คีย์เดียวกันสองฝั่ง>` แล้ว commit',
+            'แก้ PSK + commit แล้วแต่ SA ยังไม่ขึ้น? การเจรจารอบเก่าที่ล้มมักยังคาอยู่ — สั่ง `reset vpn ipsec-peer PEER` (op mode) เพื่อรื้อ SA เดิมทิ้งแล้วบังคับ IKE เจรจาใหม่ จากนั้นดู `show vpn ipsec sa` อีกครั้ง',
             'เพราะเป็น policy-based และไม่มี static route ของวง LAN ปลายทาง ping PC→PC จะผ่านได้ก็ต่อเมื่อ SA ขึ้นจริงเท่านั้น',
           ],
           topology: {
