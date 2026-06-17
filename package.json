@@ -12,6 +12,7 @@
     "seed": "node scripts/seed.js",
     "validate": "node scripts/validate-seed.js",
     "gns3:clean": "node scripts/gns3-clean.js",
+    "make-admin": "node scripts/make-admin.js",
     "test": "node --test \"tests/*.test.js\""
   },
   "dependencies": {

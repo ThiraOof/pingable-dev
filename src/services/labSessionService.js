@@ -246,18 +246,23 @@ async function listProjects() {
 // (crashed builds, projects from before sessions were persisted). Project
 // names embed their creation time (pingable_<ms>_<title>), so fresh projects
 // whose session doc may not carry a projectId yet are left alone.
+// Returns the number of orphans deleted, or null when GNS3 was unreachable
+// (so a manual caller can tell "nothing to clean" from "couldn't ask").
 export async function sweepOrphans(projects) {
   if (projects === undefined) projects = await listProjects();
-  if (!projects) return;
+  if (!projects) return null;
 
   const known = new Set((await LabSession.find().select('projectId')).map((d) => d.projectId));
+  let deleted = 0;
   for (const p of projects) {
     const stamp = /^pingable_(\d+)_/.exec(p.name || '')?.[1];
     if (!stamp || known.has(p.project_id)) continue;
     if (Date.now() - Number(stamp) < ORPHAN_MIN_AGE_MS) continue;
     logger.info({ project: p.name }, 'lab-sweeper: deleting orphaned project');
     await teardown(p.project_id);
+    deleted++;
   }
+  return deleted;
 }
 
 // Drop sessions whose GNS3 project has vanished (deleted out-of-band, or the

@@ -66,8 +66,10 @@ const T = {
     const glyph = `<span class="brand-mark">${mascotMark(28)}</span>`;
     // Events link only when an event is live (server sets events-active) — keeps the bar uncluttered off-season
     const eventsLink = a['events-active'] ? `<a href="/events" class="nav-event">${svgIcon('zap', 18)} อีเวนต์</a>` : '';
+    // Admin console link only renders for admins (the route is role-gated regardless).
+    const adminLink = a.role === 'admin' ? `<a href="/admin">${svgIcon('shield', 18)} Admin</a>` : '';
     const links = a.username
-      ? `<a href="/dashboard">${svgIcon('gauge', 18)} แดชบอร์ด</a><a href="/courses">${svgIcon('layers', 18)} คอร์สเรียน</a><a href="/exam">${svgIcon('clock', 18)} สอบจำลอง</a><a href="/notes">${svgIcon('book-open', 18)} โน้ต</a><a href="/leaderboard">${svgIcon('award', 18)} อันดับ</a>${eventsLink}<a href="/auth/settings" class="nav-user" title="ตั้งค่าบัญชี">${svgIcon('user', 16)} ${esc(a.username)}</a><form method="POST" action="/auth/logout" style="display:inline"><button type="submit" class="btn-link">${svgIcon('logout', 16)} ออกจากระบบ</button></form>`
+      ? `<a href="/dashboard">${svgIcon('gauge', 18)} แดชบอร์ด</a><a href="/courses">${svgIcon('layers', 18)} คอร์สเรียน</a><a href="/exam">${svgIcon('clock', 18)} สอบจำลอง</a><a href="/notes">${svgIcon('book-open', 18)} โน้ต</a><a href="/leaderboard">${svgIcon('award', 18)} อันดับ</a>${eventsLink}${adminLink}<a href="/auth/settings" class="nav-user" title="ตั้งค่าบัญชี">${svgIcon('user', 16)} ${esc(a.username)}</a><form method="POST" action="/auth/logout" style="display:inline"><button type="submit" class="btn-link">${svgIcon('logout', 16)} ออกจากระบบ</button></form>`
       : `<a href="/courses">${svgIcon('layers', 18)} คอร์สเรียน</a><a href="/auth/login">เข้าสู่ระบบ</a><a href="/auth/register" class="btn btn-primary">สมัครฟรี</a>`;
     return { host: BLOCK, html: `<nav class="navbar"><a href="/" class="nav-brand">${glyph} Pingable</a><div class="nav-links">${links}</div></nav>` };
   },

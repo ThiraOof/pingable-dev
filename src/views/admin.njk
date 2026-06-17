@@ -5,6 +5,10 @@
 <div class="admin-wrap">
   <h1 class="admin-title">Admin Panel</h1>
 
+  {% if notice %}
+  <div class="admin-notice admin-notice-{{ notice.kind }}">{{ notice.text }}</div>
+  {% endif %}
+
   {# ── Stats ── #}
   <div class="admin-stats">
     <div class="admin-stat">
@@ -31,9 +35,15 @@
 
   {# ── Active Lab Sessions ── #}
   <section class="admin-section">
-    <h2>Lab Sessions ที่ใช้งานอยู่
-      <span class="admin-badge">{{ sessionRows | length }}</span>
-    </h2>
+    <div class="admin-section-head">
+      <h2>Lab Sessions ที่ใช้งานอยู่
+        <span class="admin-badge">{{ sessionRows | length }}</span>
+      </h2>
+      <form method="POST" action="/admin/gns3/clean-orphans"
+            onsubmit="return confirm('เคลียร์ orphaned GNS3 project ที่ไม่มี session อ้างอิง (อายุเกิน 10 นาที) ใช่ไหม?')">
+        <button type="submit" class="admin-btn">เคลียร์ orphaned projects</button>
+      </form>
+    </div>
     {% if sessionRows.length %}
     <div class="admin-table-wrap">
       <table class="admin-table">
@@ -113,10 +123,64 @@
     {% endif %}
   </section>
 
+  {# ── Courses ── #}
+  <section class="admin-section">
+    <h2>คอร์ส
+      <span class="admin-badge">{{ courses | length }}</span>
+    </h2>
+    {% if courses.length %}
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>คอร์ส</th>
+            <th>Track</th>
+            <th>ระดับ</th>
+            <th>สถานะ</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in courses %}
+          <tr>
+            <td><strong>{{ c.title }}</strong></td>
+            <td class="muted">{{ c.track or '—' }}</td>
+            <td class="muted">{{ c.level }}</td>
+            <td>
+              {% if c.published %}
+                <span class="status-chip status-ready">เผยแพร่</span>
+              {% else %}
+                <span class="role-chip role-student">ซ่อน</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if c.published %}
+              <form method="POST" action="/admin/courses/{{ c._id }}/publish"
+                    onsubmit="return confirm('ซ่อนคอร์ส {{ c.title }} จากแคตตาล็อก ใช่ไหม?')">
+                <input type="hidden" name="published" value="false">
+                <button type="submit" class="admin-btn-danger">ซ่อน</button>
+              </form>
+              {% else %}
+              <form method="POST" action="/admin/courses/{{ c._id }}/publish">
+                <input type="hidden" name="published" value="true">
+                <button type="submit" class="admin-btn">เผยแพร่</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="admin-empty">ยังไม่มีคอร์ส</p>
+    {% endif %}
+  </section>
+
   {# ── Users ── #}
   <section class="admin-section">
     <h2>ผู้ใช้ทั้งหมด
-      <span class="admin-badge">{{ userRows | length }}</span>
+      <span class="admin-badge">{{ pagination.totalUsers }}</span>
     </h2>
     {% if userRows.length %}
     <div class="admin-table-wrap">
@@ -131,6 +195,7 @@
             <th>แล็บผ่าน</th>
             <th>แบบทดสอบผ่าน</th>
             <th>Lab ใช้งาน</th>
+            <th>สิทธิ์</th>
           </tr>
         </thead>
         <tbody>
@@ -146,11 +211,43 @@
             <td>{{ u.labsPassed }}</td>
             <td>{{ u.quizzesPassed }}</td>
             <td>{% if u.hasActiveSession %}<span class="status-chip status-ready">●</span>{% else %}—{% endif %}</td>
+            <td>
+              {% if u._id | string == user.id | string %}
+                <span class="muted">คุณ</span>
+              {% elif u.role == 'admin' %}
+                <form method="POST" action="/admin/users/{{ u._id }}/role"
+                      onsubmit="return confirm('ถอดสิทธิ์ admin ของ {{ u.username }} ใช่ไหม?')">
+                  <input type="hidden" name="role" value="student">
+                  <button type="submit" class="admin-btn-danger">ถอด admin</button>
+                </form>
+              {% else %}
+                <form method="POST" action="/admin/users/{{ u._id }}/role"
+                      onsubmit="return confirm('ตั้ง {{ u.username }} เป็น admin ใช่ไหม?')">
+                  <input type="hidden" name="role" value="admin">
+                  <button type="submit" class="admin-btn">ตั้งเป็น admin</button>
+                </form>
+              {% endif %}
+            </td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
+    {% if pagination.totalPages > 1 %}
+    <nav class="admin-pager" aria-label="แบ่งหน้าผู้ใช้">
+      {% if pagination.page > 1 %}
+      <a href="/admin?page={{ pagination.page - 1 }}" class="admin-btn">‹ ก่อนหน้า</a>
+      {% else %}
+      <span class="admin-btn admin-btn-disabled">‹ ก่อนหน้า</span>
+      {% endif %}
+      <span class="admin-pager-info">หน้า {{ pagination.page }} / {{ pagination.totalPages }}</span>
+      {% if pagination.page < pagination.totalPages %}
+      <a href="/admin?page={{ pagination.page + 1 }}" class="admin-btn">ถัดไป ›</a>
+      {% else %}
+      <span class="admin-btn admin-btn-disabled">ถัดไป ›</span>
+      {% endif %}
+    </nav>
+    {% endif %}
     {% else %}
     <p class="admin-empty">ยังไม่มีผู้ใช้</p>
     {% endif %}

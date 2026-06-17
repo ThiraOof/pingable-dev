@@ -6,8 +6,9 @@ import http from 'http';
  * be exercised with `fetch` — no supertest dependency, no real session store.
  *
  * Auth is faked per-request: send headers `x-test-user` (and optionally
- * `x-test-username`) and the app sets `req.session.user = { id, username }`,
- * which is exactly what `requireAuth` and the routes read. Omit the header to
+ * `x-test-username` / `x-test-role`) and the app sets
+ * `req.session.user = { id, username, role }`, which is exactly what
+ * `requireAuth` / `requireAdmin` and the routes read. Omit the header to
  * exercise the unauthenticated path: `requireAuth` redirects to `/auth/login`
  * (observable as a 302 with that Location, since redirects are NOT followed).
  *
@@ -27,7 +28,11 @@ export async function startRouteApp(mount) {
   app.use((req, res, next) => {
     req.log = { error() {}, warn() {}, info() {}, debug() {}, child() { return req.log; } };
     const uid = req.headers['x-test-user'];
-    req.session = uid ? { user: { id: uid, username: req.headers['x-test-username'] || 'user' } } : {};
+    req.session = uid ? { user: {
+      id: uid,
+      username: req.headers['x-test-username'] || 'user',
+      role: req.headers['x-test-role'] || 'student',
+    } } : {};
     const render = (view, locals = {}) => res.json({ __render: view, ...locals });
     res.render = render;
     next();
@@ -39,10 +44,11 @@ export async function startRouteApp(mount) {
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   const base = `http://127.0.0.1:${server.address().port}`;
 
-  async function request(path, { method = 'GET', user, username, body } = {}) {
+  async function request(path, { method = 'GET', user, username, role, body } = {}) {
     const headers = {};
     if (user) headers['x-test-user'] = String(user);
     if (username) headers['x-test-username'] = username;
+    if (role) headers['x-test-role'] = role;
     if (body !== undefined) headers['content-type'] = 'application/json';
     const res = await fetch(base + path, {
       method, headers, redirect: 'manual',
