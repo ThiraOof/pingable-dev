@@ -33,6 +33,7 @@ import adminRoutes from './routes/adminRoutes.js';
 import legalRoutes from './routes/legalRoutes.js';
 import { anyEventActive } from './config/events.js';
 import { enabledProviders } from './config/oauth.js';
+import Course from './models/Course.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -192,7 +193,28 @@ app.use('/events', eventRoutes);
 app.use('/admin', adminRoutes);
 app.use(legalRoutes);               // /privacy, /terms, /data-deletion (public)
 
-app.get('/', (req, res) => res.render('index.njk'));
+app.get('/', async (req, res) => {
+  // Landing-page signal band: counts from the live catalog so they never drift
+  // from seed data (published courses + their hands-on labs).
+  const [agg] = await Course.aggregate([
+    { $match: { published: true } },
+    { $project: {
+      labs: { $size: { $filter: {
+        input: { $reduce: {
+          input: '$modules',
+          initialValue: [],
+          in: { $concatArrays: ['$$value', '$$this.lessons'] },
+        } },
+        cond: { $eq: ['$$this.type', 'lab'] },
+      } } },
+    } },
+    { $group: { _id: null, courseCount: { $sum: 1 }, labCount: { $sum: '$labs' } } },
+  ]);
+  res.render('index.njk', {
+    labCount: agg?.labCount ?? 0,
+    courseCount: agg?.courseCount ?? 0,
+  });
+});
 
 // 404 — anything that fell through the routes
 app.use((req, res) => {
