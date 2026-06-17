@@ -62,6 +62,10 @@ if [ ! -f "$CONF" ]; then
 [Server]
 host = 0.0.0.0
 port = 3080
+; The grader runs in the app container and telnets node CONSOLE ports on the
+; host (via host.docker.internal). Without this, GNS3 binds consoles to
+; 127.0.0.1 and the container can't reach them → grading/boot-probe fail.
+allow_console_from_anywhere = True
 ; Optional basic-auth (defense-in-depth — GNS3 is already private). If you set
 ; these, mirror them into .env.production as GNS3_USER / GNS3_PASS.
 ; auth = True
@@ -69,7 +73,9 @@ port = 3080
 ; password = change-me
 EOF
 else
-  warn "$CONF already exists — ensure it has [Server] host = 0.0.0.0 (not 127.0.0.1)"
+  warn "$CONF already exists — ensure [Server] has BOTH:"
+  warn "    host = 0.0.0.0                       (not 127.0.0.1)"
+  warn "    allow_console_from_anywhere = True   (so the container can telnet consoles)"
 fi
 
 # ── 4. Run GNS3 server as a systemd service (survives reboots) ───────────
