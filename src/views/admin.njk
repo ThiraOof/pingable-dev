@@ -179,9 +179,19 @@
 
   {# ── Users ── #}
   <section class="admin-section">
-    <h2>ผู้ใช้ทั้งหมด
-      <span class="admin-badge">{{ pagination.totalUsers }}</span>
-    </h2>
+    <div class="admin-section-head">
+      <h2>ผู้ใช้ทั้งหมด
+        <span class="admin-badge">{{ pagination.totalUsers }}</span>
+      </h2>
+      <form method="GET" action="/admin" class="admin-search">
+        <input type="search" name="q" value="{{ pagination.q }}" placeholder="ค้นหา username / email…" aria-label="ค้นหาผู้ใช้">
+        <button type="submit" class="admin-btn">ค้นหา</button>
+        {% if pagination.q %}<a href="/admin" class="admin-btn admin-btn-ghost">ล้าง</a>{% endif %}
+      </form>
+    </div>
+    {% if pagination.q %}
+    <p class="admin-empty" style="margin-top:0">ผลการค้นหา "{{ pagination.q }}" — เจอ {{ pagination.matchedUsers }} รายการ</p>
+    {% endif %}
     {% if userRows.length %}
     <div class="admin-table-wrap">
       <table class="admin-table">
@@ -201,7 +211,7 @@
         <tbody>
           {% for u in userRows %}
           <tr>
-            <td><strong>{{ u.username }}</strong></td>
+            <td><a href="/admin/users/{{ u._id }}" class="admin-link"><strong>{{ u.username }}</strong></a></td>
             <td class="muted">{{ u.email }}</td>
             <td>
               <span class="role-chip role-{{ u.role }}">{{ u.role }}</span>
@@ -235,14 +245,15 @@
     </div>
     {% if pagination.totalPages > 1 %}
     <nav class="admin-pager" aria-label="แบ่งหน้าผู้ใช้">
+      {% set qs = '&q=' + pagination.q if pagination.q else '' %}
       {% if pagination.page > 1 %}
-      <a href="/admin?page={{ pagination.page - 1 }}" class="admin-btn">‹ ก่อนหน้า</a>
+      <a href="/admin?page={{ pagination.page - 1 }}{{ qs }}" class="admin-btn">‹ ก่อนหน้า</a>
       {% else %}
       <span class="admin-btn admin-btn-disabled">‹ ก่อนหน้า</span>
       {% endif %}
       <span class="admin-pager-info">หน้า {{ pagination.page }} / {{ pagination.totalPages }}</span>
       {% if pagination.page < pagination.totalPages %}
-      <a href="/admin?page={{ pagination.page + 1 }}" class="admin-btn">ถัดไป ›</a>
+      <a href="/admin?page={{ pagination.page + 1 }}{{ qs }}" class="admin-btn">ถัดไป ›</a>
       {% else %}
       <span class="admin-btn admin-btn-disabled">ถัดไป ›</span>
       {% endif %}
@@ -250,6 +261,42 @@
     {% endif %}
     {% else %}
     <p class="admin-empty">ยังไม่มีผู้ใช้</p>
+    {% endif %}
+  </section>
+
+  {# ── Audit log ── #}
+  <section class="admin-section">
+    <h2>บันทึกการกระทำของ Admin
+      <span class="admin-badge">{{ auditRows | length }}</span>
+    </h2>
+    {% if auditRows.length %}
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>เมื่อ</th>
+            <th>Admin</th>
+            <th>การกระทำ</th>
+            <th>เป้าหมาย</th>
+            <th>รายละเอียด</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in auditRows %}
+          <tr>
+            <td class="muted">{{ a.at | thaidate }}</td>
+            <td><strong>{{ a.actorName }}</strong></td>
+            <td>{{ a.label }}</td>
+            <td class="muted">{{ a.target or '—' }}</td>
+            <td class="muted">{{ a.detail or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="admin-empty" style="margin-top:8px">แสดง 50 รายการล่าสุด</p>
+    {% else %}
+    <p class="admin-empty">ยังไม่มีบันทึก</p>
     {% endif %}
   </section>
 </div>

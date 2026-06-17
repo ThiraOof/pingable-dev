@@ -25,6 +25,9 @@ const { default: User } = await import('../src/models/User.js');
 const { default: Course } = await import('../src/models/Course.js');
 const { default: Progress } = await import('../src/models/Progress.js');
 const { default: LabSession } = await import('../src/models/LabSession.js');
+const { default: LabAttempt } = await import('../src/models/LabAttempt.js');
+const { default: UserStats } = await import('../src/models/UserStats.js');
+const { default: AdminAction } = await import('../src/models/AdminAction.js');
 
 const dbUp = await connectTestDb('pingable-test-adminroutes');
 const opts = { skip: !dbUp && 'MongoDB not reachable' };
@@ -34,7 +37,8 @@ before(async () => { app = await startRouteApp((a) => { a.use('/admin', adminRou
 after(async () => { await app?.close(); await disconnectTestDb(); await fake.close(); });
 beforeEach(async () => {
   if (!dbUp) return;
-  await Promise.all([User.deleteMany({}), Course.deleteMany({}), Progress.deleteMany({}), LabSession.deleteMany({})]);
+  await Promise.all([User.deleteMany({}), Course.deleteMany({}), Progress.deleteMany({}),
+    LabSession.deleteMany({}), LabAttempt.deleteMany({}), UserStats.deleteMany({}), AdminAction.deleteMany({})]);
   fake.projects.clear(); fake.deleted.length = 0;
 });
 
@@ -264,4 +268,190 @@ test('student cannot clean orphans (403)', opts, async () => {
     method: 'POST', user: String(new mongoose.Types.ObjectId()), role: 'student',
   });
   assert.equal(r.status, 403);
+});
+
+// ── user search ────────────────────────────────────────────────────────────────
+
+test('search filters users by username/email substring', opts, async () => {
+  const admin = await mkUser({ role: 'admin', username: 'rootadmin', email: 'root@x.co' });
+  await mkUser({ username: 'alice', email: 'alice@example.com' });
+  await mkUser({ username: 'bob', email: 'bob@example.com' });
+
+  const r = await app.request('/admin?q=alice', { user: String(admin._id), role: 'admin' });
+  assert.equal(r.json.pagination.matchedUsers, 1);
+  assert.equal(r.json.userRows.length, 1);
+  assert.equal(r.json.userRows[0].username, 'alice');
+  // global stat stays the full count, not the filtered one
+  assert.equal(r.json.stats.totalUsers, 3);
+});
+
+test('search matches on email too', opts, async () => {
+  const admin = await mkUser({ role: 'admin', email: 'root@x.co' });
+  await mkUser({ username: 'carol', email: 'special@domain.io' });
+  const r = await app.request('/admin?q=special@domain', { user: String(admin._id), role: 'admin' });
+  assert.equal(r.json.userRows.length, 1);
+  assert.equal(r.json.userRows[0].username, 'carol');
+});
+
+// ── user detail ────────────────────────────────────────────────────────────────
+
+test('user detail renders with progress + attempts', opts, async () => {
+  const admin = await mkUser({ role: 'admin' });
+  const u = await mkUser();
+  const courseId = new mongoose.Types.ObjectId();
+  await Progress.create({ user: u._id, course: courseId, completed: [{ moduleIdx: 0, lessonIdx: 0, type: 'lab', score: 90 }] });
+  await LabAttempt.create({ user: u._id, course: courseId, moduleIdx: 0, lessonIdx: 0, pct: 90, passed: true, score: 9, total: 10 });
+  await UserStats.create({ user: u._id, xp: 120 });
+
+  const r = await app.request(`/admin/users/${u._id}`, { user: String(admin._id), role: 'admin' });
+  assert.equal(r.status, 200);
+  assert.equal(r.json.__render, 'admin-user.njk');
+  assert.equal(r.json.detail.username, u.username);
+  assert.equal(r.json.progressRows.length, 1);
+  assert.equal(r.json.attempts.length, 1);
+  assert.equal(r.json.level.level >= 1, true);
+});
+
+test('user detail never leaks the password hash', opts, async () => {
+  const admin = await mkUser({ role: 'admin' });
+  const u = await mkUser();
+  const r = await app.request(`/admin/users/${u._id}`, { user: String(admin._id), role: 'admin' });
+  assert.equal(r.json.detail.password, undefined);
+  assert.equal(r.json.detail.hasPassword, true);
+});
+
+test('user detail on missing user → 404', opts, async () => {
+  const admin = await mkUser({ role: 'admin' });
+  const r = await app.request(`/admin/users/${new mongoose.Types.ObjectId()}`, { user: String(admin._id), role: 'admin' });
+  assert.equal(r.status, 404);
+});
+
+test('student cannot view user detail (403)', opts, async () => {
+  const u = await mkUser();
+  const r = await app.request(`/admin/users/${u._id}`, { user: String(new mongoose.Types.ObjectId()), role: 'student' });
+  assert.equal(r.status, 403);
+});
+
+// ── account actions ─────────────────────────────────────────────────────────────
+
+test('unlock clears lock + failed-login counter', opts, async () => {
+  const admin = await mkUser({ role: 'admin' });
+  const u = await mkUser({ failedLogins: 9, lockUntil: new Date(Date.now() + 600_000) });
+  const r = await app.request(`/admin/users/${u._id}/unlock`, { method: 'POST', user: String(admin._id), role: 'admin' });
+  assert.equal(r.status, 302);
+  const after = await User.findById(u._id).select('failedLogins lockUntil').lean();
+  assert.equal(after.failedLogins, 0);
+  assert.equal(after.lockUntil, undefined);
+});
+
+test('verify marks email verified', opts, async () => {
+  const admin = await mkUser({ role: 'admin' });
+  const u = await mkUser({ emailVerified: false });
+  await app.request(`/admin/users/${u._id}/verify`, { method: 'POST', user: String(admin._id), role: 'admin' });
+  const after = await User.findById(u._id).select('emailVerified').lean();
+  assert.equal(after.emailVerified, true);
+});
+
+test('reset-password issues a reset token', opts, async () => {
+  const admin = await mkUser({ role: 'admin' });
+  const u = await mkUser();
+  const r = await app.request(`/admin/users/${u._id}/reset-password`, { method: 'POST', user: String(admin._id), role: 'admin' });
+  assert.match(r.location, /done=reset/);
+  const after = await User.findById(u._id).select('resetTokenHash resetTokenExp').lean();
+  assert.ok(after.resetTokenHash, 'reset token hash was stored');
+  assert.ok(after.resetTokenExp > new Date(), 'token has a future expiry');
+});
+
+test('student cannot run account actions (403)', opts, async () => {
+  const u = await mkUser();
+  const r = await app.request(`/admin/users/${u._id}/unlock`, { method: 'POST', user: String(new mongoose.Types.ObjectId()), role: 'student' });
+  assert.equal(r.status, 403);
+});
+
+// ── delete account ───────────────────────────────────────────────────────────────
+
+test('delete removes the user and everything they own', opts, async () => {
+  const admin = await mkUser({ role: 'admin' });
+  const u = await mkUser();
+  const courseId = new mongoose.Types.ObjectId();
+  await Progress.create({ user: u._id, course: courseId, completed: [] });
+  await LabAttempt.create({ user: u._id, course: courseId, moduleIdx: 0, lessonIdx: 0, pct: 50, passed: false, score: 5, total: 10 });
+  await UserStats.create({ user: u._id, xp: 10 });
+
+  const r = await app.request(`/admin/users/${u._id}/delete`, { method: 'POST', user: String(admin._id), role: 'admin' });
+  assert.equal(r.status, 302);
+  assert.match(r.location, /\/admin\?deleted=/);
+  assert.equal(await User.findById(u._id), null);
+  assert.equal(await Progress.countDocuments({ user: u._id }), 0);
+  assert.equal(await LabAttempt.countDocuments({ user: u._id }), 0);
+  assert.equal(await UserStats.countDocuments({ user: u._id }), 0);
+});
+
+test('admin cannot delete their own account', opts, async () => {
+  const admin = await mkUser({ role: 'admin' });
+  const r = await app.request(`/admin/users/${admin._id}/delete`, { method: 'POST', user: String(admin._id), role: 'admin' });
+  assert.equal(r.status, 400);
+  assert.ok(await User.findById(admin._id), 'account still exists');
+});
+
+test('delete on missing user → 404', opts, async () => {
+  const admin = await mkUser({ role: 'admin' });
+  const r = await app.request(`/admin/users/${new mongoose.Types.ObjectId()}/delete`, { method: 'POST', user: String(admin._id), role: 'admin' });
+  assert.equal(r.status, 404);
+});
+
+// ── audit log ────────────────────────────────────────────────────────────────
+
+test('role change writes an audit entry', opts, async () => {
+  const admin = await mkUser({ role: 'admin', username: 'theboss' });
+  const target = await mkUser({ username: 'pawn' });
+  await app.request(`/admin/users/${target._id}/role`, {
+    method: 'POST', user: String(admin._id), username: 'theboss', role: 'admin', body: { role: 'admin' },
+  });
+  const log = await AdminAction.findOne({ action: 'user.role' }).lean();
+  assert.ok(log, 'an audit entry was created');
+  assert.equal(log.actorName, 'theboss');
+  assert.equal(String(log.actor), String(admin._id));
+  assert.equal(log.targetLabel, 'pawn');
+  assert.equal(log.meta.role, 'admin');
+});
+
+test('delete writes an audit entry that survives the user', opts, async () => {
+  const admin = await mkUser({ role: 'admin' });
+  const target = await mkUser({ username: 'goner' });
+  await app.request(`/admin/users/${target._id}/delete`, { method: 'POST', user: String(admin._id), role: 'admin' });
+  const log = await AdminAction.findOne({ action: 'user.delete' }).lean();
+  assert.equal(log.targetLabel, 'goner'); // readable even though the user is gone
+  assert.equal(await User.findById(target._id), null);
+});
+
+test('a no-op role change writes NO audit entry', opts, async () => {
+  const admin = await mkUser({ role: 'admin' });
+  const target = await mkUser({ role: 'admin' }); // already admin
+  await app.request(`/admin/users/${target._id}/role`, {
+    method: 'POST', user: String(admin._id), role: 'admin', body: { role: 'admin' },
+  });
+  assert.equal(await AdminAction.countDocuments({ action: 'user.role' }), 0);
+});
+
+test('admin page surfaces recent audit rows, newest first', opts, async () => {
+  const admin = await mkUser({ role: 'admin' });
+  const t1 = await mkUser({ username: 'first' });
+  const t2 = await mkUser({ username: 'second' });
+  await app.request(`/admin/users/${t1._id}/verify`, { method: 'POST', user: String(admin._id), role: 'admin' });
+  await app.request(`/admin/users/${t2._id}/verify`, { method: 'POST', user: String(admin._id), role: 'admin' });
+
+  const r = await app.request('/admin', { user: String(admin._id), role: 'admin' });
+  assert.equal(r.json.auditRows.length, 2);
+  assert.equal(r.json.auditRows[0].target, 'second'); // most recent on top
+  assert.equal(r.json.auditRows[0].label, 'ยืนยันอีเมล');
+});
+
+test('orphan sweep writes an audit entry', opts, async () => {
+  const admin = await mkUser({ role: 'admin' });
+  const r = await app.request('/admin/gns3/clean-orphans', { method: 'POST', user: String(admin._id), role: 'admin' });
+  assert.equal(r.status, 302);
+  const log = await AdminAction.findOne({ action: 'gns3.clean-orphans' }).lean();
+  assert.ok(log, 'orphan sweep was logged');
+  assert.equal(log.meta.deleted, 0);
 });

@@ -1,0 +1,158 @@
+{% extends "base.njk" %}
+{% block title %}{{ detail.username }} — Admin — Pingable{% endblock %}
+
+{% block content %}
+<div class="admin-wrap">
+  <a href="/admin" class="admin-link admin-back">‹ กลับไปหน้า Admin</a>
+  <h1 class="admin-title">{{ detail.username }}</h1>
+
+  {% if notice %}
+  <div class="admin-notice admin-notice-{{ notice.kind }}">{{ notice.text }}</div>
+  {% endif %}
+
+  {# ── Account overview ── #}
+  <section class="admin-section">
+    <h2>บัญชี</h2>
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <tbody>
+          <tr><td class="muted">Email</td><td>{{ detail.email }}
+            {% if detail.emailVerified %}<span class="status-chip status-ready">ยืนยันแล้ว</span>
+            {% else %}<span class="role-chip role-student">ยังไม่ยืนยัน</span>{% endif %}
+          </td></tr>
+          <tr><td class="muted">Role</td><td><span class="role-chip role-{{ detail.role }}">{{ detail.role }}</span></td></tr>
+          <tr><td class="muted">สถานะบัญชี</td><td>
+            {% if detail.locked %}<span class="role-chip role-student" style="color:#f87171">ถูกล็อก (ใส่รหัสผิด {{ detail.failedLogins }} ครั้ง)</span>
+            {% else %}<span class="status-chip status-ready">ปกติ</span>{% endif %}
+          </td></tr>
+          <tr><td class="muted">การเข้าสู่ระบบ</td><td>
+            {% if detail.hasPassword %}รหัสผ่าน{% endif %}
+            {% for p in detail.providers %}<span class="role-chip role-admin">{{ p }}</span>{% endfor %}
+            {% if not detail.hasPassword and not detail.providers.length %}—{% endif %}
+          </td></tr>
+          <tr><td class="muted">สมัครเมื่อ</td><td>{{ detail.createdAt | thaidate }}</td></tr>
+          <tr><td class="muted">เป้าหมาย</td><td>{{ detail.goal or '—' }}</td></tr>
+          <tr><td class="muted">ซ่อนจาก leaderboard</td><td>{{ 'ใช่' if detail.hideFromLeaderboard else 'ไม่' }}</td></tr>
+          <tr><td class="muted">โปรไฟล์สาธารณะ</td><td>{{ 'เปิด' if detail.profilePublic else 'ปิด' }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    {# ── Actions ── #}
+    <div class="admin-actions">
+      {% if detail.locked %}
+      <form method="POST" action="/admin/users/{{ detail._id }}/unlock">
+        <button type="submit" class="admin-btn">ปลดล็อกบัญชี</button>
+      </form>
+      {% endif %}
+      {% if not detail.emailVerified %}
+      <form method="POST" action="/admin/users/{{ detail._id }}/verify">
+        <button type="submit" class="admin-btn">ยืนยันอีเมลให้</button>
+      </form>
+      {% endif %}
+      <form method="POST" action="/admin/users/{{ detail._id }}/reset-password"
+            onsubmit="return confirm('ส่งลิงก์ตั้งรหัสผ่านใหม่ไปที่ {{ detail.email }} ใช่ไหม?')">
+        <button type="submit" class="admin-btn">ส่งลิงก์ตั้งรหัสผ่าน</button>
+      </form>
+      {% if not detail.isSelf %}
+      <form method="POST" action="/admin/users/{{ detail._id }}/delete"
+            onsubmit="return confirm('ลบบัญชี {{ detail.username }} และข้อมูลทั้งหมดอย่างถาวร? ย้อนกลับไม่ได้!')">
+        <button type="submit" class="admin-btn-danger">ลบบัญชีถาวร</button>
+      </form>
+      {% endif %}
+    </div>
+  </section>
+
+  {# ── Gamification ── #}
+  {% if ustats %}
+  <section class="admin-section">
+    <h2>Gamification</h2>
+    <div class="admin-stats">
+      <div class="admin-stat"><strong>{{ level.level }}</strong><span>{{ level.title }}</span></div>
+      <div class="admin-stat"><strong>{{ ustats.xp }}</strong><span>XP</span></div>
+      <div class="admin-stat"><strong>{{ ustats.streak.current }}</strong><span>Streak (สูงสุด {{ ustats.streak.longest }})</span></div>
+      <div class="admin-stat"><strong>{{ ustats.badges | length }}</strong><span>Badges</span></div>
+    </div>
+  </section>
+  {% endif %}
+
+  {# ── Active session ── #}
+  {% if session %}
+  <section class="admin-section">
+    <h2>Lab Session ที่ใช้งานอยู่</h2>
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <tbody>
+          <tr><td class="muted">คอร์ส</td><td>{{ session.course.title if session.course else '—' }} (m{{ session.moduleIdx }}/l{{ session.lessonIdx }})</td></tr>
+          <tr><td class="muted">สถานะ</td><td><span class="status-chip status-{{ session.status }}">{{ session.status }}</span></td></tr>
+          <tr><td class="muted">Project ID</td><td class="mono">{{ session.projectId or '—' }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <form method="POST" action="/admin/sessions/{{ session._id }}/stop" class="admin-actions"
+          onsubmit="return confirm('หยุด lab ของ {{ detail.username }} ใช่ไหม?')">
+      <button type="submit" class="admin-btn-danger">หยุด session</button>
+    </form>
+  </section>
+  {% endif %}
+
+  {# ── Progress per course ── #}
+  <section class="admin-section">
+    <h2>ความคืบหน้า
+      <span class="admin-badge">{{ progressRows | length }}</span>
+    </h2>
+    {% if progressRows.length %}
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr><th>คอร์ส</th><th>บทเรียนจบ</th><th>แล็บผ่าน</th><th>แบบทดสอบผ่าน</th><th>อัปเดตล่าสุด</th></tr>
+        </thead>
+        <tbody>
+          {% for p in progressRows %}
+          <tr>
+            <td><strong>{{ p.courseTitle }}</strong></td>
+            <td>{{ p.lessonsDone }}</td>
+            <td>{{ p.labsPassed }}</td>
+            <td>{{ p.quizzesPassed }}</td>
+            <td class="muted">{{ p.updatedAt | thaidate }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="admin-empty">ยังไม่มีความคืบหน้า</p>
+    {% endif %}
+  </section>
+
+  {# ── Recent lab attempts ── #}
+  <section class="admin-section">
+    <h2>ประวัติการตรวจ Lab (20 ครั้งล่าสุด)
+      <span class="admin-badge">{{ attempts | length }}</span>
+    </h2>
+    {% if attempts.length %}
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr><th>คอร์ส</th><th>Lab</th><th>คะแนน</th><th>ผล</th><th>คำใบ้</th><th>เมื่อ</th></tr>
+        </thead>
+        <tbody>
+          {% for a in attempts %}
+          <tr>
+            <td class="muted">{{ a.course.title if a.course else '—' }}</td>
+            <td>m{{ a.moduleIdx }}/l{{ a.lessonIdx }}</td>
+            <td>{{ a.pct }}% ({{ a.score }}/{{ a.total }})</td>
+            <td>{% if a.passed %}<span class="status-chip status-ready">ผ่าน</span>{% else %}<span class="role-chip role-student">ไม่ผ่าน</span>{% endif %}</td>
+            <td>{{ a.hintsUsed }}</td>
+            <td class="muted">{{ a.at | thaidate }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="admin-empty">ยังไม่มีการตรวจ lab</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

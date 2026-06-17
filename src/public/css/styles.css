@@ -1747,6 +1747,18 @@ main { flex: 1; }
 .admin-notice-warn {
   background: rgba(251,191,36,.12); color: #fbbf24; border-color: rgba(251,191,36,.3);
 }
+.admin-search { display: flex; align-items: center; gap: var(--s-3); }
+.admin-search input[type="search"] {
+  padding: 5px 10px; font-size: .85rem; font-family: var(--font-body);
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-sm);
+  color: var(--text); min-width: 220px;
+}
+.admin-btn-ghost { background: transparent; border-color: var(--border); color: var(--muted); }
+.admin-btn-ghost:hover { background: var(--surface-2); border-color: var(--muted); }
+.admin-link { color: var(--signal); text-decoration: none; }
+.admin-link:hover { text-decoration: underline; }
+.admin-back { display: inline-block; margin-bottom: var(--s-3); font-size: .85rem; }
+.admin-actions { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-4); }
 
 /* ── Email verification banner ──────────────────────────────────────── */
 .verify-banner {
