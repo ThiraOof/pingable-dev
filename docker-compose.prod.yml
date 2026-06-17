@@ -3,6 +3,13 @@
 # lab pages need it. Add GNS3 on this same VM later (nested virt is enabled) and
 # point GNS3_HOST at it when you want labs live.
 #
+# IMPORTANT for labs: GNS3 runs NATIVELY on the VM host (it needs /dev/kvm), not
+# in a container. The app container can't reach it via "localhost" — that's the
+# container itself. Use host.docker.internal (mapped to the host gateway by the
+# extra_hosts below) and set GNS3_HOST=http://host.docker.internal in
+# .env.production. GNS3 must also bind 0.0.0.0 (not 127.0.0.1) so the container
+# can connect to both its REST API (:3080) and the node console ports.
+#
 #   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 services:
   app:
@@ -12,6 +19,11 @@ services:
     environment:
       NODE_ENV: production
       MONGODB_URI: mongodb://mongo:27017/pingable-dev
+    # Lets the container reach a GNS3 server running on the VM host via
+    # http://host.docker.internal (used for both the REST proxy and the
+    # grader's telnet to node consoles). Harmless when labs are off.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       mongo:
         condition: service_healthy
